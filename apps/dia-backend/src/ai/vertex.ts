@@ -2,7 +2,8 @@
  * Minimal Vertex AI (Gemini) client. No SDK: a service-account JWT is exchanged for an access token, then
  * `generateContent` is called. Credentials come only from the environment and are never logged.
  *   VERTEX_PROJECT, VERTEX_LOCATION (default asia-south1), VERTEX_MODEL,
- *   GOOGLE_APPLICATION_CREDENTIALS (service-account JSON path) or VERTEX_ACCESS_TOKEN (e.g. from `gcloud auth print-access-token`).
+ *   GOOGLE_APPLICATION_CREDENTIALS (service-account JSON path) or VERTEX_ACCESS_TOKEN (e.g. from `gcloud auth print-access-token`),
+ *   or, simplest, VERTEX_API_KEY (express-mode key; then VERTEX_PROJECT is not needed).
  */
 import { createSign } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -19,6 +20,10 @@ export interface VertexConfig {
   model: string;
   credentialsPath?: string;
   accessToken?: string;
+  /** Vertex AI express-mode API key (starts with "AQ."): no project, location or service account needed. */
+  apiKey?: string;
+  /** true: Google's Gemini Developer API (generativelanguage.googleapis.com) with a plain API key, instead of Vertex AI. */
+  gemini?: boolean;
 }
 
 type Fetch = (url: string, init?: RequestInit) => Promise<Response>;
@@ -26,7 +31,7 @@ type Fetch = (url: string, init?: RequestInit) => Promise<Response>;
 const b64url = (b: Buffer | string) => Buffer.from(b).toString("base64").replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 
 export class VertexClient implements LlmClient {
-  readonly name = "vertex";
+  get name() { return this.cfg.gemini ? "gemini" : "vertex"; }
   private token?: { value: string; expires: number };
 
   constructor(private readonly cfg: VertexConfig, private readonly fetchImpl: Fetch = fetch) {}
@@ -35,6 +40,7 @@ export class VertexClient implements LlmClient {
 
   /** Why the client cannot run, or null when it is fully configured. */
   static missing(cfg: VertexConfig): string | null {
+    if (cfg.apiKey) return null;
     if (!cfg.project) return "VERTEX_PROJECT is not set";
     if (!cfg.accessToken && !cfg.credentialsPath) return "set GOOGLE_APPLICATION_CREDENTIALS or VERTEX_ACCESS_TOKEN";
     return null;
@@ -60,18 +66,23 @@ export class VertexClient implements LlmClient {
   }
 
   async generate(system: string, user: string): Promise<string> {
-    const { project, location, model } = this.cfg;
-    const url = `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/publishers/google/models/${model}:generateContent`;
+    const { project, location, model, apiKey } = this.cfg;
+    const url = this.cfg.gemini
+      ? `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
+      : apiKey
+      ? `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent`
+      : `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/publishers/google/models/${model}:generateContent`;
+    const auth: Record<string, string> = apiKey ? { "x-goog-api-key": apiKey } : { authorization: `Bearer ${await this.accessToken()}` };
     const r = await this.fetchImpl(url, {
       method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${await this.accessToken()}` },
+      headers: { "content-type": "application/json", ...auth },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents: [{ role: "user", parts: [{ text: user }] }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 1024 },
+        generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
       }),
     });
-    if (!r.ok) throw new Error(`Vertex generateContent failed (${r.status})`);
+    if (!r.ok) throw new Error(`${this.cfg.gemini ? "Gemini" : "Vertex"} generateContent failed (${r.status})`);
     const j = (await r.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
     const text = (j.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("").trim();
     if (!text) throw new Error("Vertex returned no text");

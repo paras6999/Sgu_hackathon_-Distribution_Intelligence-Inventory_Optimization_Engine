@@ -55,4 +55,8 @@ export const env = {
   vertexModel: process.env.VERTEX_MODEL ?? "gemini-2.5-flash",
   googleCredentials: process.env.GOOGLE_APPLICATION_CREDENTIALS,
   vertexAccessToken: process.env.VERTEX_ACCESS_TOKEN,
+  vertexApiKey: process.env.VERTEX_API_KEY,
+  /** Gemini Developer API (Google AI) key: the simplest option; no project or billing setup. */
+  geminiApiKey: process.env.GEMINI_API_KEY,
+  geminiModel: process.env.GEMINI_MODEL ?? "gemini-flash-latest",
 };

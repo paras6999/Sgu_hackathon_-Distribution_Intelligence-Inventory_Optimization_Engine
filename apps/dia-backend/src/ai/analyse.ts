@@ -91,8 +91,9 @@ function factNumbers(v: unknown, out: number[] = []): number[] {
 }
 
 /** Figures in `text` that match no fact (after unit conversion). Small counts and years are ignored. */
-export function unverifiedNumbers(text: string, facts: Facts): number[] {
-  const known = factNumbers(facts).flatMap((v) => [v, Math.abs(v), v / 1e5, v / 1e7, v * 100, Math.abs(v) * 100]);
+export function unverifiedNumbers(text: string, facts: Facts, question = ""): number[] {
+  const asked = [...question.matchAll(/\d[\d,]*\.?\d*/g)].map((m) => Number(m[0].replaceAll(",", "").replace(/\.$/, "")));
+  const known = [...factNumbers(facts).flatMap((v) => { const a = Math.abs(v); return [v, a, a / 1e5, a / 1e7, a * 100]; }), ...asked];
   const bad: number[] = [];
   for (const m of text.matchAll(/\d[\d,]*\.?\d*/g)) {
     const n = Number(m[0].replaceAll(",", "").replace(/\.$/, ""));
@@ -128,7 +129,7 @@ export async function analyse(llm: LlmClient | null, facts: Facts, question?: st
       llm.generate(SYSTEM_PROMPT, `FACTS (JSON):\n${JSON.stringify(facts)}\n\nTASK: ${task(facts, question)}`),
       new Promise<never>((_, rej) => setTimeout(() => rej(new Error("AI request timed out")), timeoutMs)),
     ]);
-    const bad = unverifiedNumbers(text, facts);
+    const bad = unverifiedNumbers(text, facts, question ?? "");
     return { text, source: "ai", model: llm.model, verified: bad.length === 0, unverified_numbers: bad,
       note: bad.length ? "Some figures in this answer do not match the data; check them before relying on them." : null };
   } catch (e) {

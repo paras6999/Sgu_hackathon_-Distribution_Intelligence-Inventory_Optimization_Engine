@@ -41,7 +41,7 @@ Open http://localhost:3000. Pre-warm once: Plan tab → Generate plan (first cal
 **Frontier (engine, stockout weight 0.5 / 1 / 2, imbalanced):** fill 93.3% / 93.9% / 94.1%, cost ₹1.79 / ₹1.82 / ₹1.89 cr. Baseline A needs 14 days of cover to reach 94.7% fill, at ₹2.18 cr (the engine reaches 94.1% at ₹1.89 cr); Baseline B never gets above 86.5%, even at ₹3.14 cr. Frontier points use the first 5 seeds.
 
 ## Analysis on demand and the map
-- **Analyse** buttons on the Plan and Results tabs give a deep analysis of the plan or the results. With no AI model configured (the default) the text is built from the data by rules and works offline. With `AI_ENABLED=true` and Vertex AI credentials in `.env`, a Gemini model writes it from the same facts; every figure it quotes is checked against the data and flagged if it does not match. The model never sets a quantity, and a free-form question box is available when the model is on.
+- **Analyse** buttons on the Plan and Results tabs give a deep analysis of the plan or the results. With no AI model configured (the default) the text is built from the data by rules and works offline. With `AI_ENABLED=true` and a `GEMINI_API_KEY` (or Vertex AI credentials) in the git-ignored `.env`, a Gemini model writes it from the same facts; every figure it quotes is checked against the data and flagged if it does not match. The model never sets a quantity, and a free-form question box is available when the model is on.
 - **Map:** a MapLibre map on OpenStreetMap tiles (needs a network; without one the lanes still show on a plain background, and without WebGL the page falls back to the drawn map). Click an arc to filter the lines below.
 
 ## Likely questions
@@ -51,7 +51,7 @@ Open http://localhost:3000. Pre-warm once: Plan tab → Generate plan (first cal
 - **Why is fill rate lower?** The engine ships a case only when the expected margin beats freight, holding and expiry cost. It runs fuller trucks and wastes less, and accepts a few more stockouts on thin lanes. The frontier shows how to buy that fill rate back, and what it costs.
 - **Why is the home-depot ablation not shown?** The four depots are 1,000+ km apart, so no alternative depot qualifies within 600 km: the result would be zero. We dropped it rather than show an empty bar.
 - **What did you tune on the evaluation seeds?** One setting: the stockout penalty (1.2 → 2.4 × margin), chosen from the first run's frontier on seeds 1–5, which are also in the evaluation. It is disclosed in the Assumptions tab.
-- **What is not built?** Live data connectors, carbon pricing in the UI (the optimiser accepts it), multi-drop routes, and ablations (c) no-credit and (f) home-depot. The Vertex AI path is built and tested against a mocked endpoint only; it has not been run against a real Vertex project.
+- **What is not built?** Live data connectors, carbon pricing in the UI (the optimiser accepts it), multi-drop routes, and ablations (c) no-credit and (f) home-depot. The Gemini Developer API path was run live with a real key (plan, results and question analysis, figures verified); the Vertex AI path is tested against a mocked endpoint only, and the key we tried is blocked there until billing is enabled on its project.
 - **How is the result protected from a bug?** Every plan is re-checked by an independent validator before it is shown; the simulator asserts stock conservation on every node, SKU and day (0 failures in about half a million rows per run).
 
 ## Future scope

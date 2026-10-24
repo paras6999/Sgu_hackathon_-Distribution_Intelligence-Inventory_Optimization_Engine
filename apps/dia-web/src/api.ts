@@ -22,7 +22,7 @@ async function call<T>(method: "GET" | "POST", path: string, body?: unknown): Pr
   return r.json() as Promise<T>;
 }
 
-export type AiStatus = { enabled: boolean; provider: "vertex" | "rules"; model: string | null; reason: string | null };
+export type AiStatus = { enabled: boolean; provider: "vertex" | "gemini" | "rules"; model: string | null; reason: string | null };
 export type AnalyseRequest = { kind: "plan" | "line" | "results"; plan_id?: string; version?: number; line_id?: string; experiment_id?: string; opening_state?: string; question?: string };
 export type Analysis = { text: string; source: "ai" | "rules"; model: string | null; verified: boolean; unverified_numbers: number[]; note: string | null };
 

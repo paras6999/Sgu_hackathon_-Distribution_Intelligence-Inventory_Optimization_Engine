@@ -74,6 +74,12 @@ describe("number verification", () => {
   test("flags a figure that is not in the facts", () => {
     expect(unverifiedNumbers("Cost fell by 77.7% across 4,321 lines.", facts)).toEqual([77.7, 4321]);
   });
+  test("matches negative differences and figures taken from the user's own question", () => {
+    const f = { diff_inr: -3326679.56 };
+    expect(unverifiedNumbers("It saves ₹33.27 lakh, about 0.33 crore.", f)).toEqual([]);
+    expect(unverifiedNumbers("I cannot ship 5,000 more cases.", f)).toEqual([5000]);
+    expect(unverifiedNumbers("I cannot ship 5,000 more cases.", f, "ship 5000 more cases of atta")).toEqual([]);
+  });
   test("ignores small counts and years", () => {
     expect(unverifiedNumbers("Over 10 seeds in 2025, three lanes and 8 trucks.", facts)).toEqual([]);
   });
@@ -122,6 +128,25 @@ describe("Vertex client (mocked HTTP)", () => {
     const body = JSON.parse(seen!.init.body as string);
     expect(body.systemInstruction.parts[0].text).toBe("SYS");
     expect(body.contents[0].parts[0].text).toBe("USER");
+  });
+
+  test("an express-mode API key is sent as a header and needs no project", async () => {
+    let seen: { url: string; init: RequestInit } | undefined;
+    const client = new VertexClient({ location: "l", model: "gemini-x", apiKey: "AQ.test-key" }, async (url, init) => { seen = { url, init: init! }; return new Response(JSON.stringify(reply)); });
+    expect(await client.generate("S", "U")).toBe("Hello world");
+    expect(seen!.url).toBe("https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-x:generateContent");
+    expect(seen!.url).not.toContain("AQ.");
+    expect((seen!.init.headers as Record<string, string>)["x-goog-api-key"]).toBe("AQ.test-key");
+    expect(VertexClient.missing({ location: "l", model: "m", apiKey: "k" })).toBeNull();
+  });
+
+  test("a Gemini Developer API key uses the generativelanguage endpoint", async () => {
+    let seen: { url: string; init: RequestInit } | undefined;
+    const client = new VertexClient({ location: "", model: "gemini-flash-latest", apiKey: "K", gemini: true }, async (url, init) => { seen = { url, init: init! }; return new Response(JSON.stringify(reply)); });
+    expect(client.name).toBe("gemini");
+    expect(await client.generate("S", "U")).toBe("Hello world");
+    expect(seen!.url).toBe("https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent");
+    expect((seen!.init.headers as Record<string, string>)["x-goog-api-key"]).toBe("K");
   });
 
   test("exchanges a service-account key for a token and reuses it", async () => {
