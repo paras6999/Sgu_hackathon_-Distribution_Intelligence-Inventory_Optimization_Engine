@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dia/confirmation",
+  "title": "confirmation",
+  "$defs": {
+    "Proposal": {
+      "additionalProperties": false,
+      "properties": {
+        "plan_id": {
+          "type": "string"
+        },
+        "dist_id": {
+          "type": "string"
+        },
+        "proposal_version": {
+          "type": "integer"
+        },
+        "status": {
+          "$ref": "#/$defs/ProposalStatus"
+        },
+        "sent_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "responded_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "plan_id",
+        "dist_id",
+        "proposal_version",
+        "status"
+      ],
+      "type": "object"
+    },
+    "Message": {
+      "additionalProperties": false,
+      "properties": {
+        "dist_id": {
+          "type": "string"
+        },
+        "proposal_version": {
+          "type": "integer"
+        },
+        "text": {
+          "type": "string"
+        },
+        "line_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "total_value_inr": {
+          "type": "number"
+        },
+        "credit_available_inr": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "dist_id",
+        "proposal_version",
+        "text",
+        "line_ids",
+        "total_value_inr",
+        "credit_available_inr"
+      ],
+      "type": "object"
+    },
+    "LineAction": {
+      "additionalProperties": false,
+      "properties": {
+        "line_id": {
+          "type": "string"
+        },
+        "action": {
+          "$ref": "#/$defs/ResponseAction"
+        },
+        "qty": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "line_id",
+        "action"
+      ],
+      "type": "object"
+    },
+    "LineDiff": {
+      "additionalProperties": false,
+      "properties": {
+        "line_id": {
+          "type": "string"
+        },
+        "dist_id": {
+          "type": "string"
+        },
+        "old_cases": {
+          "type": "integer"
+        },
+        "new_cases": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line_id",
+        "dist_id",
+        "old_cases",
+        "new_cases"
+      ],
+      "type": "object"
+    },
+    "PlanEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "plan_id": {
+          "type": "string"
+        },
+        "plan_version": {
+          "type": "integer"
+        },
+        "dist_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actor": {
+          "type": "string"
+        },
+        "action": {
+          "$ref": "#/$defs/PlanEventAction"
+        },
+        "line_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "old_qty": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "new_qty": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "delta_cost_inr": {
+          "default": 0.0,
+          "type": "number"
+        },
+        "ts": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "plan_id",
+        "plan_version",
+        "dist_id",
+        "actor",
+        "action",
+        "ts"
+      ],
+      "type": "object"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+# Who reviews what (docs/Team.md section 2). GitHub requests these reviewers automatically.
+# TODO(M2): replace @M1_GITHUB / @M3_GITHUB / @M4_GITHUB with real usernames, then uncomment those lines.
+# Until then every path routes to the repo owner.
+
+*                                              @paras6999
+
+# M1 (Kiro): optimiser, simulation, engine service, builds and releases, AI
+# /engine/dia-engine/src/dia_engine/optimize/  @M1_GITHUB
+# /engine/dia-engine/src/dia_engine/sim/       @M1_GITHUB
+# /engine/dia-engine/src/dia_engine/service/   @M1_GITHUB
+# /engine/dia-engine/src/dia_engine/cli.py     @M1_GITHUB
+# /engine/dia-engine/build/                    @M1_GITHUB
+# /apps/dia-backend/src/ai/                    @M1_GITHUB
+# /.github/workflows/release.yml               @M1_GITHUB
+# /tools/release/                              @M1_GITHUB
+
+# Contracts: both leads must approve
+# /packages/dia-types/schema/                  @paras6999 @M1_GITHUB
+
+# M3 (Antigravity): analytics pages
+# /apps/dia-web/src/pages/AnalyticsPages.tsx   @M3_GITHUB @paras6999
+
+# M4 (data): synthetic data and its config values
+# /engine/dia-engine/src/dia_engine/data/      @M4_GITHUB @paras6999
+# /packages/dia-config/                        @M4_GITHUB @paras6999

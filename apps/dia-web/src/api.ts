@@ -1,0 +1,47 @@
+/** Typed client for the /v1 API (owner: M2). Every type comes from @dia/types, so web and backend can't drift. */
+import type {
+  AssumptionRow, DispatchResponse, ExperimentAccepted, ExperimentInfo, ExperimentRequest, ExperimentResults,
+  ForecastRequest, ForecastResponse, Message, Plan, PlanEvent, PlanRequest, Proposal, PublishResponse,
+  ResponseRequest, ResponseResult, Snapshot,
+} from "@dia/types";
+
+export class ApiError extends Error {
+  constructor(readonly status: number, message: string) { super(message); }
+}
+
+async function call<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<T> {
+  const r = await fetch(path, {
+    method,
+    headers: body === undefined ? undefined : { "content-type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!r.ok) {
+    const detail = await r.json().then((j) => j.detail as string).catch(() => r.statusText);
+    throw new ApiError(r.status, `${r.status} ${detail}`);
+  }
+  return r.json() as Promise<T>;
+}
+
+export type Health = { status: string; engine_mode: string; engine: string; fake_backend: boolean };
+
+export const api = {
+  health: () => call<Health>("GET", "/v1/health"),
+  scenarios: () => call<string[]>("GET", "/v1/scenarios"),
+  snapshot: (id: string, asOf: string) => call<Snapshot>("GET", `/v1/scenarios/${id}/snapshot?as_of=${asOf}`),
+  forecasts: (req: ForecastRequest) => call<ForecastResponse>("POST", "/v1/forecasts", req),
+  createPlan: (req: PlanRequest) => call<Plan>("POST", "/v1/plans", req),
+  plan: (id: string, version?: number) => call<Plan>("GET", `/v1/plans/${id}${version ? `?version=${version}` : ""}`),
+  publish: (id: string, version: number) => call<PublishResponse>("POST", `/v1/plans/${id}/publish`, { version }),
+  proposals: (id: string) => call<Proposal[]>("GET", `/v1/plans/${id}/proposals`),
+  inbox: (id: string, dist: string) => call<Message>("GET", `/v1/plans/${id}/inbox/${dist}`),
+  respond: (id: string, req: ResponseRequest) => call<ResponseResult>("POST", `/v1/plans/${id}/responses`, req),
+  events: (id: string) => call<PlanEvent[]>("GET", `/v1/plans/${id}/events`),
+  dispatch: (id: string, depot?: string) => call<DispatchResponse>("GET", `/v1/plans/${id}/dispatch${depot ? `?depot=${depot}` : ""}`),
+  dispatchCsvUrl: (id: string, depot?: string) => `/v1/plans/${id}/dispatch.csv${depot ? `?depot=${depot}` : ""}`,
+  startExperiment: (req: ExperimentRequest = {}) => call<ExperimentAccepted>("POST", "/v1/experiments", req),
+  experiment: (id: string) => call<ExperimentInfo>("GET", `/v1/experiments/${id}`),
+  results: (id: string) => call<ExperimentResults>("GET", `/v1/experiments/${id}/results`),
+  assumptions: () => call<AssumptionRow[]>("GET", "/v1/assumptions"),
+};
+
+export const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;

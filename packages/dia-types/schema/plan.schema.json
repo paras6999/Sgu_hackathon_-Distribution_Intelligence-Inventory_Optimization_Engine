@@ -1,0 +1,609 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dia/plan",
+  "title": "plan",
+  "$defs": {
+    "Weights": {
+      "additionalProperties": false,
+      "properties": {
+        "pi_mult": {
+          "default": 1.0,
+          "type": "number"
+        },
+        "omega_mult": {
+          "default": 1.0,
+          "type": "number"
+        },
+        "carbon_inr_per_kg": {
+          "default": 0.0,
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "EngineSettings": {
+      "additionalProperties": false,
+      "description": "Weights plus ablation switches (FR-12). Default = full engine.",
+      "properties": {
+        "weights": {
+          "$ref": "#/$defs/Weights",
+          "default": {
+            "pi_mult": 1.0,
+            "omega_mult": 1.0,
+            "carbon_inr_per_kg": 0.0
+          }
+        },
+        "no_expiry_term": {
+          "default": false,
+          "type": "boolean"
+        },
+        "no_truck_steps": {
+          "default": false,
+          "type": "boolean"
+        },
+        "forecast_model": {
+          "$ref": "#/$defs/ForecastMode",
+          "default": "full"
+        },
+        "no_credit": {
+          "default": false,
+          "type": "boolean"
+        },
+        "uniform_service_level": {
+          "default": false,
+          "type": "boolean"
+        },
+        "home_depot_only": {
+          "default": false,
+          "type": "boolean"
+        },
+        "time_limit_s": {
+          "default": 30.0,
+          "type": "number"
+        },
+        "mip_gap": {
+          "default": 0.01,
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "Lock": {
+      "additionalProperties": false,
+      "description": "Constraint C10 on one arc (lot -> distributor).",
+      "properties": {
+        "lot_id": {
+          "type": "string"
+        },
+        "dist_id": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/LockKind"
+        },
+        "qty": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "lot_id",
+        "dist_id",
+        "kind",
+        "qty"
+      ],
+      "type": "object"
+    },
+    "Reason": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ReasonCode"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "impact_inr": {
+          "default": 0.0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "code",
+        "detail"
+      ],
+      "type": "object"
+    },
+    "PlanLine": {
+      "additionalProperties": false,
+      "properties": {
+        "line_id": {
+          "type": "string"
+        },
+        "sku_id": {
+          "type": "string"
+        },
+        "sku_name": {
+          "type": "string"
+        },
+        "lot_id": {
+          "type": "string"
+        },
+        "expiry": {
+          "format": "date",
+          "type": "string"
+        },
+        "from_id": {
+          "type": "string"
+        },
+        "to_id": {
+          "type": "string"
+        },
+        "cases": {
+          "type": "integer"
+        },
+        "mode": {
+          "$ref": "#/$defs/ShipMode"
+        },
+        "truck_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "consignment_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "truck_class": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TruckClass"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ship_date": {
+          "format": "date",
+          "type": "string"
+        },
+        "eta": {
+          "format": "date",
+          "type": "string"
+        },
+        "rsl_on_arrival_days": {
+          "type": "integer"
+        },
+        "freight_alloc_inr": {
+          "type": "number"
+        },
+        "reasons": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Reason"
+          },
+          "type": "array"
+        },
+        "proposal_version": {
+          "default": 1,
+          "type": "integer"
+        },
+        "status": {
+          "$ref": "#/$defs/LineStatus",
+          "default": "PROPOSED"
+        }
+      },
+      "required": [
+        "line_id",
+        "sku_id",
+        "sku_name",
+        "lot_id",
+        "expiry",
+        "from_id",
+        "to_id",
+        "cases",
+        "mode",
+        "ship_date",
+        "eta",
+        "rsl_on_arrival_days",
+        "freight_alloc_inr"
+      ],
+      "type": "object"
+    },
+    "Shortfall": {
+      "additionalProperties": false,
+      "description": "Demand left unserved (FR-06: rows with zero shipment and a limiting code).",
+      "properties": {
+        "sku_id": {
+          "type": "string"
+        },
+        "dist_id": {
+          "type": "string"
+        },
+        "short_cases": {
+          "type": "number"
+        },
+        "reasons": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Reason"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "sku_id",
+        "dist_id",
+        "short_cases"
+      ],
+      "type": "object"
+    },
+    "Truck": {
+      "additionalProperties": false,
+      "properties": {
+        "truck_id": {
+          "type": "string"
+        },
+        "mode": {
+          "$ref": "#/$defs/ShipMode"
+        },
+        "truck_class": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TruckClass"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "from_id": {
+          "type": "string"
+        },
+        "to_id": {
+          "type": "string"
+        },
+        "ship_date": {
+          "format": "date",
+          "type": "string"
+        },
+        "kg": {
+          "type": "number"
+        },
+        "m3": {
+          "type": "number"
+        },
+        "kg_pct": {
+          "type": "number"
+        },
+        "m3_pct": {
+          "type": "number"
+        },
+        "cost_inr": {
+          "type": "number"
+        },
+        "line_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "truck_id",
+        "mode",
+        "truck_class",
+        "from_id",
+        "to_id",
+        "ship_date",
+        "kg",
+        "m3",
+        "kg_pct",
+        "m3_pct",
+        "cost_inr",
+        "line_ids"
+      ],
+      "type": "object"
+    },
+    "SolveInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/SolveStatus"
+        },
+        "seconds": {
+          "type": "number"
+        },
+        "mip_gap": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "solver": {
+          "default": "highs",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "seconds"
+      ],
+      "type": "object"
+    },
+    "ExpectedKpis": {
+      "additionalProperties": false,
+      "properties": {
+        "freight_inr": {
+          "default": 0.0,
+          "type": "number"
+        },
+        "lost_margin_inr": {
+          "default": 0.0,
+          "type": "number"
+        },
+        "holding_inr": {
+          "default": 0.0,
+          "type": "number"
+        },
+        "expiry_inr": {
+          "default": 0.0,
+          "type": "number"
+        },
+        "carbon_kg": {
+          "default": 0.0,
+          "type": "number"
+        },
+        "total_inr": {
+          "default": 0.0,
+          "type": "number"
+        },
+        "cases": {
+          "default": 0.0,
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "Plan": {
+      "additionalProperties": false,
+      "properties": {
+        "plan_id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer"
+        },
+        "scenario_id": {
+          "type": "string"
+        },
+        "as_of": {
+          "format": "date",
+          "type": "string"
+        },
+        "temp_class": {
+          "$ref": "#/$defs/TempClass"
+        },
+        "policy": {
+          "$ref": "#/$defs/PolicyName",
+          "default": "engine"
+        },
+        "settings": {
+          "$ref": "#/$defs/EngineSettings",
+          "default": {
+            "weights": {
+              "carbon_inr_per_kg": 0.0,
+              "omega_mult": 1.0,
+              "pi_mult": 1.0
+            },
+            "no_expiry_term": false,
+            "no_truck_steps": false,
+            "forecast_model": "full",
+            "no_credit": false,
+            "uniform_service_level": false,
+            "home_depot_only": false,
+            "time_limit_s": 30.0,
+            "mip_gap": 0.01
+          }
+        },
+        "status": {
+          "$ref": "#/$defs/PlanStatus",
+          "default": "DRAFT"
+        },
+        "lines": {
+          "items": {
+            "$ref": "#/$defs/PlanLine"
+          },
+          "type": "array"
+        },
+        "shortfalls": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Shortfall"
+          },
+          "type": "array"
+        },
+        "trucks": {
+          "items": {
+            "$ref": "#/$defs/Truck"
+          },
+          "type": "array"
+        },
+        "expected_kpis": {
+          "$ref": "#/$defs/ExpectedKpis",
+          "default": {
+            "freight_inr": 0.0,
+            "lost_margin_inr": 0.0,
+            "holding_inr": 0.0,
+            "expiry_inr": 0.0,
+            "carbon_kg": 0.0,
+            "total_inr": 0.0,
+            "cases": 0.0
+          }
+        },
+        "solve": {
+          "$ref": "#/$defs/SolveInfo"
+        },
+        "created_at": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "plan_id",
+        "version",
+        "scenario_id",
+        "as_of",
+        "temp_class",
+        "lines",
+        "trucks",
+        "solve",
+        "created_at"
+      ],
+      "type": "object"
+    },
+    "Violation": {
+      "additionalProperties": false,
+      "properties": {
+        "constraint": {
+          "$ref": "#/$defs/ViolationConstraint"
+        },
+        "entity": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "excess": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "constraint",
+        "entity",
+        "detail",
+        "excess"
+      ],
+      "type": "object"
+    },
+    "ValidationReport": {
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "violations": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Violation"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "ok"
+      ],
+      "type": "object"
+    },
+    "OptimizeInput": {
+      "additionalProperties": false,
+      "properties": {
+        "scenario": {
+          "$ref": "#/$defs/Scenario"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/Snapshot"
+        },
+        "forecast": {
+          "$ref": "#/$defs/ForecastBundle"
+        },
+        "targets": {
+          "items": {
+            "$ref": "#/$defs/Target"
+          },
+          "type": "array"
+        },
+        "temp_class": {
+          "$ref": "#/$defs/TempClass"
+        },
+        "settings": {
+          "$ref": "#/$defs/EngineSettings",
+          "default": {
+            "weights": {
+              "carbon_inr_per_kg": 0.0,
+              "omega_mult": 1.0,
+              "pi_mult": 1.0
+            },
+            "no_expiry_term": false,
+            "no_truck_steps": false,
+            "forecast_model": "full",
+            "no_credit": false,
+            "uniform_service_level": false,
+            "home_depot_only": false,
+            "time_limit_s": 30.0,
+            "mip_gap": 0.01
+          }
+        },
+        "locks": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Lock"
+          },
+          "type": "array"
+        },
+        "plan_id": {
+          "type": "string"
+        },
+        "version": {
+          "default": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "scenario",
+        "snapshot",
+        "forecast",
+        "targets",
+        "temp_class",
+        "plan_id"
+      ],
+      "type": "object"
+    },
+    "SolveOutput": {
+      "additionalProperties": false,
+      "properties": {
+        "plan": {
+          "$ref": "#/$defs/Plan"
+        },
+        "diagnostics": {
+          "additionalProperties": true,
+          "default": {},
+          "type": "object"
+        }
+      },
+      "required": [
+        "plan"
+      ],
+      "type": "object"
+    }
+  }
+}

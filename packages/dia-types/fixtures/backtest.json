@@ -1,0 +1,7 @@
+{
+  "wape": 0.31,
+  "wape_seasonal_naive": 0.37,
+  "bias": -0.02,
+  "coverage_p10_p90": 0.79,
+  "wape_festival_weeks": 0.41
+}

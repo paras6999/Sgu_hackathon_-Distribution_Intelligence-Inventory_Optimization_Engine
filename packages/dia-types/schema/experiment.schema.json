@@ -1,0 +1,259 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dia/experiment",
+  "title": "experiment",
+  "$defs": {
+    "ExperimentRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "policies": {
+          "default": [
+            "engine",
+            "baseline_a",
+            "baseline_b"
+          ],
+          "items": {
+            "$ref": "#/$defs/PolicyName"
+          },
+          "type": "array"
+        },
+        "seeds": {
+          "default": 20,
+          "type": "integer"
+        },
+        "opening_states": {
+          "default": [
+            "neutral",
+            "imbalanced"
+          ],
+          "items": {
+            "$ref": "#/$defs/OpeningState"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ExperimentAccepted": {
+      "additionalProperties": false,
+      "properties": {
+        "experiment_id": {
+          "type": "string"
+        },
+        "cached": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "experiment_id",
+        "cached"
+      ],
+      "type": "object"
+    },
+    "ExperimentInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "experiment_id": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/ExperimentStatus"
+        },
+        "progress_pct": {
+          "type": "number"
+        },
+        "config_hash": {
+          "type": "string"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "experiment_id",
+        "status",
+        "progress_pct",
+        "config_hash"
+      ],
+      "type": "object"
+    },
+    "KpiSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "policy": {
+          "$ref": "#/$defs/PolicyName"
+        },
+        "opening_state": {
+          "$ref": "#/$defs/OpeningState"
+        },
+        "kpi": {
+          "type": "string"
+        },
+        "mean": {
+          "type": "number"
+        },
+        "ci_low": {
+          "type": "number"
+        },
+        "ci_high": {
+          "type": "number"
+        },
+        "n_seeds": {
+          "type": "integer"
+        },
+        "delta_vs_best_baseline": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "delta_ci_low": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "delta_ci_high": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "policy",
+        "opening_state",
+        "kpi",
+        "mean",
+        "ci_low",
+        "ci_high",
+        "n_seeds"
+      ],
+      "type": "object"
+    },
+    "FrontierPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "policy": {
+          "$ref": "#/$defs/PolicyName"
+        },
+        "opening_state": {
+          "$ref": "#/$defs/OpeningState"
+        },
+        "param": {
+          "type": "string"
+        },
+        "value": {
+          "type": "number"
+        },
+        "fill_rate": {
+          "type": "number"
+        },
+        "cost_to_serve_inr": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "policy",
+        "opening_state",
+        "param",
+        "value",
+        "fill_rate",
+        "cost_to_serve_inr"
+      ],
+      "type": "object"
+    },
+    "AblationRow": {
+      "additionalProperties": false,
+      "properties": {
+        "variant": {
+          "$ref": "#/$defs/PolicyName"
+        },
+        "opening_state": {
+          "$ref": "#/$defs/OpeningState"
+        },
+        "delta_cost_to_serve_inr": {
+          "type": "number"
+        },
+        "ci_low": {
+          "type": "number"
+        },
+        "ci_high": {
+          "type": "number"
+        },
+        "delta_fill_rate_pp": {
+          "type": "number"
+        },
+        "delta_wastage_inr": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "variant",
+        "opening_state",
+        "delta_cost_to_serve_inr",
+        "ci_low",
+        "ci_high",
+        "delta_fill_rate_pp",
+        "delta_wastage_inr"
+      ],
+      "type": "object"
+    },
+    "ExperimentResults": {
+      "additionalProperties": false,
+      "properties": {
+        "experiment_id": {
+          "type": "string"
+        },
+        "kpis": {
+          "items": {
+            "$ref": "#/$defs/KpiSummary"
+          },
+          "type": "array"
+        },
+        "frontier": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/FrontierPoint"
+          },
+          "type": "array"
+        },
+        "ablation": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AblationRow"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "experiment_id",
+        "kpis"
+      ],
+      "type": "object"
+    }
+  }
+}

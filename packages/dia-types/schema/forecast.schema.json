@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dia/forecast",
+  "title": "forecast",
+  "$defs": {
+    "PairForecast": {
+      "additionalProperties": false,
+      "description": "Daily demand distribution for one SKU x distributor from `start` for len(mean) days.\n\nWindow demand over any span = sum of daily means / variances (days independent, A27).\nConvert to a distribution with engine.dist.window_dist().",
+      "properties": {
+        "sku_id": {
+          "type": "string"
+        },
+        "dist_id": {
+          "type": "string"
+        },
+        "start": {
+          "format": "date",
+          "type": "string"
+        },
+        "mean": {
+          "items": {
+            "type": "number"
+          },
+          "type": "array"
+        },
+        "var": {
+          "items": {
+            "type": "number"
+          },
+          "type": "array"
+        },
+        "festival": {
+          "items": {
+            "type": "number"
+          },
+          "type": "array"
+        },
+        "weather": {
+          "items": {
+            "type": "number"
+          },
+          "type": "array"
+        },
+        "promo": {
+          "items": {
+            "type": "number"
+          },
+          "type": "array"
+        },
+        "model": {
+          "$ref": "#/$defs/ForecastModelKind"
+        }
+      },
+      "required": [
+        "sku_id",
+        "dist_id",
+        "start",
+        "mean",
+        "var",
+        "festival",
+        "weather",
+        "promo",
+        "model"
+      ],
+      "type": "object"
+    },
+    "ForecastRow": {
+      "additionalProperties": false,
+      "description": "Weekly row for the UI and backtest report.",
+      "properties": {
+        "sku_id": {
+          "type": "string"
+        },
+        "dist_id": {
+          "type": "string"
+        },
+        "week_start": {
+          "format": "date",
+          "type": "string"
+        },
+        "p10": {
+          "type": "number"
+        },
+        "p50": {
+          "type": "number"
+        },
+        "p90": {
+          "type": "number"
+        },
+        "model": {
+          "type": "string"
+        },
+        "factors": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "sku_id",
+        "dist_id",
+        "week_start",
+        "p10",
+        "p50",
+        "p90",
+        "model",
+        "factors"
+      ],
+      "type": "object"
+    },
+    "ForecastBundle": {
+      "additionalProperties": false,
+      "properties": {
+        "scenario_id": {
+          "type": "string"
+        },
+        "as_of": {
+          "format": "date",
+          "type": "string"
+        },
+        "horizon_days": {
+          "type": "integer"
+        },
+        "pairs": {
+          "items": {
+            "$ref": "#/$defs/PairForecast"
+          },
+          "type": "array"
+        },
+        "weekly": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ForecastRow"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "scenario_id",
+        "as_of",
+        "horizon_days",
+        "pairs"
+      ],
+      "type": "object"
+    },
+    "BacktestMetrics": {
+      "additionalProperties": false,
+      "properties": {
+        "wape": {
+          "type": "number"
+        },
+        "wape_seasonal_naive": {
+          "type": "number"
+        },
+        "bias": {
+          "type": "number"
+        },
+        "coverage_p10_p90": {
+          "type": "number"
+        },
+        "wape_festival_weeks": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "wape",
+        "wape_seasonal_naive",
+        "bias",
+        "coverage_p10_p90",
+        "wape_festival_weeks"
+      ],
+      "type": "object"
+    },
+    "Target": {
+      "additionalProperties": false,
+      "properties": {
+        "sku_id": {
+          "type": "string"
+        },
+        "dist_id": {
+          "type": "string"
+        },
+        "S": {
+          "type": "number"
+        },
+        "critical_ratio": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        },
+        "cover_days": {
+          "type": "integer"
+        },
+        "mu": {
+          "type": "number"
+        },
+        "sigma": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "sku_id",
+        "dist_id",
+        "S",
+        "critical_ratio",
+        "z",
+        "cover_days",
+        "mu",
+        "sigma"
+      ],
+      "type": "object"
+    }
+  }
+}

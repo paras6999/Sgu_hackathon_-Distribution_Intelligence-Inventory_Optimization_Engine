@@ -1,0 +1,393 @@
+[
+  {
+    "parameter": "network.depots",
+    "value": [
+      "W1-Bhiwandi",
+      "N1-Gurugram",
+      "S1-Hosur",
+      "E1-Dankuni"
+    ],
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "network.distributors_per_region",
+    "value": 4,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "network.road_factor",
+    "value": 1.3,
+    "unit": "x haversine",
+    "source": "judgment",
+    "rationale": "Indian road detour factor"
+  },
+  {
+    "parameter": "network.candidate_depots_per_distributor",
+    "value": 3,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "planning.cadence_days.ambient",
+    "value": 7,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "planning.cadence_days.chilled",
+    "value": 2,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "planning.mrsl_fraction.GT",
+    "value": 0.6,
+    "unit": "share of shelf life",
+    "source": "judgment",
+    "rationale": "Typical GT minimum life on receipt"
+  },
+  {
+    "parameter": "planning.fair_share_alpha",
+    "value": 0.0,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "planning.critical_ratio_clip",
+    "value": [
+      0.3,
+      0.98
+    ],
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "planning.festival_prebuild.lookahead_days.ambient",
+    "value": 14,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "planning.festival_prebuild.lookahead_days.chilled",
+    "value": 0,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "planning.festival_prebuild.min_factor",
+    "value": 1.15,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "planning.lost_sales_breakpoints",
+    "value": [
+      0.0,
+      0.1,
+      0.25,
+      0.5,
+      0.75,
+      0.9,
+      0.98
+    ],
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "planning.waste_breakpoints",
+    "value": [
+      0.0,
+      0.1,
+      0.3,
+      0.5,
+      0.7,
+      0.9
+    ],
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "forecast.param_refit_weeks",
+    "value": 4,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "forecast.weather_forecast_days",
+    "value": 7,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "forecast.weather_noise.tmax_sd_c",
+    "value": 2.0,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "forecast.weather_noise.rain_rel",
+    "value": 0.3,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "costs.diesel_inr_per_l",
+    "value": 97.8,
+    "unit": "INR/l",
+    "source": "Upstox, Mumbai retail diesel, Oct 2026",
+    "rationale": null
+  },
+  {
+    "parameter": "costs.ftl.AMB32.min_inr",
+    "value": 15000.0,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "costs.ftl.AMB32.fixed_inr",
+    "value": 8000.0,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "costs.ftl.AMB32.non_fuel_per_km_inr",
+    "value": 12.0,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "costs.ftl.AMB32.km_per_l",
+    "value": 3.5,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "costs.ftl.AMB32.kg",
+    "value": 7000.0,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "costs.ftl.AMB32.m3",
+    "value": 55.0,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "costs.ftl.REEF17.min_inr",
+    "value": 10000.0,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "costs.ftl.REEF17.fixed_inr",
+    "value": 6000.0,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "costs.ftl.REEF17.non_fuel_per_km_inr",
+    "value": 18.0,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "costs.ftl.REEF17.km_per_l",
+    "value": 4.0,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "costs.ftl.REEF17.kg",
+    "value": 3000.0,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "costs.ftl.REEF17.m3",
+    "value": 15.0,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "costs.ptl.slabs",
+    "value": [
+      [
+        300.0,
+        4.5
+      ],
+      [
+        800.0,
+        8.0
+      ],
+      [
+        99999.0,
+        15.0
+      ]
+    ],
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "costs.ptl.min_charge_inr",
+    "value": 1500.0,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "costs.ptl.kg_per_m3",
+    "value": 250.0,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "costs.ptl.fuel_share",
+    "value": 0.5,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "costs.festival_freight_premium.months",
+    "value": [
+      9,
+      10,
+      11,
+      12,
+      1
+    ],
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "costs.festival_freight_premium.factor",
+    "value": 1.2,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "costs.stockout_penalty_x_margin",
+    "value": 1.2,
+    "unit": "x unit margin",
+    "source": "judgment",
+    "rationale": "Goodwill factor (A16)"
+  },
+  {
+    "parameter": "costs.holding_rate_annual",
+    "value": 0.2,
+    "unit": "per year",
+    "source": "Indian working-capital rates (A18)",
+    "rationale": null
+  },
+  {
+    "parameter": "costs.expiry_claim_share",
+    "value": 1.0,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "carbon.diesel_kg_co2_per_l",
+    "value": 2.68,
+    "unit": "kg CO2/l",
+    "source": "Standard diesel emission factor (A22)",
+    "rationale": null
+  },
+  {
+    "parameter": "carbon.ptl_load_factor",
+    "value": 0.6,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "carbon.price_inr_per_kg",
+    "value": 0.0,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "simulation.history",
+    "value": [
+      "2023-09-25",
+      "2025-09-28"
+    ],
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "simulation.test_window",
+    "value": [
+      "2025-09-29",
+      "2025-12-21"
+    ],
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "simulation.seeds",
+    "value": 20,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "simulation.delay_prob.intra",
+    "value": 0.1,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "simulation.delay_prob.inter",
+    "value": 0.2,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  },
+  {
+    "parameter": "simulation.payment_lag_days",
+    "value": 7,
+    "unit": null,
+    "source": null,
+    "rationale": null
+  }
+]

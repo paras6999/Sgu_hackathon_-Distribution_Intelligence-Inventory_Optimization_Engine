@@ -1,0 +1,293 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dia/api",
+  "title": "api",
+  "$defs": {
+    "ForecastRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "scenario_id": {
+          "type": "string"
+        },
+        "as_of": {
+          "format": "date",
+          "type": "string"
+        },
+        "horizon_weeks": {
+          "default": 4,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "scenario_id",
+        "as_of"
+      ],
+      "type": "object"
+    },
+    "ForecastResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "rows": {
+          "items": {
+            "$ref": "#/$defs/ForecastRow"
+          },
+          "type": "array"
+        },
+        "metrics": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BacktestMetrics"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "rows"
+      ],
+      "type": "object"
+    },
+    "PlanRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "scenario_id": {
+          "type": "string"
+        },
+        "as_of": {
+          "format": "date",
+          "type": "string"
+        },
+        "temp_class": {
+          "$ref": "#/$defs/TempClass"
+        },
+        "weights": {
+          "$ref": "#/$defs/Weights",
+          "default": {
+            "pi_mult": 1.0,
+            "omega_mult": 1.0,
+            "carbon_inr_per_kg": 0.0
+          }
+        },
+        "locks": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Lock"
+          },
+          "type": "array"
+        },
+        "base_plan_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "scenario_id",
+        "as_of",
+        "temp_class"
+      ],
+      "type": "object"
+    },
+    "PublishRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "version"
+      ],
+      "type": "object"
+    },
+    "PublishResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "plan_id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer"
+        },
+        "messages": {
+          "items": {
+            "$ref": "#/$defs/Message"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "plan_id",
+        "version",
+        "messages"
+      ],
+      "type": "object"
+    },
+    "ResponseRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "dist_id": {
+          "type": "string"
+        },
+        "proposal_version": {
+          "type": "integer"
+        },
+        "actions": {
+          "items": {
+            "$ref": "#/$defs/LineAction"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "dist_id",
+        "proposal_version",
+        "actions"
+      ],
+      "type": "object"
+    },
+    "ResponseResult": {
+      "additionalProperties": false,
+      "properties": {
+        "plan_version": {
+          "type": "integer"
+        },
+        "proposal_version": {
+          "type": "integer"
+        },
+        "grown_proposals": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "line_diff": {
+          "items": {
+            "$ref": "#/$defs/LineDiff"
+          },
+          "type": "array"
+        },
+        "delta_cost_inr": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "plan_version",
+        "proposal_version",
+        "grown_proposals",
+        "line_diff",
+        "delta_cost_inr"
+      ],
+      "type": "object"
+    },
+    "DispatchTruck": {
+      "additionalProperties": false,
+      "properties": {
+        "truck": {
+          "$ref": "#/$defs/Truck"
+        },
+        "lines": {
+          "items": {
+            "$ref": "#/$defs/PlanLine"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "truck",
+        "lines"
+      ],
+      "type": "object"
+    },
+    "DispatchResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "plan_id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer"
+        },
+        "depot_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "trucks": {
+          "items": {
+            "$ref": "#/$defs/DispatchTruck"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "plan_id",
+        "version",
+        "depot_id",
+        "trucks"
+      ],
+      "type": "object"
+    },
+    "AssumptionRow": {
+      "additionalProperties": false,
+      "properties": {
+        "parameter": {
+          "type": "string"
+        },
+        "value": {},
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "rationale": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "parameter",
+        "value"
+      ],
+      "type": "object"
+    }
+  }
+}
