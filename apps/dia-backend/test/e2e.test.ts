@@ -54,4 +54,25 @@ describe.if(enabled)("backend + engine (source mode)", () => {
     expect(plan.trucks.length).toBeGreaterThan(0);
     expect(plan.lines.every((l) => l.reasons.length >= 1)).toBe(true);
   }, 120_000);
+  test("a trim in the inbox does a real re-solve (FR-08)", async () => {
+    const post = (path: string, body: unknown) => app.request(path, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const plan = (await (await post("/v1/plans", { scenario_id: "seed01", as_of: "2025-09-29", temp_class: "ambient" })).json()) as
+      { plan_id: string; version: number; lines: Array<{ line_id: string; to_id: string; cases: number }> };
+    expect((await post(`/v1/plans/${plan.plan_id}/publish`, { version: plan.version })).status).toBe(200);
+    const line = plan.lines.find((l) => l.cases >= 4)!;
+    const t0 = performance.now();
+    const r = await post(`/v1/plans/${plan.plan_id}/responses`, {
+      dist_id: line.to_id, proposal_version: 1, actions: [{ line_id: line.line_id, action: "trim", qty: Math.floor(line.cases / 2) }] });
+    const secs = (performance.now() - t0) / 1000;
+    expect(r.status).toBe(200);
+    const res = (await r.json()) as { plan_version: number; line_diff: Array<{ dist_id: string; old_cases: number; new_cases: number }> };
+    expect(res.plan_version).toBe(plan.version + 1);
+    // nobody who has not answered shrinks
+    expect(res.line_diff.filter((d) => d.dist_id !== line.to_id).every((d) => d.new_cases >= d.old_cases)).toBe(true);
+    console.log(`re-solve through the API: ${secs.toFixed(1)} s`);
+    // a stale version for the same distributor is refused
+    const stale = await post(`/v1/plans/${plan.plan_id}/responses`, { dist_id: line.to_id, proposal_version: 0, actions: [] });
+    expect(stale.status).toBe(409);
+  }, 240_000);
 });
