@@ -17,12 +17,14 @@ Read this first in any new chat or AI tool. Each PR adds 2–3 lines under its m
 - Engine is stateless about plans; the backend owns plan ids and versions.
 - Experiments run as a one-shot `dia-engine experiment` process reporting `PROGRESS` lines.
 - Releases: `dia-engine` (PyInstaller) + `dia-server` (Bun compile, web embedded), built by M1.
+- Forecast: own NumPy ETS/TSB instead of statsforecast (speed for weekly sim refits; no numba in the binary).
 - Generator v0 calibration: ~Rs 4.2 cr/yr per distributor, Diwali snacks ×1.57, beverages May/Dec ×2.2, 4.3% historical stockouts, ~7 t ambient per distributor-week, Sunday ×0.61.
 
 ## M1 · Kiro lead
 - _next: `m1/build-release` (prove both binaries by hour 3), then freight + validator_
 
 ## M2 · Claude Code lead
+- `m2/forecast`: FR-03 done. Factors learned from history (season, festival uplift, heat/rain), level by vectorised NumPy ETS (simple vs damped, AIC) or TSB, bands from the 12-origin backtest. seed01: WAPE 14.6% (naive 29.3%), bias -0.6%, P10-P90 coverage 79.9%, festival WAPE 15.3%; backtest 6 s, forecast 0.2-0.4 s. statsforecast removed (28 s import, 7.5 s/fit, numba). Caveat: WAPE is flattered because generator and model share structure (PRD risk 10). _next: targets.py_
 - Rescaffold PR opened; CODEOWNERS filled with all four usernames. _next: branch protection after first CI run, `dist.py`, forecast_
 
 ## M3 · Antigravity
