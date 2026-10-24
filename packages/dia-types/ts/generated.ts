@@ -615,6 +615,88 @@ export interface Target {
 }
 /**
  * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "DemandPoint".
+ */
+export interface DemandPoint {
+  week_start: string;
+  actual: number;
+}
+/**
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "BacktestPoint".
+ */
+export interface BacktestPoint {
+  week_start: string;
+  actual: number;
+  p10: number;
+  p50: number;
+  p90: number;
+  naive: number;
+}
+/**
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "FestivalWindow".
+ */
+export interface FestivalWindow {
+  name: string;
+  start: string;
+  end: string;
+}
+/**
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "DemandHistory".
+ */
+export interface DemandHistory {
+  scenario_id: string;
+  label: string;
+  dist_id: string | null;
+  sku_id: string | null;
+  weekly: DemandPoint[];
+  backtest: BacktestPoint[];
+  festivals: FestivalWindow[];
+  has_band: boolean;
+}
+/**
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "FestivalEffect".
+ */
+export interface FestivalEffect {
+  name: string;
+  learned: {
+    [k: string]: number;
+  };
+  configured: {
+    [k: string]: number;
+  };
+}
+/**
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "WeatherEffect".
+ */
+export interface WeatherEffect {
+  category: string;
+  heat_pct_per_degc_learned: number;
+  heat_pct_per_degc_configured: number;
+  rain_cut_pct_learned: number;
+  rain_cut_pct_configured: number;
+}
+/**
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "LearnedEffects".
+ */
+export interface LearnedEffects {
+  scenario_id: string;
+  festivals: FestivalEffect[];
+  weather: WeatherEffect[];
+  seasonality: {
+    [k: string]: number[];
+  };
+  seasonality_configured: {
+    [k: string]: number[];
+  };
+}
+/**
+ * This interface was referenced by `Dia`'s JSON-Schema
  * via the `definition` "Node".
  */
 export interface Node {

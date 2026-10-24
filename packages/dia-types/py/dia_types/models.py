@@ -401,6 +401,80 @@ class Target(BaseModel):
     sigma: float
 
 
+class DemandPoint(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    week_start: date
+    actual: float
+
+
+class BacktestPoint(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    week_start: date
+    actual: float
+    p10: float
+    p50: float
+    p90: float
+    naive: float
+
+
+class FestivalWindow(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    name: str
+    start: date
+    end: date
+
+
+class DemandHistory(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    scenario_id: str
+    label: str
+    dist_id: str | None = None
+    sku_id: str | None = None
+    weekly: list[DemandPoint]
+    backtest: list[BacktestPoint]
+    festivals: list[FestivalWindow]
+    has_band: bool
+
+
+class FestivalEffect(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    name: str
+    learned: dict[str, float]
+    configured: dict[str, float]
+
+
+class WeatherEffect(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    category: str
+    heat_pct_per_degc_learned: float
+    heat_pct_per_degc_configured: float
+    rain_cut_pct_learned: float
+    rain_cut_pct_configured: float
+
+
+class LearnedEffects(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    scenario_id: str
+    festivals: list[FestivalEffect]
+    weather: list[WeatherEffect]
+    seasonality: dict[str, list[float]]
+    seasonality_configured: dict[str, list[float]]
+
+
 class Node(BaseModel):
     model_config = ConfigDict(
         extra="forbid",

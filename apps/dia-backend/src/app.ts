@@ -100,6 +100,9 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
   });
   app.get("/v1/scenarios", async (c) => c.json(await engine.scenarios()));
   app.get("/v1/scenarios/:id", async (c) => c.json(await engine.scenario(c.req.param("id"))));
+  app.get("/v1/scenarios/:id/history", async (c) => c.json(await engine.history(c.req.param("id"), c.req.query("dist_id") || undefined, c.req.query("sku_id") || undefined)));
+  app.get("/v1/scenarios/:id/effects", async (c) => c.json(await engine.effects(c.req.param("id"))));
+  app.get("/v1/scenarios/:id/backtest", async (c) => c.json(await engine.backtest(c.req.param("id"))));
   app.get("/v1/assumptions", async (c) => c.json(await engine.assumptions()));
   app.get("/openapi.json", (c) => c.json(openapiDocument()));
   app.get("/docs", (c) => c.html(DOCS_HTML));

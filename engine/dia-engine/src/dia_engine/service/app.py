@@ -16,12 +16,13 @@ from fastapi.responses import JSONResponse
 from dia_engine import __version__, store
 from dia_engine.config import get_config
 from dia_engine.data.generate import list_scenarios, load_scenario
+from dia_engine.forecast.analysis import demand_history, learned_effects
 from dia_engine.forecast.forecast import backtest, forecast
 from dia_engine.optimize.pipeline import PlanInvalid, apply_response, make_plan
 from dia_engine.sim.simulate import get_snapshot
 from dia_types import (
     AssumptionRow, BacktestMetrics, EngineForecastRequest, EngineHealth, EnginePlanRequest, EngineResolveRequest,
-    ForecastBundle, ForecastMode, OpeningState, Plan, Scenario, Snapshot,
+    DemandHistory, ForecastBundle, ForecastMode, LearnedEffects, OpeningState, Plan, Scenario, Snapshot,
 )
 
 app = FastAPI(title="dia-engine (internal)", version=__version__)
@@ -76,6 +77,16 @@ def snapshot(scenario_id: str, as_of: date, opening_state: OpeningState = Openin
 @app.get("/scenarios/{scenario_id}/backtest", response_model=BacktestMetrics)
 def scenario_backtest(scenario_id: str) -> BacktestMetrics:
     return backtest(scenario_id)
+
+
+@app.get("/scenarios/{scenario_id}/history", response_model=DemandHistory)
+def history(scenario_id: str, dist_id: str | None = None, sku_id: str | None = None) -> DemandHistory:
+    return demand_history(scenario_id, dist_id or None, sku_id or None)
+
+
+@app.get("/scenarios/{scenario_id}/effects", response_model=LearnedEffects)
+def effects(scenario_id: str) -> LearnedEffects:
+    return learned_effects(scenario_id)
 
 
 @app.post("/forecast", response_model=ForecastBundle)

@@ -10,8 +10,8 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import type {
-  AssumptionRow, BacktestMetrics, EngineForecastRequest, EngineHealth, EnginePlanRequest, EngineResolveRequest,
-  ExperimentRequest, ExperimentResults, ForecastBundle, OpeningState, Plan, Scenario, Snapshot,
+  AssumptionRow, BacktestMetrics, DemandHistory, EngineForecastRequest, EngineHealth, EnginePlanRequest, EngineResolveRequest,
+  ExperimentRequest, ExperimentResults, ForecastBundle, LearnedEffects, OpeningState, Plan, Scenario, Snapshot,
 } from "@dia/types";
 import { env, repoRoot } from "../env";
 import { EngineError, type EngineClient, type ExperimentOutcome } from "./client";
@@ -79,6 +79,13 @@ export class HttpEngine implements EngineClient {
   }
   forecast(req: EngineForecastRequest) { return this.call<ForecastBundle>("POST", "/forecast", req); }
   backtest(id: string) { return this.call<BacktestMetrics>("GET", `/scenarios/${encodeURIComponent(id)}/backtest`); }
+  history(id: string, distId?: string, skuId?: string) {
+    const q = new URLSearchParams();
+    if (distId) q.set("dist_id", distId);
+    if (skuId) q.set("sku_id", skuId);
+    return this.call<DemandHistory>("GET", `/scenarios/${encodeURIComponent(id)}/history?${q}`);
+  }
+  effects(id: string) { return this.call<LearnedEffects>("GET", `/scenarios/${encodeURIComponent(id)}/effects`); }
   plan(req: EnginePlanRequest) { return this.call<Plan>("POST", "/plan", req); }
   resolve(req: EngineResolveRequest) { return this.call<Plan>("POST", "/resolve", req); }
   assumptions() { return this.call<AssumptionRow[]>("GET", "/assumptions"); }

@@ -3,6 +3,7 @@ import type { Plan } from "@dia/types";
 import { useState, type ReactNode } from "react";
 import { api } from "./api";
 import { Icon, useLoad } from "./components/ui";
+import { DemandPage } from "./pages/DemandPage";
 import { AssumptionsPage, FrontierPage, MapPage, ResultsPage } from "./pages/AnalyticsPages";
 import { DispatchPage } from "./pages/DispatchPage";
 import { InboxPage } from "./pages/InboxPage";
@@ -10,7 +11,7 @@ import { PlanPage } from "./pages/PlanPage";
 
 const GROUPS: Array<{ title: string; items: Array<{ tab: string; icon: ReactNode }> }> = [
   { title: "Planning", items: [{ tab: "Plan", icon: Icon.plan }, { tab: "Map", icon: Icon.map }, { tab: "Dispatch", icon: Icon.truck }, { tab: "Distributor inbox", icon: Icon.inbox }] },
-  { title: "Evaluation", items: [{ tab: "Results", icon: Icon.results }, { tab: "Frontier & Ablation", icon: Icon.frontier }] },
+  { title: "Evaluation", items: [{ tab: "Demand analysis", icon: Icon.history }, { tab: "Results", icon: Icon.results }, { tab: "Frontier & Ablation", icon: Icon.frontier }] },
   { title: "Reference", items: [{ tab: "Assumptions", icon: Icon.book }] },
 ];
 type Tab = (typeof GROUPS)[number]["items"][number]["tab"];
@@ -58,6 +59,7 @@ export function App() {
           {tab === "Map" && <MapPage plan={plan} />}
           {tab === "Dispatch" && <DispatchPage plan={plan} />}
           {tab === "Distributor inbox" && <InboxPage plan={plan} setPlan={setPlan} />}
+          {tab === "Demand analysis" && <DemandPage />}
           {tab === "Results" && <ResultsPage />}
           {tab === "Frontier & Ablation" && <FrontierPage />}
           {tab === "Assumptions" && <AssumptionsPage />}

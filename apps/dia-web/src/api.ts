@@ -1,7 +1,7 @@
 /** Typed client for the /v1 API (owner: M2). Every type comes from @dia/types, so web and backend can't drift. */
 import type {
-  AssumptionRow, DispatchResponse, ExperimentAccepted, ExperimentInfo, ExperimentRequest, ExperimentResults,
-  ForecastRequest, ForecastResponse, Message, Plan, PlanEvent, PlanRequest, Proposal, PublishResponse,
+  AssumptionRow, BacktestMetrics, DemandHistory, DispatchResponse, ExperimentAccepted, ExperimentInfo, ExperimentRequest, ExperimentResults,
+  ForecastRequest, ForecastResponse, LearnedEffects, Message, Plan, PlanEvent, PlanRequest, Proposal, PublishResponse,
   ResponseRequest, ResponseResult, Scenario, Snapshot,
 } from "@dia/types";
 
@@ -38,6 +38,9 @@ export const MAIN_EXPERIMENT: ExperimentRequest = {
 export const api = {
   health: () => call<Health>("GET", "/v1/health"),
   scenarios: () => call<string[]>("GET", "/v1/scenarios"),
+  history: (id: string, dist?: string, sku?: string) => call<DemandHistory>("GET", `/v1/scenarios/${id}/history?${new URLSearchParams({ ...(dist ? { dist_id: dist } : {}), ...(sku ? { sku_id: sku } : {}) })}`),
+  effects: (id: string) => call<LearnedEffects>("GET", `/v1/scenarios/${id}/effects`),
+  backtest: (id: string) => call<BacktestMetrics>("GET", `/v1/scenarios/${id}/backtest`),
   scenario: (id: string) => call<Scenario>("GET", `/v1/scenarios/${id}`),
   snapshot: (id: string, asOf: string) => call<Snapshot>("GET", `/v1/scenarios/${id}/snapshot?as_of=${asOf}`),
   forecasts: (req: ForecastRequest) => call<ForecastResponse>("POST", "/v1/forecasts", req),

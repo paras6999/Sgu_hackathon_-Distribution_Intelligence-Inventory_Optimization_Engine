@@ -211,6 +211,241 @@
         "sigma"
       ],
       "type": "object"
+    },
+    "DemandPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "week_start": {
+          "format": "date",
+          "type": "string"
+        },
+        "actual": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "week_start",
+        "actual"
+      ],
+      "type": "object"
+    },
+    "BacktestPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "week_start": {
+          "format": "date",
+          "type": "string"
+        },
+        "actual": {
+          "type": "number"
+        },
+        "p10": {
+          "type": "number"
+        },
+        "p50": {
+          "type": "number"
+        },
+        "p90": {
+          "type": "number"
+        },
+        "naive": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "week_start",
+        "actual",
+        "p10",
+        "p50",
+        "p90",
+        "naive"
+      ],
+      "type": "object"
+    },
+    "FestivalWindow": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "start": {
+          "format": "date",
+          "type": "string"
+        },
+        "end": {
+          "format": "date",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "start",
+        "end"
+      ],
+      "type": "object"
+    },
+    "DemandHistory": {
+      "additionalProperties": false,
+      "properties": {
+        "scenario_id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "dist_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sku_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "weekly": {
+          "items": {
+            "$ref": "#/$defs/DemandPoint"
+          },
+          "type": "array"
+        },
+        "backtest": {
+          "items": {
+            "$ref": "#/$defs/BacktestPoint"
+          },
+          "type": "array"
+        },
+        "festivals": {
+          "items": {
+            "$ref": "#/$defs/FestivalWindow"
+          },
+          "type": "array"
+        },
+        "has_band": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "scenario_id",
+        "label",
+        "dist_id",
+        "sku_id",
+        "weekly",
+        "backtest",
+        "festivals",
+        "has_band"
+      ],
+      "type": "object"
+    },
+    "FestivalEffect": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "learned": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "type": "object"
+        },
+        "configured": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "name",
+        "learned",
+        "configured"
+      ],
+      "type": "object"
+    },
+    "WeatherEffect": {
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "type": "string"
+        },
+        "heat_pct_per_degc_learned": {
+          "type": "number"
+        },
+        "heat_pct_per_degc_configured": {
+          "type": "number"
+        },
+        "rain_cut_pct_learned": {
+          "type": "number"
+        },
+        "rain_cut_pct_configured": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "category",
+        "heat_pct_per_degc_learned",
+        "heat_pct_per_degc_configured",
+        "rain_cut_pct_learned",
+        "rain_cut_pct_configured"
+      ],
+      "type": "object"
+    },
+    "LearnedEffects": {
+      "additionalProperties": false,
+      "properties": {
+        "scenario_id": {
+          "type": "string"
+        },
+        "festivals": {
+          "items": {
+            "$ref": "#/$defs/FestivalEffect"
+          },
+          "type": "array"
+        },
+        "weather": {
+          "items": {
+            "$ref": "#/$defs/WeatherEffect"
+          },
+          "type": "array"
+        },
+        "seasonality": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "type": "object"
+        },
+        "seasonality_configured": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "scenario_id",
+        "festivals",
+        "weather",
+        "seasonality",
+        "seasonality_configured"
+      ],
+      "type": "object"
     }
   }
 }
