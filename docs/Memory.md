@@ -23,6 +23,7 @@ Read this first in any new chat or AI tool. Each PR adds 2–3 lines under its m
 - _next: `m1/build-release` (prove both binaries by hour 3), then freight + validator_
 
 ## M2 · Claude Code lead
+- `m2/dist`: `forecast/dist.py` done — NB/Poisson window distribution (`window_dist`), `quantile`, `expected_shortfall` (C2), `expected_leftover` (C8); exact, within 2% of mean vs 400k Monte Carlo draws. M1 can build the curves on it. _next: forecast.py_
 - Rescaffold PR opened; CODEOWNERS filled with all four usernames. _next: branch protection after first CI run, `dist.py`, forecast_
 
 ## M3 · Antigravity
