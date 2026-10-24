@@ -5,6 +5,7 @@ from datetime import date, timedelta
 
 import pytest
 
+from dia_engine.config import get_config
 from dia_engine.data.generate import load_scenario
 from dia_engine.forecast.forecast import forecast
 from dia_engine.forecast.targets import compute_targets
@@ -105,7 +106,9 @@ def test_storage_limited(world):
     assert R.STORAGE_LIMITED in _codes(plan)
 
 
-def test_mrsl_blocked(world):
+def test_mrsl_blocked(world, monkeypatch):
+    # alternative depots are 1,000+ km apart, so allow them for this scenario
+    monkeypatch.setattr(get_config().network, "alt_depot_max_km", 5000.0)
     sc, snap, fc = world
     depot = "N1-Gurugram"
     plan, _ = _plan(world, snap=snap.model_copy(update={"depot_lots": [

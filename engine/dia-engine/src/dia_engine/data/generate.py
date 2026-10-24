@@ -171,6 +171,7 @@ def _supply(cfg: Config, skus: pd.DataFrame, rng: np.random.Generator) -> tuple[
     """Opening depot lots on the first test day and fixed plant receipts through the test window."""
     t0, t1 = cfg.simulation.test_window
     base = _base_daily(cfg)
+    base[np.ix_(*_far_chilled(cfg))] = 0.0                       # no chilled volume for distributors beyond chilled_max_km
     regions = np.array([d.region for d in cfg.catalogue.distributors])
     sup = cfg.supply
     lots, receipts = [], []
@@ -207,6 +208,23 @@ def _supply(cfg: Config, skus: pd.DataFrame, rng: np.random.Generator) -> tuple[
             pd.DataFrame(receipts, columns=store.TABLES["plant_receipts"][1]))
 
 
+def _drop_far_chilled(cfg: Config, mean: np.ndarray) -> np.ndarray:
+    """No chilled demand at distributors farther than network.chilled_max_km (road km) from their home depot.
+    mean is [day, sku, distributor]; the same rule is applied to the plant's regional volume in _supply."""
+    mean = mean.copy()
+    mean[np.ix_(np.arange(mean.shape[0]), *_far_chilled(cfg))] = 0.0
+    return mean
+
+
+def _far_chilled(cfg: Config) -> tuple[np.ndarray, np.ndarray]:
+    """(chilled SKU indices, distributor indices beyond chilled_max_km of their home depot)."""
+    home = {d.region: d for d in cfg.catalogue.depots}
+    far = [_haversine_km(home[d.region].lat, home[d.region].lon, d.lat, d.lon) * cfg.network.road_factor
+           > cfg.network.chilled_max_km for d in cfg.catalogue.distributors]
+    chilled = [s.temp_class == TempClass.CHILLED.value for s in cfg.catalogue.skus]
+    return np.where(chilled)[0], np.where(far)[0]
+
+
 def generate(cfg: Config, seed: int) -> str:
     """Build and persist one scenario. Same cfg + seed gives identical tables. Returns scenario_id."""
     sid = scenario_id_for(seed)
@@ -217,6 +235,7 @@ def generate(cfg: Config, seed: int) -> str:
     skus = _sku_table(cfg)
     weather = load_weather(cfg, start, end)
     mean, events = _expected_demand(cfg, dates, rng, weather)
+    mean = _drop_far_chilled(cfg, mean)
 
     k = cfg.demand.nb_dispersion_k
     true = rng.negative_binomial(k, k / (k + np.maximum(mean, 1e-9)))

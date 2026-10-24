@@ -40,7 +40,9 @@ def test_forecast_shape_and_factors(seed_dir):
     assert len(fc.pairs) == 384 and len(fc.weekly) == 384 * 4
     for p in fc.pairs:
         assert len(p.mean) == len(p.var) == len(p.festival) == 28
-        assert min(p.mean) >= 0 and min(p.var) > 0
+        assert min(p.mean) >= 0 and min(p.var) >= 0
+        if sum(p.mean) > 0:              # pairs with no demand (chilled beyond chilled_max_km) forecast zero
+            assert min(p.var) > 0
     diwali = [w for w in fc.weekly if w.sku_id == "SN-01" and w.week_start == AS_OF]
     assert all("Diwali" in w.factors and w.factors["Diwali"] > 1.15 for w in diwali)
     for w in fc.weekly:

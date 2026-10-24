@@ -137,7 +137,7 @@ def _overstock_slow(stock: dict, fc, scenario) -> None:
     pop = {d.id: d.population_m for d in get_config().catalogue.distributors}
     dist = min((n.node_id for n in scenario.nodes if n.type == NodeType.DISTRIBUTOR and n.region == OVERSTOCK_REGION),
                key=lambda j: pop[j])
-    mine = sorted((pf for pf in fc.pairs if pf.dist_id == dist), key=lambda pf: sum(pf.mean))
+    mine = sorted((pf for pf in fc.pairs if pf.dist_id == dist and sum(pf.mean) > 0), key=lambda pf: sum(pf.mean))
     weeks = get_config().supply.distributor_storage_weeks
     for pf in mine[:max(round(len(mine) * SLOW_SKU_SHARE), 1)]:
         key = (pf.sku_id, dist)

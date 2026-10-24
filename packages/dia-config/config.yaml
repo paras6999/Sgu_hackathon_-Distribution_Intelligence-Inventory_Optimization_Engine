@@ -5,6 +5,8 @@
 network:
   road_factor: 1.3                     # road km = haversine x factor; judgment
   candidate_depots_per_distributor: 3
+  alt_depot_max_km: 600                # a non-home depot is a sourcing candidate only within this road distance; the 4 depots are 1,000+ km apart (judgment)
+  chilled_max_km: 600                  # dairy is not trucked further from the home depot; beyond it local dairy suppliers serve (judgment)
 
 # --------------------------------------------------------------------------- catalogue (FR-01)
 catalogue:
@@ -156,6 +158,8 @@ assumptions:
   calendar.festivals: {source: "Published Indian festival dates 2023-2025", rationale: "Uplifts are judgment"}
   supply.plant_output_x_base_demand: {source: judgment, rationale: "A21: plant output fixed, short in festival peaks"}
   planning.mrsl_fraction.GT: {unit: "share of shelf life", source: judgment, rationale: "Typical GT minimum life on receipt"}
+  network.alt_depot_max_km: {unit: km, source: judgment, rationale: "Measured on seed01: allowing 2 alternative depots 1,000+ km away raised engine cost to serve by ~29% (82 part-empty long-haul FTL trips), so alternative depots are used only within 600 km. None qualifies in this network, so the home-depot ablation is near zero here"}
+  network.chilled_max_km: {unit: km, source: judgment, rationale: "Chilled SKUs are sold only by distributors within 600 road-km of their home depot; farther ones buy dairy from local suppliers, so the brand has no chilled demand there"}
   catalogue.skus.dairy_volume: {unit: "cases/day at size 1", source: judgment, rationale: "Dairy base volumes tripled (9 / 6 / 4.5 / 6 cases) so a 2-day chilled drop (~1.3 t) fills a refrigerated LCV; at the original volume a drop was ~340 kg and chilled freight was ~60% of chilled value"}
   costs.ftl.REEF17: {unit: "INR", source: judgment, rationale: "Refrigerated LCV (~1.5 t, 9 m3) in place of a 17 ft reefer; class code kept for contract stability. Rates are approximate, not fitted to market data"}
   costs.ftl.AMB32: {unit: "INR", source: "Least-squares fit to 8 FR8 32 ft SXL market rates (A11)"}

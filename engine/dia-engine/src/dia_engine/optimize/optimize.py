@@ -88,8 +88,9 @@ def solve(inp: OptimizeInput) -> SolveOutput:
     cand: dict[str, set[str]] = {}
     for j in dists:
         home = nodes[j].home_depot_id
-        others = [w for w in by_km[j] if w != home]
-        cand[j] = {home} if st.home_depot_only else {home, *others[:CANDIDATE_DEPOTS - 1]}
+        others = [w for w in by_km[j] if w != home and lanes[(w, j)].km <= cfg.network.alt_depot_max_km]
+        # chilled is served from the home depot only (dairy is not trucked across regions)
+        cand[j] = {home} if st.home_depot_only or not ambient else {home, *others[:CANDIDATE_DEPOTS - 1]}
 
     # arcs: candidate depot, usable stock, RSL on arrival >= MRSL (C-filter of PRD 6.5 step 4)
     arcs: list[tuple[str, str]] = []
@@ -171,9 +172,13 @@ def solve(inp: OptimizeInput) -> SolveOutput:
             obj.append((sku.landed_cost_inr + sku.disposal_inr) * claim * st.weights.omega_mult * phi)
         for b, l in lots_by.items():
             sku = skus[l.sku_id]
-            if (l.expiry_date - snap.as_of).days - review < mrsl_default * sku.shelf_life_days:
-                # falls below MRSL before the next cycle: whatever stays at the depot is written off
-                obj.append(-(sku.landed_cost_inr + sku.disposal_inr) * st.weights.omega_mult * pulp.lpSum(by_lot.get(b, [])))
+            # Days the lot can still ship before it falls below the MRSL floor. Whatever stays at the depot is
+            # written off with probability review / shippable days (1 when the floor falls before the next cycle):
+            # the depot bears the whole write-off, so every lot carries this cost, not only the ones about to cliff.
+            shippable = (l.expiry_date - snap.as_of).days - mrsl_default * sku.shelf_life_days
+            p_off = 1.0 if shippable <= review else review / shippable
+            obj.append(-p_off * (sku.landed_cost_inr + sku.disposal_inr) * st.weights.omega_mult
+                       * pulp.lpSum(by_lot.get(b, [])))
 
     # ---- freight: C3/C4 trucks, C5 PTL pricing
     y: dict[tuple[str, str], pulp.LpVariable] = {}

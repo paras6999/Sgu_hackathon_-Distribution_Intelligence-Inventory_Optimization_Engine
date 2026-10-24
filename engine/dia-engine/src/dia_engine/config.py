@@ -141,6 +141,8 @@ class Supply(_Strict):
 class Network(_Strict):
     road_factor: float
     candidate_depots_per_distributor: int
+    alt_depot_max_km: float
+    chilled_max_km: float
 
 
 class FestivalPrebuild(_Strict):
