@@ -4,9 +4,13 @@
  * beyond relative differences and the target check of PRD 8.2.
  */
 import type { AblationRow, AssumptionRow, ExperimentResults, FrontierPoint, KpiSummary, OpeningState, Plan } from "@dia/types";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { api } from "../api";
+import { AnalysisPanel } from "../components/AnalysisPanel";
 import { ErrorText, ReasonChips, useLoad } from "../components/ui";
+
+/** MapLibre is large; it loads only when the Map tab is opened. */
+const NetworkMap = lazy(() => import("../components/NetworkMap").then((m) => ({ default: m.NetworkMap })));
 
 // ---------------------------------------------------------------------------------------------- shared
 
@@ -162,6 +166,7 @@ export function ResultsPage() {
 
       {rows.length > 0 && (
         <>
+          <AnalysisPanel title="Deep analysis of these results" request={ex.id ? { kind: "results", experiment_id: ex.id, opening_state: state } : null} />
           <div className="kpis">
             {HEADLINE.map((kpi) => {
               const e = get(kpi, "engine"); const m = metaOf(kpi);
@@ -393,6 +398,7 @@ const RC_COLOUR: Record<string, string> = {
 export function MapPage({ plan }: { plan: Plan | null }) {
   const scenario = useLoad(() => (plan ? api.scenario(plan.scenario_id) : Promise.resolve(null)), [plan?.scenario_id]);
   const [selected, setSelected] = useState<string | null>(null);
+  const [noWebgl, setNoWebgl] = useState(false);
   const nodes = scenario.data?.nodes ?? [];
   const W = 600, H = 600, K = 20, LON0 = 68, LAT1 = 36, COS = 0.93;
   const pos = (n: { lat: number; lon: number }) => ({ x: 20 + (n.lon - LON0) * COS * K, y: 20 + (LAT1 - n.lat) * K });
@@ -419,9 +425,10 @@ export function MapPage({ plan }: { plan: Plan | null }) {
         <>
           <ErrorText error={scenario.error} />
           <p style={{ color: "var(--neutral)" }}>
-            Squares are depots, circles are distributors. Arc width is cases shipped; colour is the main reason code on the lane. Click an arc to filter the lines below.
+            Squares are depots, circles are distributors. Arc width is cases shipped; colour is the main reason code on the lane. Click an arc to filter the lines below. The background map needs a network connection; without one the lanes still show on a plain background.
           </p>
-          <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Plan lanes on a map of India" style={{ width: "100%", maxWidth: 640, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8 }}>
+          {noWebgl ? (
+            <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Plan lanes on a map of India" style={{ width: "100%", maxWidth: 640, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8 }}>
             {lanes.map((l) => {
               const a = byId.get(l.from), b = byId.get(l.to);
               if (!a || !b) return null;
@@ -452,6 +459,14 @@ export function MapPage({ plan }: { plan: Plan | null }) {
               );
             })}
           </svg>
+          ) : (
+            <Suspense fallback={<p>Loading map…</p>}>
+            <NetworkMap
+              nodes={nodes.map((n) => ({ id: n.node_id, city: n.city, lat: n.lat, lon: n.lon, depot: n.type === "depot" }))}
+              lanes={lanes.map((l) => ({ key: `${l.from}>${l.to}`, from: l.from, to: l.to, cases: l.cases, code: dominant(l) }))}
+              selected={selected} onSelect={setSelected} onUnsupported={() => setNoWebgl(true)} />
+            </Suspense>
+          )}
           <div className="row" style={{ gap: 12, margin: "6px 0" }}>
             {Object.entries(RC_COLOUR).map(([code, colour]) => (
               <span key={code} style={{ fontSize: 12 }}><span style={{ display: "inline-block", width: 10, height: 10, background: colour, marginRight: 4 }} />{code}</span>

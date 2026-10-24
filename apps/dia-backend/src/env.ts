@@ -26,4 +26,10 @@ export const env = {
   backendDataDir: process.env.DIA_BACKEND_DATA_DIR ?? join(repoRoot, "data", "backend"),
   engineDataDir: process.env.DIA_DATA_DIR ?? join(repoRoot, "data", "engine"),
   aiEnabled: process.env.AI_ENABLED === "true",
+  /** Vertex AI (Gemini) for narration and analysis; credentials stay in the environment, never in code. */
+  vertexProject: process.env.VERTEX_PROJECT,
+  vertexLocation: process.env.VERTEX_LOCATION ?? "asia-south1",
+  vertexModel: process.env.VERTEX_MODEL ?? "gemini-2.5-flash",
+  googleCredentials: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+  vertexAccessToken: process.env.VERTEX_ACCESS_TOKEN,
 };

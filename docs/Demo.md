@@ -40,6 +40,10 @@ Open http://localhost:3000. Pre-warm once: Plan tab → Generate plan (first cal
 
 **Frontier (engine, stockout weight 0.5 / 1 / 2, imbalanced):** fill 93.3% / 93.9% / 94.1%, cost ₹1.79 / ₹1.82 / ₹1.89 cr. Baseline A needs 14 days of cover to reach 94.7% fill, at ₹2.18 cr (the engine reaches 94.1% at ₹1.89 cr); Baseline B never gets above 86.5%, even at ₹3.14 cr. Frontier points use the first 5 seeds.
 
+## Analysis on demand and the map
+- **Analyse** buttons on the Plan and Results tabs give a deep analysis of the plan or the results. With no AI model configured (the default) the text is built from the data by rules and works offline. With `AI_ENABLED=true` and Vertex AI credentials in `.env`, a Gemini model writes it from the same facts; every figure it quotes is checked against the data and flagged if it does not match. The model never sets a quantity, and a free-form question box is available when the model is on.
+- **Map:** a MapLibre map on OpenStreetMap tiles (needs a network; without one the lanes still show on a plain background, and without WebGL the page falls back to the drawn map). Click an arc to filter the lines below.
+
 ## Likely questions
 - **Is the data real?** Demand, stock lots, orders and delays are simulated — no brand publishes them. Weather is real (Open-Meteo, 16 cities, Sep 2023 – Dec 2025), as are locations, populations and festival dates. The simulator is checked against real-world benchmarks (turnover per distributor, Diwali uplift, summer beverages, a ~4% stockout rate, ~7 t per distributor-week).
 - **Where do the formulas come from?** The model is in `docs/PRD.md` §6.6: exponential smoothing / TSB forecasts, newsvendor service levels, a mixed-integer programme with ten constraints (stock, trucks, part-load freight, storage, credit, expiry, distributor locks). Standard methods; the parameters are in the Assumptions tab, each with a source or marked judgment.
@@ -47,11 +51,11 @@ Open http://localhost:3000. Pre-warm once: Plan tab → Generate plan (first cal
 - **Why is fill rate lower?** The engine ships a case only when the expected margin beats freight, holding and expiry cost. It runs fuller trucks and wastes less, and accepts a few more stockouts on thin lanes. The frontier shows how to buy that fill rate back, and what it costs.
 - **Why is the home-depot ablation not shown?** The four depots are 1,000+ km apart, so no alternative depot qualifies within 600 km: the result would be zero. We dropped it rather than show an empty bar.
 - **What did you tune on the evaluation seeds?** One setting: the stockout penalty (1.2 → 2.4 × margin), chosen from the first run's frontier on seeds 1–5, which are also in the evaluation. It is disclosed in the Assumptions tab.
-- **What is not built?** Real AI narration, a basemap on the network map, live data connectors, carbon pricing in the UI (the optimiser accepts it), multi-drop routes, and ablations (c) no-credit and (f) home-depot.
+- **What is not built?** Live data connectors, carbon pricing in the UI (the optimiser accepts it), multi-drop routes, and ablations (c) no-credit and (f) home-depot. The Vertex AI path is built and tested against a mocked endpoint only; it has not been run against a real Vertex project.
 - **How is the result protected from a bug?** Every plan is re-checked by an independent validator before it is shown; the simulator asserts stock conservation on every node, SKU and day (0 failures in about half a million rows per run).
 
 ## Future scope
 - **Decisions:** multi-drop routes for chilled (FR-17), lateral rebalancing between distributors and depots (FR-18), and a two-stage, multi-period model for festival pre-build (FR-28; today the model is single-period and pre-builds by lengthening the cover window).
 - **Planner tools:** a what-if panel for a demand shock, a depot outage or diesel +10% (FR-19); planner line overrides with the ₹ cost shown (FR-22); a near-expiry list and per-SKU drill-down (FR-20, FR-21); a heat-season evaluation window (FR-23); a timed scale benchmark (FR-24).
-- **Real world:** a 4-week shadow pilot in one real region; messy distributor Excel ingestion and live DMS connectors (FR-26); WhatsApp Business messaging (FR-29); carbon price in the UI (FR-13; the optimiser already accepts it); optional AI narration (FR-25).
+- **Real world:** a 4-week shadow pilot in one real region; messy distributor Excel ingestion and live DMS connectors (FR-26); WhatsApp Business messaging (FR-29); carbon price in the UI (FR-13; the optimiser already accepts it).
 - **Model work the results point to:** close the fill-rate gap (the lost-sales model assumes a shipment is available on day 0 although it arrives after the lead time) and revisit per-SKU service levels, which did not pay in the ablation.

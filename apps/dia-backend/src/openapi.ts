@@ -22,6 +22,8 @@ export const ROUTES: Route[] = [
   { method: "get", path: "/v1/experiments/{id}", summary: "Job status", response: "ExperimentInfo" },
   { method: "get", path: "/v1/experiments/{id}/results", summary: "Cached results (404 until done)", response: "ExperimentResults" },
   { method: "get", path: "/v1/assumptions", summary: "FR-15 assumptions table", response: "AssumptionRow", array: true },
+  { method: "get", path: "/v1/ai/status", summary: "Whether an AI model is configured (otherwise rules-based analysis)" },
+  { method: "post", path: "/v1/ai/analyse", summary: "Analysis on demand: body {kind: plan|line|results, plan_id | experiment_id, question?}. Figures come from the data; quantities are never set by the model" },
 ];
 
 const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });

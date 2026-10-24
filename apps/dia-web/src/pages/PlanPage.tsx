@@ -2,6 +2,7 @@
 import type { Plan, TempClass } from "@dia/types";
 import { useState } from "react";
 import { api, inr } from "../api";
+import { AnalysisPanel } from "../components/AnalysisPanel";
 import { ErrorText, Kpi, ReasonChips, useLoad } from "../components/ui";
 
 export function PlanPage({ plan, setPlan }: { plan: Plan | null; setPlan: (p: Plan) => void }) {
@@ -64,6 +65,7 @@ export function PlanPage({ plan, setPlan }: { plan: Plan | null; setPlan: (p: Pl
             <Kpi label="Solve" value={`${plan.solve.seconds.toFixed(2)} s · ${plan.solve.status}`} />
           </div>
           <p className="mono">Plan {plan.plan_id} v{plan.version}</p>
+          <AnalysisPanel title="Deep analysis of this plan" request={{ kind: "plan", plan_id: plan.plan_id, version: plan.version }} />
           <div className="table-wrap card">
             <table>
               <thead><tr><th>Line</th><th>SKU</th><th>Lot</th><th>From → To</th><th>Cases</th><th>Truck</th><th>Life on arrival</th><th>Freight</th><th>Reasons</th><th>Status</th></tr></thead>

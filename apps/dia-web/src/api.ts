@@ -22,6 +22,10 @@ async function call<T>(method: "GET" | "POST", path: string, body?: unknown): Pr
   return r.json() as Promise<T>;
 }
 
+export type AiStatus = { enabled: boolean; provider: "vertex" | "rules"; model: string | null; reason: string | null };
+export type AnalyseRequest = { kind: "plan" | "line" | "results"; plan_id?: string; version?: number; line_id?: string; experiment_id?: string; opening_state?: string; question?: string };
+export type Analysis = { text: string; source: "ai" | "rules"; model: string | null; verified: boolean; unverified_numbers: number[]; note: string | null };
+
 export type Health = { status: string; engine_mode: string; engine: string; fake_backend: boolean };
 
 /** The cached headline run: 10 seeds, both opening states, ablations (a) expiry (b) truck steps (e) service levels. */
@@ -50,6 +54,8 @@ export const api = {
   experiment: (id: string) => call<ExperimentInfo>("GET", `/v1/experiments/${id}`),
   results: (id: string) => call<ExperimentResults>("GET", `/v1/experiments/${id}/results`),
   assumptions: () => call<AssumptionRow[]>("GET", "/v1/assumptions"),
+  aiStatus: () => call<AiStatus>("GET", "/v1/ai/status"),
+  analyse: (req: AnalyseRequest) => call<Analysis>("POST", "/v1/ai/analyse", req),
 };
 
 export const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;

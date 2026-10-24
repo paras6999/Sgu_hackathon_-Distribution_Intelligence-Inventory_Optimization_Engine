@@ -12,10 +12,15 @@ import type {
 } from "@dia/types";
 import type { Repo } from "./db/repo";
 import { EngineError, type EngineClient } from "./engine/client";
+import { analyse } from "./ai/analyse";
+import { lineFacts, planFacts, resultsFacts } from "./ai/facts";
+import { llmFromEnv, statusOf } from "./ai";
+import type { LlmClient } from "./ai/vertex";
 import { DOCS_HTML, openapiDocument } from "./openapi";
 import { validate } from "./validation";
 
-export type Deps = { repo: Repo; engine: EngineClient };
+/** llm: undefined reads the environment; null forces the rules-only path (tests). */
+export type Deps = { repo: Repo; engine: EngineClient; llm?: LlmClient | null };
 
 const now = () => new Date().toISOString();
 const newPlanId = () => `PL-${crypto.randomUUID().replaceAll("-", "").slice(0, 6).toUpperCase()}`;
@@ -64,8 +69,10 @@ function message(plan: Plan, dist: string, pv: number, scenario: Scenario, credi
   };
 }
 
-export function createApp({ repo, engine }: Deps): Hono {
+export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
   const app = new Hono();
+  const fromEnv = llmDep === undefined ? llmFromEnv() : null;
+  const llm: LlmClient | null = llmDep === undefined ? fromEnv!.llm : llmDep;
   const withPlanLock = keyedMutex();
 
   app.onError((err, c) => {
@@ -284,6 +291,32 @@ export function createApp({ repo, engine }: Deps): Hono {
     const res = await engine.experimentResults(info.experiment_id);
     if (!res) throw new HTTPException(404, { message: "results file missing" });
     return c.json(res);
+  });
+
+  // ------------------------------------------------------------------ analysis on demand (FR-25)
+  app.get("/v1/ai/status", (c) => c.json(statusOf(llm, fromEnv?.status.reason ?? "no model configured")));
+
+  app.post("/v1/ai/analyse", async (c) => {
+    const body = (await c.req.json().catch(() => ({}))) as { kind?: string; plan_id?: string; version?: number; line_id?: string; experiment_id?: string; opening_state?: string; question?: string };
+    const question = typeof body.question === "string" ? body.question.trim().slice(0, 500) || undefined : undefined;
+    let facts;
+    if (body.kind === "plan" || body.kind === "line") {
+      if (!body.plan_id) throw new HTTPException(422, { message: "plan_id is required" });
+      const plan = planOr404(body.plan_id, body.version);
+      const scenario = await engine.scenario(plan.scenario_id).catch(() => null);
+      facts = body.kind === "plan" ? planFacts(plan, scenario) : lineFacts(plan, body.line_id ?? "", scenario);
+      if (!facts) throw new HTTPException(404, { message: `line ${body.line_id} not found` });
+    } else if (body.kind === "results") {
+      if (!body.experiment_id) throw new HTTPException(422, { message: "experiment_id is required" });
+      const info = repo.getExperiment(body.experiment_id);
+      if (!info || info.status !== "done") throw new HTTPException(404, { message: "results not ready" });
+      const res = await engine.experimentResults(info.experiment_id);
+      if (!res) throw new HTTPException(404, { message: "results file missing" });
+      facts = resultsFacts(res, openingState(body.opening_state));
+    } else {
+      throw new HTTPException(422, { message: "kind must be plan, line or results" });
+    }
+    return c.json(await analyse(llm, facts, question));
   });
 
   return app;
