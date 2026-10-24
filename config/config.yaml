@@ -1,0 +1,55 @@
+# Vitaran configuration. Every business parameter lives here (Rules.md).
+# Schema: engine/config.py (owner: Member A). Each parameter needs an entry in
+# `assumptions` with unit and source, or "judgment" (FR-15).
+
+network:
+  depots: [W1-Bhiwandi, N1-Gurugram, S1-Hosur, E1-Dankuni]
+  distributors_per_region: 4
+  road_factor: 1.3                     # judgment
+  candidate_depots_per_distributor: 3
+planning:
+  cadence_days: {ambient: 7, chilled: 2}
+  mrsl_fraction: {GT: 0.60}            # judgment; configurable per node type
+  fair_share_alpha: 0.0                # 0 = off
+  critical_ratio_clip: [0.30, 0.98]
+  festival_prebuild: {lookahead_days: {ambient: 14, chilled: 0}, min_factor: 1.15}
+  lost_sales_breakpoints: [0, 0.10, 0.25, 0.50, 0.75, 0.90, 0.98]
+  waste_breakpoints: [0, 0.10, 0.30, 0.50, 0.70, 0.90]
+forecast:
+  param_refit_weeks: 4
+  weather_forecast_days: 7
+  weather_noise: {tmax_sd_c: 2.0, rain_rel: 0.30}
+costs:
+  diesel_inr_per_l: 97.8               # Mumbai retail, Oct 2026
+  ftl:
+    AMB32:  {min_inr: 15000, fixed_inr: 8000, non_fuel_per_km_inr: 12, km_per_l: 3.5, kg: 7000, m3: 55}
+    REEF17: {min_inr: 10000, fixed_inr: 6000, non_fuel_per_km_inr: 18, km_per_l: 4.0, kg: 3000, m3: 15}
+  lane_rate_overrides: {}
+  ptl:
+    slabs: [[300, 4.5], [800, 8.0], [99999, 15.0]]
+    min_charge_inr: 1500
+    kg_per_m3: 250
+    fuel_share: 0.5
+  festival_freight_premium: {months: [9, 10, 11, 12, 1], factor: 1.20}
+  stockout_penalty_x_margin: 1.2
+  holding_rate_annual: 0.20
+  expiry_claim_share: 1.0
+carbon:
+  diesel_kg_co2_per_l: 2.68
+  ptl_load_factor: 0.60
+  price_inr_per_kg: 0.0
+simulation:
+  history: ["2023-09-25", "2025-09-28"]
+  test_window: ["2025-09-29", "2025-12-21"]
+  seeds: 20
+  delay_prob: {intra: 0.10, inter: 0.20}
+  payment_lag_days: 7
+
+# FR-15 Assumptions tab. Key = dotted path above. Member A completes this list.
+assumptions:
+  network.road_factor: {unit: "x haversine", source: judgment, rationale: "Indian road detour factor"}
+  planning.mrsl_fraction.GT: {unit: "share of shelf life", source: judgment, rationale: "Typical GT minimum life on receipt"}
+  costs.diesel_inr_per_l: {unit: "INR/l", source: "Upstox, Mumbai retail diesel, Oct 2026"}
+  costs.stockout_penalty_x_margin: {unit: "x unit margin", source: judgment, rationale: "Goodwill factor (A16)"}
+  costs.holding_rate_annual: {unit: "per year", source: "Indian working-capital rates (A18)"}
+  carbon.diesel_kg_co2_per_l: {unit: "kg CO2/l", source: "Standard diesel emission factor (A22)"}
