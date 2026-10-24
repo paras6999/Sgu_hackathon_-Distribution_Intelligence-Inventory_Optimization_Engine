@@ -24,6 +24,13 @@ async function call<T>(method: "GET" | "POST", path: string, body?: unknown): Pr
 
 export type Health = { status: string; engine_mode: string; engine: string; fake_backend: boolean };
 
+/** The cached headline run: 10 seeds, both opening states, ablations (a) expiry (b) truck steps (e) service levels. */
+export const MAIN_EXPERIMENT: ExperimentRequest = {
+  policies: ["engine", "baseline_a", "baseline_b", "abl_no_expiry", "abl_no_truck_steps", "abl_uniform_service"],
+  seeds: 10,
+  opening_states: ["neutral", "imbalanced"],
+};
+
 export const api = {
   health: () => call<Health>("GET", "/v1/health"),
   scenarios: () => call<string[]>("GET", "/v1/scenarios"),
@@ -38,7 +45,7 @@ export const api = {
   events: (id: string) => call<PlanEvent[]>("GET", `/v1/plans/${id}/events`),
   dispatch: (id: string, depot?: string) => call<DispatchResponse>("GET", `/v1/plans/${id}/dispatch${depot ? `?depot=${depot}` : ""}`),
   dispatchCsvUrl: (id: string, depot?: string) => `/v1/plans/${id}/dispatch.csv${depot ? `?depot=${depot}` : ""}`,
-  startExperiment: (req: ExperimentRequest = {}) => call<ExperimentAccepted>("POST", "/v1/experiments", req),
+  startExperiment: (req: ExperimentRequest = MAIN_EXPERIMENT) => call<ExperimentAccepted>("POST", "/v1/experiments", req),
   experiment: (id: string) => call<ExperimentInfo>("GET", `/v1/experiments/${id}`),
   results: (id: string) => call<ExperimentResults>("GET", `/v1/experiments/${id}/results`),
   assumptions: () => call<AssumptionRow[]>("GET", "/v1/assumptions"),

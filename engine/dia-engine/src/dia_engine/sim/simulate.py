@@ -388,10 +388,10 @@ def _enforce_credit(plan, snap: Snapshot, skus: dict, cut: dict):
 
 
 SIM_TIME_LIMIT_S = 1.0      # per-solve cap for the engine inside experiments (the API default is 30 s)
-SUBSET_SEEDS = 10           # ablations and non-default frontier points (FR-09)
+SUBSET_SEEDS = 5            # ablations and non-default frontier points; PRD says 10, cut to fit the time (drop order 6)
 KEEP_LOG_SEEDS = 2          # sim_log / sim_trips are stored for the first seeds only; KPIs for every run
 FRONTIER = {                # (parameter, values) per policy (FR-11); the default value is added from the headline run
-    "engine": ("pi_mult", [0.25, 0.5, 2.0, 4.0], 1.0),
+    "engine": ("pi_mult", [0.5, 2.0], 1.0),                 # 3 points with the default (drop order 5)
     "baseline_b": ("service_level", [0.80, 0.90, 0.98, 0.995], 0.95),
     "baseline_a": ("cover_days", [7, 10, 21], 14),
 }
@@ -484,7 +484,7 @@ def run_experiment(experiment_id: str, req: ExperimentRequest,
     extra = [n for n in names if n.startswith("abl_")]
     states = [OpeningState(s) for s in req.opening_states]
     tasks = [(seed, headline, extra, states) for seed in range(1, req.seeds + 1)]
-    workers = max(1, min(len(tasks), (os.cpu_count() or 2) - 1, 8))
+    workers = max(1, min(len(tasks), (os.cpu_count() or 2) - 1, 10))
     done: list[tuple] = []
     if progress:
         progress(0.0)
