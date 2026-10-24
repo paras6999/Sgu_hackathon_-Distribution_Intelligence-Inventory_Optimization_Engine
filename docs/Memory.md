@@ -23,6 +23,7 @@ Read this first in any new chat or AI tool. Each PR adds 2–3 lines under its m
 - _next: `m1/build-release` (prove both binaries by hour 3), then freight + validator_
 
 ## M2 · Claude Code lead
+- `m2/baseline-a`: FR-10 Baseline A done, plus `baselines/common.py` (lot picking FIFO/FEFO, MRSL, pro-rata storage/credit cuts, FTL-vs-PTL lane choice, whole-case truck packing, freight allocation) that Baseline B will reuse. Open: (1) weights use forecast demand because the Policy contract has no trailing sales; (2) freight is a local A11-A13 copy until M1's `freight.py` lands, then switch. _next: Baseline B_
 - Rescaffold PR opened; CODEOWNERS filled with all four usernames. _next: branch protection after first CI run, `dist.py`, forecast_
 
 ## M3 · Antigravity
