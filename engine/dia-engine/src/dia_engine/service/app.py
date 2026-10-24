@@ -21,7 +21,7 @@ from dia_engine.optimize.pipeline import PlanInvalid, apply_response, make_plan
 from dia_engine.sim.simulate import get_snapshot
 from dia_types import (
     AssumptionRow, BacktestMetrics, EngineForecastRequest, EngineHealth, EnginePlanRequest, EngineResolveRequest,
-    ForecastBundle, OpeningState, Plan, Scenario, Snapshot,
+    ForecastBundle, ForecastMode, OpeningState, Plan, Scenario, Snapshot,
 )
 
 app = FastAPI(title="dia-engine (internal)", version=__version__)
@@ -82,7 +82,7 @@ def post_forecast(req: EngineForecastRequest) -> ForecastBundle:
 def post_plan(req: EnginePlanRequest) -> Plan:
     sc = _scenario(req.scenario_id)
     snap = get_snapshot(req.scenario_id, req.as_of, req.opening_state)
-    fc = forecast(req.scenario_id, req.as_of, 28, req.settings.forecast_model.value)
+    fc = forecast(req.scenario_id, req.as_of, 28, ForecastMode(req.settings.forecast_model).value)
     return make_plan(sc, snap, fc, req.temp_class, plan_id=req.plan_id, settings=req.settings,
                      locks=req.locks, version=req.version)
 
@@ -92,7 +92,7 @@ def post_resolve(req: EngineResolveRequest) -> Plan:
     p = req.plan
     sc = _scenario(p.scenario_id)
     snap = get_snapshot(p.scenario_id, p.as_of, req.opening_state)
-    fc = forecast(p.scenario_id, p.as_of, 28, p.settings.forecast_model.value)
+    fc = forecast(p.scenario_id, p.as_of, 28, ForecastMode(p.settings.forecast_model).value)
     return apply_response(p, req.proposals, req.response, sc, snap, fc)
 
 

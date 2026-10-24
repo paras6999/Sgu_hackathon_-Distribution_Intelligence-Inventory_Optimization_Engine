@@ -1,7 +1,6 @@
 /**
  * End-to-end: backend + REAL engine process (ENGINE_MODE=source). Opt-in: E2E=1 (CI runs it).
  * Generates seed01 into a temp dir, starts `uv run dia-engine serve`, and checks the two connect.
- * Plan endpoints answer 501 until the engine modules are implemented; that is the expected state today.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdtempSync } from "node:fs";
@@ -44,11 +43,15 @@ describe.if(enabled)("backend + engine (source mode)", () => {
     expect(rows.some((r) => r.parameter === "costs.diesel_inr_per_l")).toBe(true);
   });
 
-  test("unbuilt engine modules surface as 501, not crashes", async () => {
+  test("POST /v1/plans returns a validated plan with a reason on every line", async () => {
     const r = await app.request("/v1/plans", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ scenario_id: "seed01", as_of: "2025-09-29", temp_class: "ambient" }),
+      body: JSON.stringify({ scenario_id: "seed01", as_of: "2025-09-29", temp_class: "chilled" }),
     });
-    expect([200, 501]).toContain(r.status);
-  });
+    expect(r.status).toBe(200);
+    const plan = (await r.json()) as { lines: Array<{ reasons: unknown[] }>; trucks: unknown[] };
+    expect(plan.lines.length).toBeGreaterThan(0);
+    expect(plan.trucks.length).toBeGreaterThan(0);
+    expect(plan.lines.every((l) => l.reasons.length >= 1)).toBe(true);
+  }, 120_000);
 });

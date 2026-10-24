@@ -7,7 +7,7 @@ import { ErrorText, Kpi, ReasonChips, useLoad } from "../components/ui";
 export function PlanPage({ plan, setPlan }: { plan: Plan | null; setPlan: (p: Plan) => void }) {
   const scenarios = useLoad(api.scenarios, []);
   const [scenario, setScenario] = useState("");
-  const [asOf, setAsOf] = useState("2025-10-13");
+  const [asOf, setAsOf] = useState("2025-09-29"); // first test day: the only day with an opening-state snapshot
   const [temp, setTemp] = useState<TempClass>("ambient");
   const [piMult, setPiMult] = useState(1);
   const [busy, setBusy] = useState(false);
