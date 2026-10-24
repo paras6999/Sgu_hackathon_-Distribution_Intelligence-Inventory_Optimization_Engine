@@ -40,7 +40,7 @@ export function PlanPage({ plan, setPlan }: { plan: Plan | null; setPlan: (p: Pl
             {(scenarios.data ?? []).map((s) => <option key={s}>{s}</option>)}
           </select>
         </label>
-        <label>As of <input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} /></label>
+        <label>As of <input type="date" value={asOf} min="2025-09-29" max="2025-12-21" onChange={(e) => setAsOf(e.target.value)} /></label>
         <label>Temperature class
           <select value={temp} onChange={(e) => setTemp(e.target.value as TempClass)}>
             <option value="ambient">ambient</option>

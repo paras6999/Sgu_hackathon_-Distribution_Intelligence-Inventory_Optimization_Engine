@@ -64,12 +64,23 @@ def _stock_expiry(sku, cover: int, as_of: date) -> date:
     return as_of + timedelta(days=max(int(sku.shelf_life_days - life_used - cover / 2), 1))
 
 
+@lru_cache(maxsize=64)
+def _replayed_snapshot(data_dir: str, scenario_id: str, as_of: date, opening_state: OpeningState) -> Snapshot:
+    """Stock state on a later day: replay the window with Baseline A (about 10 s) up to that morning.
+    Baseline A, not the engine, keeps this interactive; the engine's own trajectory is what the experiment measures."""
+    out = run_policy(scenario_id, BaselineA(), opening_state, seed=1, snapshot_at=as_of)
+    assert isinstance(out, Snapshot)
+    return out
+
+
 def get_snapshot(scenario_id: str, as_of: date, opening_state: OpeningState = OpeningState.IMBALANCED) -> Snapshot:
     """State on as_of. On the first test day this is the opening state; later days replay the engine policy."""
     cfg = get_config()
     t0 = cfg.simulation.test_window[0]
     if as_of != t0:
-        raise NotImplementedError(f"FR-09: only the first test day ({t0}) has a snapshot until run_policy exists")
+        if not t0 < as_of <= cfg.simulation.test_window[1]:
+            raise ValueError(f"as_of {as_of} is outside the test window {t0} to {cfg.simulation.test_window[1]}")
+        return _replayed_snapshot(str(store.data_dir()), scenario_id, as_of, OpeningState(opening_state))
     scenario = load_scenario(scenario_id)
     skus = {s.sku_id: s for s in scenario.skus}
     dists = [n for n in scenario.nodes if n.type == NodeType.DISTRIBUTOR]
@@ -178,8 +189,10 @@ def _is_plan_day(day: date, t0: date, temp_class: TempClass) -> bool:
 
 
 def run_policy(scenario_id: str, policy: Policy, opening_state: OpeningState, seed: int,
-               ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Daily loop over the test window. Returns (sim_log, sim_trips) with store.TABLES columns.
+               snapshot_at: date | None = None) -> tuple[pd.DataFrame, pd.DataFrame] | Snapshot:
+    """Daily loop over the test window. Returns (sim_log, sim_trips) with store.TABLES columns, or, when
+    snapshot_at is a day of the window, the stock state a planner would see that morning (after plant receipts,
+    before dispatch) as soon as the loop reaches it.
     Enforces credit cuts identically for every policy and asserts stock conservation every day.
 
     Demand comes from the scenario's `demand_daily` (identical for every policy); shipment delays are drawn
@@ -269,6 +282,9 @@ def run_policy(scenario_id: str, policy: Policy, opening_state: OpeningState, se
         for r in receipts_by_day.get(day, ()):
             depot_lots[r["lot_id"]] = _DepotLot(r["sku_id"], r["depot_id"], int(r["qty_cases"]), r["expiry_date"])
             receipts[(r["depot_id"], r["sku_id"])] += int(r["qty_cases"])
+
+        if snapshot_at == day:
+            return snapshot(day)
 
         # ---- planning and dispatch
         for ci, tc in enumerate((TempClass.CHILLED, TempClass.AMBIENT)):

@@ -88,7 +88,18 @@ def test_imbalanced_short_region_and_overstock(snaps):
     assert all(i_stock[j] == n_stock[j] for j in n_stock if j not in north and j != small)
 
 
-def test_later_day_not_implemented_and_deterministic(snaps, seed01):
-    with pytest.raises(NotImplementedError):
-        simulate.get_snapshot("seed01", date(2025, 10, 6))
+def test_later_day_replays_the_window_and_is_deterministic(snaps):
+    later = date(2025, 10, 6)
+    a = simulate.get_snapshot("seed01", later, OpeningState.IMBALANCED)
+    assert a.as_of == later and a.depot_lots and a.dist_stock
+    assert a == simulate.get_snapshot("seed01", later, OpeningState.IMBALANCED)
+    first = {(d.dist_id, d.sku_id): d.qty_cases for d in snaps[1].dist_stock}
+    assert {(d.dist_id, d.sku_id): d.qty_cases for d in a.dist_stock} != first      # a week of sales and shipments moved stock
+    assert all(c <= n.credit_limit_inr for n in snaps[2].nodes if n.credit_limit_inr
+               for c in [a.credit_available_inr[n.node_id]])
+
+
+def test_day_outside_the_window_is_rejected(snaps):
+    with pytest.raises(ValueError):
+        simulate.get_snapshot("seed01", date(2025, 12, 31), OpeningState.NEUTRAL)
     assert simulate.get_snapshot("seed01", T0, OpeningState.IMBALANCED) == snaps[1]

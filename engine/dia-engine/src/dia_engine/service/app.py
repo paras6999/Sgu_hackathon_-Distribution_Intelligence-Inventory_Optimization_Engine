@@ -32,6 +32,11 @@ async def _not_implemented(_: Request, exc: NotImplementedError) -> JSONResponse
     return JSONResponse(status_code=501, content={"detail": f"not implemented yet: {exc}"})
 
 
+@app.exception_handler(ValueError)
+async def _bad_request(_: Request, exc: ValueError) -> JSONResponse:
+    return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+
 @app.exception_handler(PlanInvalid)
 async def _plan_invalid(_: Request, exc: PlanInvalid) -> JSONResponse:
     return JSONResponse(status_code=422, content={"detail": str(exc),
