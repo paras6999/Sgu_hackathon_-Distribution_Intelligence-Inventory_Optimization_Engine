@@ -3,7 +3,7 @@ import { useState } from "react";
 import { api, type Analysis, type AnalyseRequest } from "../api";
 import { ErrorText, useLoad } from "./ui";
 
-export function AnalysisPanel({ request, title = "Deep analysis" }: { request: AnalyseRequest | null; title?: string }) {
+export function AnalysisPanel({ request, title = "Analysis" }: { request: AnalyseRequest | null; title?: string }) {
   const status = useLoad(api.aiStatus, []);
   const [result, setResult] = useState<Analysis | null>(null);
   const [question, setQuestion] = useState("");
@@ -18,14 +18,14 @@ export function AnalysisPanel({ request, title = "Deep analysis" }: { request: A
   }
 
   return (
-    <div className="card" style={{ margin: "12px 0" }}>
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <b>{title}</b>
-        <span className="badge" title={status.data?.reason ?? ""}>
-          {aiOn ? `AI: ${status.data?.model}` : "AI model off · rules-based analysis"}
+    <div className="card" style={{ marginTop: 14 }}>
+      <div className="card-h">
+        <h3>{title}</h3>
+        <span className={`badge ${aiOn ? "info" : ""}`} title={status.data?.reason ?? ""}>
+          {aiOn ? `AI model: ${status.data?.model}` : "Rules-based · no AI model"}
         </span>
       </div>
-      <div className="row" style={{ marginTop: 8 }}>
+      <div className="row">
         <button className="primary" disabled={busy || !request} onClick={() => run()}>{busy ? "Analysing…" : "Analyse"}</button>
         <label style={{ flex: 1, minWidth: 220 }}>Ask a question{aiOn ? "" : " (needs the AI model)"}
           <input value={question} disabled={!aiOn} placeholder="e.g. Why is Pune short on atta?" onChange={(e) => setQuestion(e.target.value)}
@@ -35,17 +35,15 @@ export function AnalysisPanel({ request, title = "Deep analysis" }: { request: A
       </div>
       <ErrorText error={error} />
       {result && (
-        <div style={{ marginTop: 10 }}>
-          <div className="row" style={{ gap: 8, marginBottom: 6 }}>
-            <span className="badge" style={result.source === "ai" ? { background: "var(--primary)", color: "#fff" } : undefined}>
-              {result.source === "ai" ? `AI · ${result.model}` : "Rules-based"}
-            </span>
-            {result.source === "ai" && result.verified && <span className="badge" style={{ background: "var(--success)", color: "#fff" }}>every figure matches the data</span>}
-            {result.source === "ai" && !result.verified && <span className="badge" style={{ background: "var(--warning)", color: "#000" }}>unverified figures: {result.unverified_numbers.join(", ")}</span>}
+        <div style={{ marginTop: 14 }}>
+          <div className="row" style={{ gap: 8, marginBottom: 8 }}>
+            <span className={`badge ${result.source === "ai" ? "info" : ""}`}>{result.source === "ai" ? `AI · ${result.model}` : "Rules-based"}</span>
+            {result.source === "ai" && result.verified && <span className="badge ok">Every figure matches the data</span>}
+            {result.source === "ai" && !result.verified && <span className="badge warn">Unverified figures: {result.unverified_numbers.join(", ")}</span>}
           </div>
-          <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{result.text}</div>
-          {result.note && <p style={{ color: "var(--neutral)", fontSize: 13 }}>{result.note}</p>}
-          <p style={{ color: "var(--neutral)", fontSize: 12, marginBottom: 0 }}>The analysis explains numbers the optimiser already produced; it never sets a quantity.</p>
+          <div className="analysis-text">{result.text}</div>
+          {result.note && <p className="note" style={{ marginTop: 8 }}>{result.note}</p>}
+          <p className="note" style={{ marginTop: 8 }}>This explains numbers the optimiser already produced. It never sets a quantity.</p>
         </div>
       )}
     </div>

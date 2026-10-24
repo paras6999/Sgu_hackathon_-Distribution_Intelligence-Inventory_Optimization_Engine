@@ -7,7 +7,7 @@ import type { AblationRow, AssumptionRow, ExperimentResults, FrontierPoint, KpiS
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { AnalysisPanel } from "../components/AnalysisPanel";
-import { ErrorText, ReasonChips, useLoad } from "../components/ui";
+import { EmptyState, ErrorText, Kpi, PageHeader, ReasonChips, Segmented, useLoad } from "../components/ui";
 
 /** MapLibre is large; it loads only when the Map tab is opened. */
 const NetworkMap = lazy(() => import("../components/NetworkMap").then((m) => ({ default: m.NetworkMap })));
@@ -86,22 +86,14 @@ function useExperiment() {
 
 function StatusLine({ ex }: { ex: ReturnType<typeof useExperiment> }) {
   const { info } = ex;
-  if (!ex.id) return <p>Connecting…</p>;
-  if (info?.status === "running") return <p>Experiment {ex.id} is running: {info.progress_pct.toFixed(0)}% of seeds finished. This page refreshes itself.</p>;
+  if (!ex.id) return <p className="muted" style={{ marginTop: 12 }}>Connecting…</p>;
+  if (info?.status === "running") return <div className="callout" role="status"><p>Experiment {ex.id} is running: {info.progress_pct.toFixed(0)}% of seeds finished. This page refreshes itself.</p></div>;
   if (info?.status === "failed") return <p className="error">Experiment {ex.id} failed: {info.error}</p>;
   return null;
 }
 
 function Toggle({ value, onChange }: { value: OpeningState; onChange: (v: OpeningState) => void }) {
-  return (
-    <div className="row" role="group" aria-label="Opening state">
-      {STATES.map((s) => (
-        <button key={s} className={value === s ? "primary" : "secondary"} onClick={() => onChange(s)}>
-          {s === "neutral" ? "Neutral start" : "Imbalanced start"}
-        </button>
-      ))}
-    </div>
-  );
+  return <Segmented label="Opening state" value={value} onChange={onChange} options={[{ value: "neutral", label: "Neutral start" }, { value: "imbalanced", label: "Imbalanced start" }]} />;
 }
 
 // ---------------------------------------------------------------------------------------------- Results
@@ -152,21 +144,19 @@ export function ResultsPage() {
 
   const engineSeeds = get("cost_to_serve_inr", "engine")?.n_seeds;
   return (
-    <div>
-      <h2>Results</h2>
-      <p style={{ color: "var(--neutral)" }}>
-        The engine against the <b>better</b> of Baseline A and Baseline B on each KPI. Means with 90% intervals over{" "}
-        {engineSeeds ?? "…"} seeds; differences are paired by seed (identical demand, delays and promotions for every policy).
-      </p>
-      <div className="row"><Toggle value={state} onChange={setState} /><button className="secondary" onClick={ex.restart}>Reload</button></div>
+    <section>
+      <PageHeader
+        title="Results"
+        sub={<>The engine against the <b>better</b> of Baseline A and Baseline B on each KPI. Means with 90% intervals over {engineSeeds ?? "…"} seeds; differences are paired by seed, with identical demand, delays and promotions for every policy.</>}
+        actions={<><Toggle value={state} onChange={setState} /><button className="secondary" onClick={ex.restart}>Reload</button></>}
+      />
       <ErrorText error={ex.error} />
       <StatusLine ex={ex} />
-      {ex.results === null && ex.info?.status === "done" && <p>No results yet.</p>}
-      {ex.results && rows.length === 0 && <p>No rows for this opening state.</p>}
+      {ex.results === null && ex.info?.status === "done" && <EmptyState title="No results yet">Run the experiment to see the comparison.</EmptyState>}
+      {ex.results && rows.length === 0 && <EmptyState title="No rows for this opening state" />}
 
       {rows.length > 0 && (
         <>
-          <AnalysisPanel title="Deep analysis of these results" request={ex.id ? { kind: "results", experiment_id: ex.id, opening_state: state } : null} />
           <div className="kpis">
             {HEADLINE.map((kpi) => {
               const e = get(kpi, "engine"); const m = metaOf(kpi);
@@ -175,25 +165,22 @@ export function ResultsPage() {
               const d = e.delta_vs_best_baseline;
               const good = d == null ? null : m.higherBetter ? d > 0 : d < 0;
               return (
-                <div className="card kpi" key={kpi}>
-                  <div className="label">{m.label} · Engine</div>
-                  <div className="value">{fmt(e.mean, m.fmt)}</div>
-                  {d != null && best ? (
-                    <div style={{ color: good ? "var(--success)" : "var(--danger)", fontSize: 13 }}>
-                      {fmtDelta(d, m.fmt)}{m.fmt === "pct" ? "" : ` (${d > 0 ? "+" : "−"}${Math.abs((d / best) * 100).toFixed(0)}%)`} vs better baseline
-                    </div>
-                  ) : null}
-                </div>
+                <Kpi key={kpi} label={`${m.label} · engine`} value={fmt(e.mean, m.fmt)}
+                  tone={good == null ? undefined : good ? "good" : "bad"}
+                  hint={d != null && best ? `${fmtDelta(d, m.fmt)}${m.fmt === "pct" ? "" : ` (${d > 0 ? "+" : "−"}${Math.abs((d / best) * 100).toFixed(0)}%)`} vs better baseline` : undefined} />
               );
             })}
           </div>
 
-          <div className="table-wrap card">
+          <AnalysisPanel title="Analysis of these results" request={ex.id ? { kind: "results", experiment_id: ex.id, opening_state: state } : null} />
+
+          <h2>Scorecard</h2>
+          <div className="table-wrap" style={{ marginTop: 10 }}>
             <table>
               <thead>
                 <tr>
-                  <th>KPI</th><th>Baseline A</th><th>Baseline B</th><th>Engine</th>
-                  <th>Engine − better baseline (90% CI)</th><th>Target (PRD 8.2)</th><th>Met</th>
+                  <th>KPI</th><th className="num">Baseline A</th><th className="num">Baseline B</th><th className="num">Engine</th>
+                  <th>Engine − better baseline (90% CI)</th><th>Target</th><th>Met</th>
                 </tr>
               </thead>
               <tbody>
@@ -207,19 +194,19 @@ export function ResultsPage() {
                   const met = t && best != null ? t.met(e, best) : null;
                   const cell = (policy: string) => {
                     const k = get(kpi, policy);
-                    return k ? <>{fmt(k.mean, m.fmt)} <span style={{ color: "var(--neutral)", fontSize: 12 }}>± {fmt(Math.abs(k.ci_high - k.mean), m.fmt)}</span></> : "–";
+                    return k ? <>{fmt(k.mean, m.fmt)}<div className="cell-sub">± {fmt(Math.abs(k.ci_high - k.mean), m.fmt)}</div></> : "–";
                   };
                   return (
                     <tr key={kpi}>
                       <td>{m.label}</td>
-                      <td>{cell("baseline_a")}</td>
-                      <td>{cell("baseline_b")}</td>
-                      <td><b>{cell("engine")}</b></td>
-                      <td style={{ color: good == null ? undefined : good ? "var(--success)" : "var(--danger)" }}>
-                        {d == null ? "–" : <>{fmtDelta(d, m.fmt)} <span style={{ fontSize: 12 }}>{ci(e, m.fmt)}</span></>}
+                      <td className="num">{cell("baseline_a")}</td>
+                      <td className="num">{cell("baseline_b")}</td>
+                      <td className="num"><b>{cell("engine")}</b></td>
+                      <td style={{ color: good == null ? undefined : good ? "var(--success)" : "var(--danger)", fontWeight: 600 }}>
+                        {d == null ? "–" : <>{fmtDelta(d, m.fmt)}<div className="cell-sub" style={{ color: "var(--muted)", fontWeight: 400 }}>{ci(e, m.fmt)}</div></>}
                       </td>
-                      <td>{t?.text ?? "–"}</td>
-                      <td>{met == null ? "–" : met ? <span style={{ color: "var(--success)" }}>✓ met</span> : <span style={{ color: "var(--danger)" }}>✗ not met</span>}</td>
+                      <td className="muted">{t?.text ?? "–"}</td>
+                      <td>{met == null ? "–" : met ? <span className="badge ok">Met</span> : <span className="badge bad">Not met</span>}</td>
                     </tr>
                   );
                 })}
@@ -228,8 +215,8 @@ export function ResultsPage() {
           </div>
 
           {worse.length > 0 && (
-            <div className="card" style={{ marginTop: 12, borderColor: "var(--danger)" }}>
-              <h3 style={{ marginTop: 0 }}>Where the engine is worse, and why</h3>
+            <div className="callout warn">
+              <h3>Where the engine is worse, and why</h3>
               {worse.map(({ kpi, e }) => (
                 <p key={kpi}>
                   <b>{metaOf(kpi).label}</b>: {fmtDelta(e.delta_vs_best_baseline!, metaOf(kpi).fmt)} vs the better baseline{" "}
@@ -240,7 +227,7 @@ export function ResultsPage() {
           )}
         </>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -266,7 +253,7 @@ function FrontierChart({ points }: { points: FrontierPoint[] }) {
   const policies = [...new Set(points.map((p) => p.policy))];
   const ticks = (a: number, b: number) => Array.from({ length: 5 }, (_, i) => a + ((b - a) * i) / 4);
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Fill rate against cost to serve" style={{ width: "100%", maxWidth: 760 }}>
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Fill rate against cost to serve" style={{ width: "100%", maxWidth: 820, display: "block", margin: "0 auto" }}>
       {ticks(x0 - padX, x1 + padX).map((v) => (
         <g key={`x${v}`}>
           <line x1={sx(v)} x2={sx(v)} y1={T} y2={H - B} stroke="var(--border)" />
@@ -308,7 +295,7 @@ function AblationBars({ rows }: { rows: AblationRow[] }) {
   return (
     <div className="card">
       {rows.map((r) => (
-        <div key={r.variant} style={{ display: "grid", gridTemplateColumns: "minmax(180px, 280px) 1fr 110px", gap: 12, alignItems: "center", padding: "6px 0" }}>
+        <div key={r.variant} style={{ display: "grid", gridTemplateColumns: "minmax(180px, 300px) 1fr 120px", gap: 16, alignItems: "center", padding: "8px 0" }}>
           <div>{ABLATION_TEXT[r.variant] ?? r.variant}</div>
           <svg viewBox="0 0 100 14" preserveAspectRatio="none" style={{ width: "100%", height: 22 }} aria-label={`${r.variant} cost change with interval`}>
             <line x1="50" x2="50" y1="0" y2="14" stroke="var(--neutral)" strokeWidth="0.4" />
@@ -333,57 +320,56 @@ export function FrontierPage() {
   const ablation = (res?.ablation ?? []).filter((a) => a.opening_state === state);
   const params = [...new Set(points.map((p) => `${POLICY_LABEL[p.policy] ?? p.policy}: ${PARAM_LABEL[p.param] ?? p.param}`))];
   return (
-    <div>
-      <h2>Frontier & ablation</h2>
-      <div className="row"><Toggle value={state} onChange={setState} /></div>
+    <section>
+      <PageHeader title="Frontier & ablation" sub="How much service each policy buys with each rupee, and what each mechanism of the engine is worth." actions={<Toggle value={state} onChange={setState} />} />
       <ErrorText error={ex.error} />
       <StatusLine ex={ex} />
       {res && (
         <>
-          <h3>Fill rate against cost to serve</h3>
-          <p style={{ color: "var(--neutral)" }}>
+          <h2>Fill rate against cost to serve</h2>
+          <p className="muted" style={{ marginBottom: 12 }}>
             Each line is one policy swept over its own tuning knob ({params.join("; ") || "no sweep in this run"}). A point further up and left is better.
             The default setting of each policy is the middle of its line; the numbers next to the points are the knob values.
           </p>
           {points.length > 0 ? (
-            <>
+            <div className="card">
               <FrontierChart points={points} />
-              <div className="row" style={{ gap: 16, marginTop: 4 }}>
+              <div className="legend">
                 {[...new Set(points.map((p) => p.policy))].map((p) => (
-                  <span key={p}><span style={{ display: "inline-block", width: 12, height: 12, borderRadius: 6, background: POLICY_COLOUR[p], marginRight: 6 }} />{POLICY_LABEL[p] ?? p}</span>
+                  <span key={p}><i style={{ background: POLICY_COLOUR[p] }} />{POLICY_LABEL[p] ?? p}</span>
                 ))}
               </div>
-            </>
-          ) : <p>No frontier points in this run.</p>}
+            </div>
+          ) : <EmptyState title="No frontier points in this run" />}
 
-          <h3>What each mechanism is worth</h3>
-          <p style={{ color: "var(--neutral)" }}>
+          <h2>What each mechanism is worth</h2>
+          <p className="muted" style={{ marginBottom: 12 }}>
             Cost to serve when one mechanism is switched off, relative to the full engine on the same seeds. A red bar to the right means the
             mechanism saves that much; a green bar to the left means the engine does better without it; the line is the 90% interval.
           </p>
           {ablation.length > 0 ? (
             <>
               <AblationBars rows={ablation} />
-              <div className="table-wrap card" style={{ marginTop: 12 }}>
+              <div className="table-wrap" style={{ marginTop: 14 }}>
                 <table>
-                  <thead><tr><th>Switched off</th><th>Δ cost to serve (90% CI)</th><th>Δ fill rate</th><th>Δ wastage</th></tr></thead>
+                  <thead><tr><th>Switched off</th><th className="num">Δ cost to serve (90% CI)</th><th className="num">Δ fill rate</th><th className="num">Δ wastage</th></tr></thead>
                   <tbody>
                     {ablation.map((a) => (
                       <tr key={a.variant}>
                         <td>{ABLATION_TEXT[a.variant] ?? a.variant}</td>
-                        <td>{a.delta_cost_to_serve_inr > 0 ? "+" : "−"}{inr(Math.abs(a.delta_cost_to_serve_inr)).replace("−", "")} <span style={{ fontSize: 12 }}>[{inr(a.ci_low)}, {inr(a.ci_high)}]</span></td>
-                        <td>{a.delta_fill_rate_pp > 0 ? "+" : ""}{a.delta_fill_rate_pp.toFixed(1)} pp</td>
-                        <td>{a.delta_wastage_inr > 0 ? "+" : "−"}{inr(Math.abs(a.delta_wastage_inr)).replace("−", "")}</td>
+                        <td className="num">{a.delta_cost_to_serve_inr > 0 ? "+" : "−"}{inr(Math.abs(a.delta_cost_to_serve_inr)).replace("−", "")}<div className="cell-sub">[{inr(a.ci_low)}, {inr(a.ci_high)}]</div></td>
+                        <td className="num">{a.delta_fill_rate_pp > 0 ? "+" : ""}{a.delta_fill_rate_pp.toFixed(1)} pp</td>
+                        <td className="num">{a.delta_wastage_inr > 0 ? "+" : "−"}{inr(Math.abs(a.delta_wastage_inr)).replace("−", "")}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             </>
-          ) : <p>No ablation rows in this run.</p>}
+          ) : <EmptyState title="No ablation rows in this run" />}
         </>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -419,14 +405,11 @@ export function MapPage({ plan }: { plan: Plan | null }) {
   const dominant = (l: (typeof lanes)[number]) => [...l.byCode.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "";
   const shownLines = (plan?.lines ?? []).filter((l) => !selected || `${l.from_id}>${l.to_id}` === selected);
   return (
-    <div>
-      <h2>Network map</h2>
-      {!plan ? <p>Generate a plan first (Plan tab).</p> : (
+    <section>
+      <PageHeader title="Network map" sub="Squares are depots, circles are distributors. Arc width is cases shipped and colour is the main reason on the lane. Select an arc to filter the lines below. The street map needs a network connection; without one the lanes still show on a plain background." />
+      {!plan ? <EmptyState title="No plan to draw">Generate a plan on the Plan tab first.</EmptyState> : (
         <>
           <ErrorText error={scenario.error} />
-          <p style={{ color: "var(--neutral)" }}>
-            Squares are depots, circles are distributors. Arc width is cases shipped; colour is the main reason code on the lane. Click an arc to filter the lines below. The background map needs a network connection; without one the lanes still show on a plain background.
-          </p>
           {noWebgl ? (
             <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Plan lanes on a map of India" style={{ width: "100%", maxWidth: 640, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8 }}>
             {lanes.map((l) => {
@@ -467,29 +450,29 @@ export function MapPage({ plan }: { plan: Plan | null }) {
               selected={selected} onSelect={setSelected} onUnsupported={() => setNoWebgl(true)} />
             </Suspense>
           )}
-          <div className="row" style={{ gap: 12, margin: "6px 0" }}>
+          <div className="legend">
             {Object.entries(RC_COLOUR).map(([code, colour]) => (
-              <span key={code} style={{ fontSize: 12 }}><span style={{ display: "inline-block", width: 10, height: 10, background: colour, marginRight: 4 }} />{code}</span>
+              <span key={code}><i style={{ background: colour }} />{code.replaceAll("_", " ").toLowerCase()}</span>
             ))}
-            {selected && <button className="secondary" onClick={() => setSelected(null)}>Show all lanes</button>}
+            {selected && <button className="secondary" style={{ height: 28, padding: "0 10px" }} onClick={() => setSelected(null)}>Show all lanes</button>}
           </div>
-          <div className="table-wrap card">
+          <div className="table-wrap scroll" style={{ maxHeight: 420 }}>
             <table>
-              <thead><tr><th>SKU</th><th>From → To</th><th>Cases</th><th>Reasons</th></tr></thead>
+              <thead><tr><th>SKU</th><th>From → to</th><th className="num">Cases</th><th>Reasons</th></tr></thead>
               <tbody>
                 {shownLines.slice(0, 80).map((l) => (
                   <tr key={l.line_id}>
-                    <td>{l.sku_name}</td><td>{l.from_id} → {l.to_id}</td><td>{l.cases.toLocaleString("en-IN")}</td>
+                    <td>{l.sku_name}</td><td>{l.from_id.split("-")[1] ?? l.from_id} → {l.to_id.split("-")[1] ?? l.to_id}</td><td className="num">{l.cases.toLocaleString("en-IN")}</td>
                     <td><ReasonChips reasons={l.reasons} /></td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {shownLines.length > 80 && <p style={{ color: "var(--neutral)" }}>Showing 80 of {shownLines.length} lines.</p>}
           </div>
+          {shownLines.length > 80 && <p className="note" style={{ marginTop: 8 }}>Showing 80 of {shownLines.length} lines.</p>}
         </>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -503,21 +486,19 @@ export function AssumptionsPage() {
     (q === "" || `${r.parameter} ${r.source ?? ""} ${r.rationale ?? ""}`.toLowerCase().includes(q.toLowerCase())));
   const sourced = data.filter((r) => r.source && r.source !== "judgment").length;
   return (
-    <div>
-      <h2>Assumptions</h2>
-      <p style={{ color: "var(--neutral)" }}>
-        Every business number the engine uses, from <span className="mono">config.yaml</span>. {sourced} of {data.length} rows cite a source;
-        the rest are marked as judgment.
-      </p>
-      <div className="row">
-        <label>Search<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. diesel, MRSL, credit" /></label>
-        <label style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+    <section>
+      <PageHeader title="Assumptions" sub={<>Every business number the engine uses, from <span className="mono">config.yaml</span>. {sourced} of {data.length} rows cite a source; the rest are marked as judgment.</>} />
+      <div className="card toolbar">
+        <label className="grow">Search
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. diesel, shelf life, credit" />
+        </label>
+        <label style={{ flexDirection: "row", alignItems: "center", gap: 8, height: 36 }}>
           <input type="checkbox" checked={onlyJudgment} onChange={(e) => setOnlyJudgment(e.target.checked)} /> Judgment only
         </label>
-        <span>{shown.length} shown</span>
+        <span className="muted" style={{ alignSelf: "center" }}>{shown.length} shown</span>
       </div>
       <ErrorText error={rows.error} />
-      <div className="table-wrap card" style={{ marginTop: 8 }}>
+      <div className="table-wrap scroll" style={{ marginTop: 14 }}>
         <table>
           <thead><tr><th>Parameter</th><th>Value</th><th>Unit</th><th>Source</th><th>Why</th></tr></thead>
           <tbody>
@@ -526,13 +507,13 @@ export function AssumptionsPage() {
                 <td className="mono">{r.parameter}</td>
                 <td className="mono" style={{ maxWidth: 260, overflowWrap: "anywhere" }}>{typeof r.value === "object" ? JSON.stringify(r.value) : String(r.value)}</td>
                 <td>{r.unit ?? ""}</td>
-                <td>{r.source ? (r.source === "judgment" ? <span className="badge" style={{ background: "var(--warning)", color: "#000" }}>judgment</span> : r.source) : <span className="badge">no source</span>}</td>
-                <td>{r.rationale ?? ""}</td>
+                <td>{r.source ? (r.source === "judgment" ? <span className="badge warn">judgment</span> : r.source) : <span className="badge">no source</span>}</td>
+                <td className="muted">{r.rationale ?? ""}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   );
 }
