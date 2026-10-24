@@ -1,4 +1,4 @@
-# M2 · Claude Code lead — foundation, types, backend, core web, forecast, integration
+# M2 · Claude Code lead — foundation, types, backend, core web, forecast, integration (@paras6999)
 
 Tool: **Claude Code**. It reads `CLAUDE.md` (root), which points here. Repo owner and admin.
 
