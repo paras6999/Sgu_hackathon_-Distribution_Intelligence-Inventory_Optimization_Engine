@@ -1,19 +1,18 @@
-# AGENTS.md — instructions for any AI coding agent (Antigravity, Kiro, Claude Code, others)
+# AGENTS.md — instructions for any AI coding agent
 
-Project: **Vitaran (DIAgent)**, a distribution intelligence and inventory optimisation engine (hackathon PS2).
+Project: **Vitaran (DIAgent)**, a distribution intelligence and inventory optimisation engine (hackathon PS2). Built solo by @paras6999 with Claude Code.
 
 ## Read first, in this order
 1. `docs/Memory.md` — current state and open issues.
-2. Your member guide in `docs/team/`: M1 Kiro lead · M2 Claude Code lead · M3 web analytics · M4 data. Ask the user which member they are if unsure.
+2. `docs/Phases.md` — what to build next and the drop order.
 3. `docs/Rules.md` — boundaries. `docs/Architecture.md` — how parts connect. `docs/PRD.md` — requirements.
 
 ## Hard rules
-- Never push to `main`. Work on `m<N>/<task>`, open a PR (`docs/Team.md` §4).
-- Edit only files your member owns (`docs/Team.md` §2).
 - Python only in `engine/dia-engine`; TypeScript on Bun everywhere else.
 - Data shapes come from `packages/dia-types/schema`; never hand-edit generated files (`bun run gen:types`).
 - Quantities come only from the optimiser, never from an LLM. Simulated data must be realistic (`docs/Rules.md`).
-- No secrets in code, PRs or chat. `.env` is git-ignored.
+- Run `bun run test` before pushing. Never force-push `main`.
+- No secrets in code, commits or chat. `.env` is git-ignored.
 
 ## Commands
 ```bash
@@ -25,4 +24,4 @@ bun run data         # generate scenario seed01
 bun run gen:types    # regenerate TS + Python types from the schema
 ```
 
-At the end of a session, add 2–3 lines under your member in `docs/Memory.md`.
+At the end of a task, add 2–3 lines to `docs/Memory.md`.

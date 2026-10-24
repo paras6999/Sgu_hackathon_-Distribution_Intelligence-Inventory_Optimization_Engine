@@ -1,6 +1,6 @@
 # Architecture.md — Vitaran (DIAgent)
 
-*What* to build: `PRD.md`. *Who* builds it: `Team.md`. This file fixes *how* the parts connect: languages, folders, data, APIs and contracts.
+*What* to build: `PRD.md`. *Who* builds it: one person (`Team.md`). This file fixes *how* the parts connect: languages, folders, data, APIs and contracts.
 
 ## 1. Shape of the system
 
@@ -26,32 +26,30 @@ flowchart LR
 
 **One pipeline.** The engine service (`POST /plan`) and the simulator both call `dia_engine.optimize.pipeline.make_plan()`. What the judges see live is exactly what was evaluated.
 
-## 2. Folder structure (owner in brackets)
+## 2. Folder structure
 
 ```
 .
 ├── README.md  AGENTS.md  CLAUDE.md        entry points for humans and AI tools
-├── .kiro/steering/                         Kiro rules (point to docs/)
 ├── docs/                                   PRD, Architecture, Rules, Phases, Design, Team, Memory
-│   └── team/  M1-kiro-lead.md  M2-claude-lead.md  M3-web-analytics.md  M4-data.md
 ├── apps/
-│   ├── dia-backend/   [M2; src/ai M1]      Hono routes, bun:sqlite repo, engine clients, OpenAPI
-│   ├── dia-web/       [M2 core; M3 analytics pages]
-│   └── dia-fallback-ui/ [M2]               Streamlit emergency UI
+│   ├── dia-backend/        Hono routes, bun:sqlite repo, engine clients, OpenAPI
+│   ├── dia-web/      
+│   └── dia-fallback-ui/               Streamlit emergency UI
 ├── engine/dia-engine/src/dia_engine/
-│   ├── config.py  store.py  [M2]           config schema, parquet store
-│   ├── data/          [M4, backup M2]      generator v0, weather
-│   ├── forecast/      [M2]                 forecast, dist, targets
-│   ├── baselines/     [M2]                 Baseline A and B
-│   ├── optimize/      [M1]                 optimize, freight, validate, explain, pipeline
-│   ├── sim/           [M1]                 simulate, kpi, policy
-│   ├── service/  cli.py [M1]               internal HTTP service + CLI
+│   ├── config.py  store.py            config schema, parquet store
+│   ├── data/               generator v0, weather
+│   ├── forecast/                      forecast, dist, targets
+│   ├── baselines/                     Baseline A and B
+│   ├── optimize/                      optimize, freight, validate, explain, pipeline
+│   ├── sim/                           simulate, kpi, policy
+│   ├── service/  cli.py               internal HTTP service + CLI
 │   └── ../tests/                           contract + realism tests
 ├── packages/
-│   ├── dia-types/     [M2; schema changes need M1 too]  schema/ fixtures/ dist/ ts/ py/ scripts/
-│   └── dia-config/    [M2 schema, M4 values]  config.yaml  climate.yaml
-├── tools/release/     [M1]                 binary builds (next PR: m1/build-release)
-├── .github/           [M2; release.yml M1]  ci.yml  CODEOWNERS  PR template
+│   ├── dia-types/      schema/ fixtures/ dist/ ts/ py/ scripts/
+│   └── dia-config/     config.yaml  climate.yaml
+├── tools/release/                     binary builds (next PR: m1/build-release)
+├── .github/            ci.yml  CODEOWNERS  PR template
 ├── package.json  turbo.json  bun.lock      Bun workspaces
 └── pyproject.toml  uv.lock  .python-version uv workspace
 ```
@@ -145,24 +143,24 @@ Experiments do not use HTTP: the backend runs `dia-engine experiment --id EX-…
 | API | Used | How |
 |---|---|---|
 | Open-Meteo archive | Once | `dia-engine weather --fetch` caches real history; offline fallback = `climate.yaml` climatology |
-| Vertex AI (`gemini-4-argon`) | Optional, off | `apps/dia-backend/src/ai/` (M1). Explains only; never produces quantities. `AI_ENABLED=false` by default |
+| Vertex AI (`gemini-4-argon`) | Optional, off | `apps/dia-backend/src/ai/`. Explains only; never produces quantities. `AI_ENABLED=false` by default |
 | WhatsApp / maps / others | No | Inbox is our own screen; map uses a free MapLibre basemap |
 
 ## 7. Engine module contracts
 
-| Function | Owner | Returns | Called by |
+| Function | State | Returns | Called by |
 |---|---|---|---|
-| `data.generate.generate(cfg, seed)` / `load_scenario(id)` | M4/M2 | scenario id / `Scenario` | CLI, service |
-| `sim.simulate.get_snapshot(id, as_of, opening_state)` | M1 | `Snapshot` | service |
-| `sim.simulate.run_experiment(id, req, progress)` | M1 | writes parquet + results.json | CLI |
-| `forecast.forecast.forecast(id, as_of, horizon_days, model)` | M2 | `ForecastBundle` | service, sim |
-| `forecast.dist.*` | M2 | window distributions | optimiser (C2, C8) |
-| `forecast.targets.compute_targets(...)` | M2 | `Target[]` | pipeline, baselines |
-| `baselines.BaselineA/B().plan(...)` | M2 | `Plan` | sim, pipeline fallback |
-| `optimize.freight.*` | M1 | INR, (lines, trucks) | optimiser and both baselines |
-| `optimize.optimize.solve(OptimizeInput)` | M1 | `SolveOutput` | pipeline only |
-| `optimize.explain.add_reasons` / `validate.validate_plan` | M1 | `Plan` / `ValidationReport` | pipeline only |
-| `optimize.pipeline.make_plan` / `apply_response` | M1 | validated `Plan` | service, `EnginePolicy` |
+| `data.generate.generate(cfg, seed)` / `load_scenario(id)` | done | scenario id / `Scenario` | CLI, service |
+| `sim.simulate.get_snapshot(id, as_of, opening_state)` | to build | `Snapshot` | service |
+| `sim.simulate.run_experiment(id, req, progress)` | to build | writes parquet + results.json | CLI |
+| `forecast.forecast.forecast(id, as_of, horizon_days, model)` | done | `ForecastBundle` | service, sim |
+| `forecast.dist.*` | done | window distributions | optimiser (C2, C8) |
+| `forecast.targets.compute_targets(...)` | done | `Target[]` | pipeline, baselines |
+| `baselines.BaselineA/B().plan(...)` | done | `Plan` | sim, pipeline fallback |
+| `optimize.freight.*` | to build | INR, (lines, trucks) | optimiser and both baselines |
+| `optimize.optimize.solve(OptimizeInput)` | to build | `SolveOutput` | pipeline only |
+| `optimize.explain.add_reasons` / `validate.validate_plan` | to build | `Plan` / `ValidationReport` | pipeline only |
+| `optimize.pipeline.make_plan` / `apply_response` | glue done / to build | validated `Plan` | service, `EnginePolicy` |
 
 ## 8. Key decisions
 - One network-wide MILP per temperature class; convex piecewise-linear lost-sales and waste curves; feasible by construction; Baseline B fallback if the solver fails.

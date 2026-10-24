@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-This repo is worked on by four people with different AI tools. Claude Code is used by **M2** (foundation, types, backend, core web, forecast, integration).
+Solo project: @paras6999 builds everything with Claude Code.
 
-Read `AGENTS.md` (shared rules and commands), then `docs/team/M2-claude-lead.md`, then `docs/Memory.md`.
+Read `AGENTS.md` (rules and commands), then `docs/Memory.md`, then the next task in `docs/Phases.md`.
 
 Claude-specific notes:
-- Never push to `main`; branch `m2/<task>` and open a PR. Commit messages end with the co-author line the environment provides.
-- Before editing a file, check its owner in `docs/Team.md` §2. If it belongs to M1, M3 or M4, propose the change instead of making it.
+- Small, safe changes may go straight to `main`; large or risky ones (the MILP, the simulator) go on a branch with a PR so CI runs first, then squash-merge. Commit messages end with the co-author line the environment provides.
+- Keep the module boundaries and contracts in `docs/Architecture.md`; a contract change updates fixtures and tests in the same commit.
 - On Windows use `bun` and `uv` from Git Bash or PowerShell; the backend starts the engine with `.venv` Python directly so it can stop it cleanly.

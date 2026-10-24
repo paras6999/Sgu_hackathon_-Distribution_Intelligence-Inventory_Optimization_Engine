@@ -1,4 +1,4 @@
-# Design.md — Visual design (web app `apps/dia-web`, owner: M2 core, M3 analytics pages)
+# Design.md — Visual design (web app `apps/dia-web`, solo build)
 
 ## Principles
 - Planner first: dense but readable tables; every number traces to a source row.

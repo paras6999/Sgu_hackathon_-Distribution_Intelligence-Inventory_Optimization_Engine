@@ -10,12 +10,11 @@ apps/dia-web (React) ──/v1──▶ apps/dia-backend (Bun + Hono, SQLite) �
 ## Read in this order
 | File | What |
 |---|---|
-| [AGENTS.md](AGENTS.md) | Rules and commands for every AI agent |
-| [docs/Team.md](docs/Team.md) | Members, folder ownership, PR workflow, checkpoints |
-| [docs/team/](docs/team) | One guide per member (M1 Kiro, M2 Claude Code, M3 Antigravity, M4 data) |
+| [AGENTS.md](AGENTS.md) | Rules and commands for AI agents |
+| [docs/Team.md](docs/Team.md) | Solo build: what's done, what's left, git workflow, GitHub settings |
 | [docs/Architecture.md](docs/Architecture.md) | Languages, folders, database, APIs, contracts |
 | [docs/PRD.md](docs/PRD.md) | Requirements |
-| [docs/Phases.md](docs/Phases.md) | 24-hour plan per member |
+| [docs/Phases.md](docs/Phases.md) | Solo build plan and drop order |
 | [docs/Rules.md](docs/Rules.md) | Boundaries, realism rules, AI rules |
 | [docs/Design.md](docs/Design.md) | Screens, colours, fonts |
 | [docs/Memory.md](docs/Memory.md) | Progress log; update every PR |
@@ -38,4 +37,4 @@ bun run dev
 
 Open http://localhost:3000. `bun run dev` starts the backend on :8000, which starts the engine on :7010. Use `bun run dev:fake` to run on fixture data without the engine. API docs: http://localhost:8000/docs.
 
-Nobody pushes to `main`: branch `m<N>/<task>` and open a pull request (`docs/Team.md` §4).
+Solo workflow: small changes go straight to `main`, larger ones through a PR so CI runs first (`docs/Team.md` §2).

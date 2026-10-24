@@ -1,6 +1,6 @@
-# Rules.md — Boundaries for the AI tools and the team
+# Rules.md — Boundaries for the AI tools
 
-Read with `PRD.md` (what), `Architecture.md` (how it connects), `Team.md` (who) and your `team/M<N>-*.md`.
+Read with `PRD.md` (what), `Architecture.md` (how it connects), `Phases.md` (what next) and `Team.md` (solo workflow).
 
 ## Scope
 - `PRD.md` is the source of truth. If code and PRD disagree, flag it; don't silently deviate.
@@ -13,10 +13,9 @@ Read with `PRD.md` (what), `Architecture.md` (how it connects), `Team.md` (who) 
 - The engine service and the simulator call `make_plan()`. Nobody else calls `optimize`, `explain` or `validate`.
 - Only `dia_engine/store.py` touches parquet; only `apps/dia-backend/src/db/repo.ts` touches SQLite. The engine never writes SQLite.
 
-## Contracts and ownership
-- Edit only files you own (`Team.md` §2). For anything else, ask or open a PR the owner reviews.
+## Contracts
 - Data shapes live in `packages/dia-types/schema/*.schema.json`. Never edit `dist/`, `ts/generated.ts` or `py/dia_types/models.py` by hand; run `bun run gen:types`.
-- Don't change a schema definition, `store.TABLES`, an engine function signature or a route without a contract PR (`Team.md` §5).
+- Don't change a schema definition, `store.TABLES`, an engine function signature or a route without a deliberate `contract:` commit that also updates fixtures and tests (`Team.md` §3).
 - Exchange data only through dia-types models (or `store.TABLES` parquet). No ad hoc dicts across modules.
 
 ## Libraries
@@ -39,7 +38,7 @@ The data is simulated, but judges will test whether it is believable. Every gene
 
 ## AI usage in the product
 - Quantities come only from the optimiser or a baseline. Never from an LLM.
-- Optional narration/Q&A (FR-25) lives in `apps/dia-backend/src/ai/`, owned by M1, behind `AI_ENABLED` (default `false`), with a non-AI fallback so the demo works offline.
+- Optional narration/Q&A (FR-25) lives in `apps/dia-backend/src/ai/`, behind `AI_ENABLED` (default `false`), with a non-AI fallback so the demo works offline.
 - Vertex AI credentials stay in a local `.env` or GitHub secret. Never in code, logs, issues or chat.
 
 ## Determinism
@@ -56,9 +55,9 @@ The data is simulated, but judges will test whether it is believable. Every gene
 - Weather API failure: use the cache or the climatology fallback; never call it during experiments or the demo.
 
 ## Git
-- **Never push to `main`.** Branch `m<N>/<task>`, PR, green CI, one owner review, squash merge.
+- Solo workflow (`Team.md` §2): small changes straight to `main`; large or risky ones on a branch + PR, squash-merged after CI. Run `bun run test` before every push. Never force-push.
 - Never commit `data/`, `.venv/`, `node_modules/`, `.env`, credentials, LP dumps or build outputs.
-- Add a line to `docs/Memory.md` in every PR.
+- Add a line to `docs/Memory.md` for every finished task.
 
 ## Code style
 - Python 3.11, type hints, small pure functions, no global mutable state in the engine. TypeScript `strict`.
