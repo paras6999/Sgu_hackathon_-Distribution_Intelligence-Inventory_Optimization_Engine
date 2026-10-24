@@ -18,7 +18,7 @@ flowchart LR
 
 | Part | Language | Why | Ships as |
 |---|---|---|---|
-| `engine/dia-engine` | **Python 3.11** (the only Python) | statsforecast, scipy, PuLP + HiGHS, pandas | `dia-engine` binary (PyInstaller `--onedir`) |
+| `engine/dia-engine` | **Python 3.11** (the only Python) | scipy, PuLP + HiGHS, pandas | `dia-engine` binary (PyInstaller `--onedir`) |
 | `apps/dia-backend` | **TypeScript on Bun** | All public APIs, app state, joins web and engine | `dia-server` binary (`bun build --compile`, web embedded) |
 | `apps/dia-web` | **TypeScript, React** | Planner, distributor, dispatch and results screens | static files inside `dia-server` |
 | `packages/dia-types` | **JSON Schema** | One contract for both languages | generated TS + pydantic |
@@ -69,7 +69,7 @@ flowchart LR
 | Request validation | Ajv against the bundled JSON Schema | — |
 | Engine HTTP | FastAPI + uvicorn (internal only) | `bun run engine` |
 | Optimiser | PuLP + HiGHS (CBC fallback) | — |
-| Forecast | statsforecast, scipy | — |
+| Forecast | NumPy ETS (simple vs damped trend, AIC) + TSB, scipy distributions | — |
 | Web | Vite + React 18 | `bun run --cwd apps/dia-web dev` |
 
 Changes from the earlier plan, made while building: plain `bun:sqlite` with SQL migrations instead of Drizzle (fewer moving parts, embeds cleanly in the binary), and Ajv + a route table for OpenAPI instead of `@hono/zod-openapi` (validates against the same JSON Schema the engine uses, no zod copy).
