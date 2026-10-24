@@ -23,8 +23,9 @@ from scipy.stats import norm
 
 from dia_engine.baselines.common import Draft, apply_limits, build_plan, mrsl_ok, positions, take_lots
 from dia_engine.config import get_config
+from dia_engine.optimize import freight
 from dia_engine.forecast.dist import window
-from dia_types import ForecastBundle, Plan, Scenario, Snapshot, TempClass, TruckClass
+from dia_types import ForecastBundle, Plan, Scenario, Snapshot, TempClass
 
 TOP_UP_THRESHOLD = 0.70
 
@@ -91,7 +92,7 @@ class BaselineB:
                           use_ptl_rule=lambda load_fraction, ftl, ptl: load_fraction < TOP_UP_THRESHOLD)
 
     def _top_up(self, drafts, snapshot, pairs, skus, usable, remaining, temp_class, review) -> list[Draft]:
-        cap = get_config().costs.ftl[(TruckClass.REEF17 if temp_class is TempClass.CHILLED else TruckClass.AMB32).value]
+        cap = freight.capacity(freight.truck_class_for(temp_class))
         lanes: dict[tuple[str, str], list[Draft]] = defaultdict(list)
         for d in drafts:
             lanes[(d.lot.depot_id, d.to_id)].append(d)
