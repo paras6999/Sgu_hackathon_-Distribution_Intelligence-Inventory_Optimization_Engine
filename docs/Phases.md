@@ -2,6 +2,11 @@
 
 One person with Claude Code. Order follows dependencies; each step ends with a check, and the next step starts only when it is green. Hours are rough estimates for planning the 24-hour clock.
 
+## Status (updated at the end of the build)
+- **Phases 1-3 done:** plan, simulate, KPIs, experiment, inbox re-solve, Results / Frontier & Ablation / Assumptions pages, network map.
+- **Evaluation actually run:** 10 seeds x 2 opening states; ablations (a) expiry, (b) truck steps, (e) uniform service level and frontier points on the first 5 seeds. Dropped: ablations (c), (f); release binaries; AI narration (off).
+- **Phase 4:** `docs/Demo.md` has the 7-minute script and the question-and-answer sheet; deck and rehearsals are left to do.
+
 ## Done
 - Monorepo, shared types and codegen, fixtures, CI, backend (17 endpoints, SQLite, fake/source/binary engine modes), web shell (Plan, Inbox, Dispatch on fake data).
 - Generator v0 (realistic, seeded), weather fallback.
