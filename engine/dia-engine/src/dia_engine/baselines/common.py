@@ -81,9 +81,15 @@ def festival_premium(ship_date: date) -> float:
     return p.factor if ship_date.month in p.months else 1.0
 
 
+def cheaper_mode(load_fraction: float, ftl_cost: float, ptl_cost: float) -> bool:
+    """Default lane rule (Baseline A): PTL when it costs less than the FTL trips the load needs."""
+    return ptl_cost < ftl_cost
+
+
 def build_plan(drafts: list[Draft], scenario: Scenario, as_of: date, temp_class: TempClass, policy: str,
-               plan_id: str, seconds: float) -> Plan:
-    """Group drafts by lane, choose FTL vs PTL by cost, pack whole cases into trucks, allocate freight."""
+               plan_id: str, seconds: float, use_ptl_rule=cheaper_mode) -> Plan:
+    """Group drafts by lane, choose FTL vs PTL (ambient only) with use_ptl_rule(load_fraction, ftl_cost,
+    ptl_cost), pack whole cases into trucks, allocate freight. load_fraction = max(kg, m3 share) of one truck."""
     cfg = get_config()
     lanes = {(l.from_id, l.to_id): l for l in scenario.lanes}
     truck_class = TruckClass.REEF17 if temp_class is TempClass.CHILLED else TruckClass.AMB32
@@ -107,7 +113,8 @@ def build_plan(drafts: list[Draft], scenario: Scenario, as_of: date, temp_class:
         trip = lane.ftl_cost_inr[truck_class.value] * premium
         ftl_cost = math.ceil(max(kg / cap.kg, m3 / cap.m3)) * trip
         ptl_cost = max(lane.ptl_min_charge_inr, lane.ptl_rate_inr_per_kg * max(kg, kg_per_m3 * m3))
-        use_ptl = temp_class is TempClass.AMBIENT and ptl_cost < ftl_cost
+        load_fraction = max(kg / cap.kg, m3 / cap.m3)
+        use_ptl = temp_class is TempClass.AMBIENT and use_ptl_rule(load_fraction, ftl_cost, ptl_cost)
 
         # loads: list of (truck_id, [(draft, cases)])
         loads: list[tuple[str, list[tuple[Draft, int]]]] = []
