@@ -92,6 +92,7 @@ export function createApp({ repo, engine }: Deps): Hono {
     return c.json({ status: "ok", engine_mode: engine.mode, engine: engineStatus, fake_backend: engine.mode === "fake" });
   });
   app.get("/v1/scenarios", async (c) => c.json(await engine.scenarios()));
+  app.get("/v1/scenarios/:id", async (c) => c.json(await engine.scenario(c.req.param("id"))));
   app.get("/v1/assumptions", async (c) => c.json(await engine.assumptions()));
   app.get("/openapi.json", (c) => c.json(openapiDocument()));
   app.get("/docs", (c) => c.html(DOCS_HTML));

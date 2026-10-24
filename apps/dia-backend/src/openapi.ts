@@ -6,6 +6,7 @@ type Route = { method: "get" | "post"; path: string; summary: string; body?: str
 export const ROUTES: Route[] = [
   { method: "get", path: "/v1/health", summary: "Liveness and engine mode" },
   { method: "get", path: "/v1/scenarios", summary: "Scenario ids" },
+  { method: "get", path: "/v1/scenarios/{id}", summary: "Nodes (with coordinates), SKUs and lanes", response: "Scenario" },
   { method: "get", path: "/v1/scenarios/{id}/snapshot", summary: "Stock state (query: as_of, opening_state)", response: "Snapshot" },
   { method: "post", path: "/v1/forecasts", summary: "Weekly forecast + backtest metrics", body: "ForecastRequest", response: "ForecastResponse" },
   { method: "post", path: "/v1/plans", summary: "New plan, or new version with base_plan_id", body: "PlanRequest", response: "Plan" },

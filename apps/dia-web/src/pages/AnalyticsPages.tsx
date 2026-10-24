@@ -6,7 +6,7 @@
 import type { AblationRow, AssumptionRow, ExperimentResults, FrontierPoint, KpiSummary, OpeningState, Plan } from "@dia/types";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
-import { ErrorText, Kpi, Placeholder, useLoad } from "../components/ui";
+import { ErrorText, ReasonChips, useLoad } from "../components/ui";
 
 // ---------------------------------------------------------------------------------------------- shared
 
@@ -384,37 +384,95 @@ export function FrontierPage() {
 
 // ---------------------------------------------------------------------------------------------- Map, Assumptions
 
+const RC_COLOUR: Record<string, string> = {
+  CHEAPEST_SOURCE: "var(--rc-cheapest-source)", EXPIRY_PUSH: "var(--rc-expiry-push)", CLIFF_RESCUE: "var(--rc-cliff-rescue)",
+  FTL_TOPUP: "var(--rc-ftl-topup)", FESTIVAL_UPLIFT: "var(--rc-festival-uplift)", WEATHER_SHIFT: "var(--rc-weather-shift)",
+};
+
+/** Network map (FR-14): nodes at their real coordinates, arcs sized by cases and coloured by the dominant reason code. No basemap tiles, so it works offline. */
 export function MapPage({ plan }: { plan: Plan | null }) {
+  const scenario = useLoad(() => (plan ? api.scenario(plan.scenario_id) : Promise.resolve(null)), [plan?.scenario_id]);
+  const [selected, setSelected] = useState<string | null>(null);
+  const nodes = scenario.data?.nodes ?? [];
+  const W = 600, H = 600, K = 20, LON0 = 68, LAT1 = 36, COS = 0.93;
+  const pos = (n: { lat: number; lon: number }) => ({ x: 20 + (n.lon - LON0) * COS * K, y: 20 + (LAT1 - n.lat) * K });
   const lanes = useMemo(() => {
-    const m = new Map<string, { from: string; to: string; cases: number }>();
+    const m = new Map<string, { from: string; to: string; cases: number; byCode: Map<string, number> }>();
     for (const l of plan?.lines ?? []) {
       const k = `${l.from_id}>${l.to_id}`;
-      const cur = m.get(k) ?? { from: l.from_id, to: l.to_id, cases: 0 };
+      const cur = m.get(k) ?? { from: l.from_id, to: l.to_id, cases: 0, byCode: new Map<string, number>() };
       cur.cases += l.cases;
+      const code = l.reasons?.[0]?.code ?? "";
+      cur.byCode.set(code, (cur.byCode.get(code) ?? 0) + l.cases);
       m.set(k, cur);
     }
     return [...m.values()].sort((a, b) => b.cases - a.cases);
   }, [plan]);
+  const byId = new Map(nodes.map((n) => [n.node_id, n]));
+  const max = Math.max(...lanes.map((l) => l.cases), 1);
+  const dominant = (l: (typeof lanes)[number]) => [...l.byCode.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "";
+  const shownLines = (plan?.lines ?? []).filter((l) => !selected || `${l.from_id}>${l.to_id}` === selected);
   return (
     <div>
-      <h2>Network lanes</h2>
+      <h2>Network map</h2>
       {!plan ? <p>Generate a plan first (Plan tab).</p> : (
-        <div className="table-wrap card">
-          <table>
-            <thead><tr><th>From</th><th>To</th><th>Cases</th><th>Share</th></tr></thead>
-            <tbody>
-              {lanes.map((l) => {
-                const total = lanes.reduce((s, x) => s + x.cases, 0);
-                return (
-                  <tr key={l.from + l.to}>
-                    <td>{l.from}</td><td>{l.to}</td><td>{l.cases.toLocaleString("en-IN")}</td>
-                    <td><div style={{ background: "var(--primary)", height: 8, width: `${(100 * l.cases) / total * 6}px`, maxWidth: 240, borderRadius: 4 }} /></td>
+        <>
+          <ErrorText error={scenario.error} />
+          <p style={{ color: "var(--neutral)" }}>
+            Squares are depots, circles are distributors. Arc width is cases shipped; colour is the main reason code on the lane. Click an arc to filter the lines below.
+          </p>
+          <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Plan lanes on a map of India" style={{ width: "100%", maxWidth: 640, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8 }}>
+            {lanes.map((l) => {
+              const a = byId.get(l.from), b = byId.get(l.to);
+              if (!a || !b) return null;
+              const p = pos(a), q = pos(b);
+              const cx = (p.x + q.x) / 2 + (q.y - p.y) * 0.12, cy = (p.y + q.y) / 2 - (q.x - p.x) * 0.12;
+              const key = `${l.from}>${l.to}`;
+              return (
+                <path key={key} d={`M${p.x},${p.y} Q${cx},${cy} ${q.x},${q.y}`} fill="none" strokeLinecap="round"
+                  stroke={RC_COLOUR[dominant(l)] ?? "var(--rc-limited)"} strokeWidth={1 + 12 * Math.sqrt(l.cases / max)}
+                  opacity={selected && selected !== key ? 0.12 : 0.65} style={{ cursor: "pointer" }}
+                  onClick={() => setSelected(selected === key ? null : key)}>
+                  <title>{`${a.city} → ${b.city}: ${l.cases.toLocaleString("en-IN")} cases, mainly ${dominant(l) || "n/a"}`}</title>
+                </path>
+              );
+            })}
+            {nodes.map((n) => {
+              const p = pos(n);
+              return n.type === "depot" ? (
+                <g key={n.node_id}>
+                  <rect x={p.x - 7} y={p.y - 7} width={14} height={14} fill="var(--primary)" stroke="var(--surface)" strokeWidth="2" />
+                  <text x={p.x + 10} y={p.y + 4} fontSize="11" fontWeight="600" fill="var(--text)">{n.city}</text>
+                </g>
+              ) : (
+                <g key={n.node_id}>
+                  <circle cx={p.x} cy={p.y} r={4.5} fill="var(--neutral)" stroke="var(--surface)" strokeWidth="1.5" />
+                  <text x={p.x + 7} y={p.y + 3} fontSize="9" fill="var(--text)">{n.city}</text>
+                </g>
+              );
+            })}
+          </svg>
+          <div className="row" style={{ gap: 12, margin: "6px 0" }}>
+            {Object.entries(RC_COLOUR).map(([code, colour]) => (
+              <span key={code} style={{ fontSize: 12 }}><span style={{ display: "inline-block", width: 10, height: 10, background: colour, marginRight: 4 }} />{code}</span>
+            ))}
+            {selected && <button className="secondary" onClick={() => setSelected(null)}>Show all lanes</button>}
+          </div>
+          <div className="table-wrap card">
+            <table>
+              <thead><tr><th>SKU</th><th>From → To</th><th>Cases</th><th>Reasons</th></tr></thead>
+              <tbody>
+                {shownLines.slice(0, 80).map((l) => (
+                  <tr key={l.line_id}>
+                    <td>{l.sku_name}</td><td>{l.from_id} → {l.to_id}</td><td>{l.cases.toLocaleString("en-IN")}</td>
+                    <td><ReasonChips reasons={l.reasons} /></td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+            {shownLines.length > 80 && <p style={{ color: "var(--neutral)" }}>Showing 80 of {shownLines.length} lines.</p>}
+          </div>
+        </>
       )}
     </div>
   );

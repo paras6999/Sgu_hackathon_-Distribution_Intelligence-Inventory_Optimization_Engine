@@ -2,7 +2,7 @@
 import type {
   AssumptionRow, DispatchResponse, ExperimentAccepted, ExperimentInfo, ExperimentRequest, ExperimentResults,
   ForecastRequest, ForecastResponse, Message, Plan, PlanEvent, PlanRequest, Proposal, PublishResponse,
-  ResponseRequest, ResponseResult, Snapshot,
+  ResponseRequest, ResponseResult, Scenario, Snapshot,
 } from "@dia/types";
 
 export class ApiError extends Error {
@@ -34,6 +34,7 @@ export const MAIN_EXPERIMENT: ExperimentRequest = {
 export const api = {
   health: () => call<Health>("GET", "/v1/health"),
   scenarios: () => call<string[]>("GET", "/v1/scenarios"),
+  scenario: (id: string) => call<Scenario>("GET", `/v1/scenarios/${id}`),
   snapshot: (id: string, asOf: string) => call<Snapshot>("GET", `/v1/scenarios/${id}/snapshot?as_of=${asOf}`),
   forecasts: (req: ForecastRequest) => call<ForecastResponse>("POST", "/v1/forecasts", req),
   createPlan: (req: PlanRequest) => call<Plan>("POST", "/v1/plans", req),
