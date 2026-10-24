@@ -1,4 +1,4 @@
-# M1 · Kiro lead — optimiser, simulation, engine service, builds and releases
+# M1 · Kiro lead — optimiser, simulation, engine service, builds and releases (@AmeyKuradeAK)
 
 Tool: **Kiro** (Opus 5.5 for the MILP and simulation, Sonnet 5.5 for routine edits). Kiro reads `.kiro/steering/*.md`, which point here.
 

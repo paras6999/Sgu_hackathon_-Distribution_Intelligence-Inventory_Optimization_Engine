@@ -1,4 +1,4 @@
-# M4 · Data — realistic synthetic datasets
+# M4 · Data — realistic synthetic datasets (@Shanurrr)
 
 Tool: any (the agent should read `AGENTS.md` first). Work happens when needed; nobody is blocked on you, because **generator v0 already produces all scenario tables**. Your job is to make the data more believable and better sourced.
 

@@ -1,25 +1,33 @@
 # Who reviews what (docs/Team.md section 2). GitHub requests these reviewers automatically.
-# TODO(M2): replace @M1_GITHUB / @M3_GITHUB / @M4_GITHUB with real usernames, then uncomment those lines.
-# Until then every path routes to the repo owner.
+# The LAST matching pattern wins. Every path lists two people, because GitHub never lets an
+# author approve their own PR: whoever opens it, another listed owner can approve.
+#
+# M1 Kiro lead ........ @AmeyKuradeAK
+# M2 Claude Code lead . @paras6999
+# M3 Antigravity ...... @vinitchougale05
+# M4 data ............. @Shanurrr
 
-*                                              @paras6999
+# Default: the two leads (M2 areas, docs, CI, root config)
+*                                              @paras6999 @AmeyKuradeAK
 
-# M1 (Kiro): optimiser, simulation, engine service, builds and releases, AI
-# /engine/dia-engine/src/dia_engine/optimize/  @M1_GITHUB
-# /engine/dia-engine/src/dia_engine/sim/       @M1_GITHUB
-# /engine/dia-engine/src/dia_engine/service/   @M1_GITHUB
-# /engine/dia-engine/src/dia_engine/cli.py     @M1_GITHUB
-# /engine/dia-engine/build/                    @M1_GITHUB
-# /apps/dia-backend/src/ai/                    @M1_GITHUB
-# /.github/workflows/release.yml               @M1_GITHUB
-# /tools/release/                              @M1_GITHUB
+# M1: optimiser, simulation, engine service, builds and releases, AI
+/engine/dia-engine/src/dia_engine/optimize/    @AmeyKuradeAK @paras6999
+/engine/dia-engine/src/dia_engine/sim/         @AmeyKuradeAK @paras6999
+/engine/dia-engine/src/dia_engine/service/     @AmeyKuradeAK @paras6999
+/engine/dia-engine/src/dia_engine/cli.py       @AmeyKuradeAK @paras6999
+/engine/dia-engine/build/                      @AmeyKuradeAK @paras6999
+/apps/dia-backend/src/ai/                      @AmeyKuradeAK @paras6999
+/.github/workflows/release.yml                 @AmeyKuradeAK @paras6999
+/tools/release/                                @AmeyKuradeAK @paras6999
 
-# Contracts: both leads must approve
-# /packages/dia-types/schema/                  @paras6999 @M1_GITHUB
+# Contracts: either lead can approve; contract PRs also need the other lead's sign-off (docs/Team.md section 5)
+/packages/dia-types/schema/                    @paras6999 @AmeyKuradeAK
 
-# M3 (Antigravity): analytics pages
-# /apps/dia-web/src/pages/AnalyticsPages.tsx   @M3_GITHUB @paras6999
+# M3: analytics pages
+/apps/dia-web/src/pages/AnalyticsPages.tsx     @vinitchougale05 @paras6999
+/apps/dia-web/src/pages/analytics/             @vinitchougale05 @paras6999
 
-# M4 (data): synthetic data and its config values
-# /engine/dia-engine/src/dia_engine/data/      @M4_GITHUB @paras6999
-# /packages/dia-config/                        @M4_GITHUB @paras6999
+# M4: synthetic data and its config values
+/engine/dia-engine/src/dia_engine/data/        @Shanurrr @paras6999
+/engine/dia-engine/tests/test_realism.py       @Shanurrr @paras6999
+/packages/dia-config/                          @Shanurrr @paras6999

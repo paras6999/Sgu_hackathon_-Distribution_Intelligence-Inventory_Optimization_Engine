@@ -11,10 +11,10 @@ Three things make that work:
 
 | ID | Name | GitHub | AI tool | Availability | Role | Guide |
 |---|---|---|---|---|---|---|
-| **M1** | _____ | @_____ | Kiro (Opus 5.5 / Sonnet 5.5) | Full-time | **Lead for complex work + build/deploy**: optimiser stack, simulation, engine service, both binaries, release CI, Vertex AI | [team/M1-kiro-lead.md](team/M1-kiro-lead.md) |
+| **M1** | _____ | @AmeyKuradeAK | Kiro (Opus 5.5 / Sonnet 5.5) | Full-time | **Lead for complex work + build/deploy**: optimiser stack, simulation, engine service, both binaries, release CI, Vertex AI | [team/M1-kiro-lead.md](team/M1-kiro-lead.md) |
 | **M2** | _____ | @paras6999 | Claude Code | Full-time | **Foundation + integration**: types, backend, core web, forecast, baselines, data backup, docs, reviews | [team/M2-claude-lead.md](team/M2-claude-lead.md) |
-| **M3** | _____ | @_____ | Antigravity (Argon / Claude) | Low | Analytics pages, map, assumptions page, deck. **Not on the critical path** | [team/M3-web-analytics.md](team/M3-web-analytics.md) |
-| **M4** | _____ | @_____ | any | On demand | Realistic synthetic data. **Not on the critical path** (generator v0 already works) | [team/M4-data.md](team/M4-data.md) |
+| **M3** | _____ | @vinitchougale05 | Antigravity (Argon / Claude) | Low | Analytics pages, map, assumptions page, deck. **Not on the critical path** | [team/M3-web-analytics.md](team/M3-web-analytics.md) |
+| **M4** | _____ | @Shanurrr | any | On demand | Realistic synthetic data. **Not on the critical path** (generator v0 already works) | [team/M4-data.md](team/M4-data.md) |
 
 Escalation: complex or blocked work goes to **M1**. Integration, contract questions and anything M3/M4 can't finish go to **M2**.
 
@@ -35,7 +35,7 @@ Escalation: complex or blocked work goes to **M1**. Integration, contract questi
 | `engine/dia-engine/src/dia_engine/data/`, `packages/dia-config/*.yaml` values | M4 (backup M2) | M2 |
 | `docs/`, `.github/ci.yml`, `CODEOWNERS`, root config | M2 | M1 |
 
-Never edit a file you don't own. Ask the owner, or open a PR they review. `.github/CODEOWNERS` enforces reviewers once usernames are filled in.
+Never edit a file you don't own. Ask the owner, or open a PR they review. `.github/CODEOWNERS` requests the right reviewers automatically; every path lists two owners, because GitHub never lets you approve your own PR.
 
 ## 3. Hand-offs
 

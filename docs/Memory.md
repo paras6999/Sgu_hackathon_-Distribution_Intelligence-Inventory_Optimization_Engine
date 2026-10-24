@@ -23,7 +23,7 @@ Read this first in any new chat or AI tool. Each PR adds 2–3 lines under its m
 - _next: `m1/build-release` (prove both binaries by hour 3), then freight + validator_
 
 ## M2 · Claude Code lead
-- Rescaffold PR opened. _next: turn on branch protection, fill CODEOWNERS usernames, `dist.py`, forecast_
+- Rescaffold PR opened; CODEOWNERS filled with all four usernames. _next: branch protection after first CI run, `dist.py`, forecast_
 
 ## M3 · Antigravity
 - _next: Results page on fixtures_
@@ -34,4 +34,3 @@ Read this first in any new chat or AI tool. Each PR adds 2–3 lines under its m
 ## Open issues
 - **Chilled freight looks too expensive:** small reefer loads (~340 kg per 2-day cycle) against a ₹10,000 minimum trip make chilled freight ~25–30% of chilled value. Fix with M1/M4: more dairy volume, smaller vehicles, or multi-drop runs (FR-17).
 - `climate.yaml` values are approximate normals, labelled as such; replace by fetching real weather.
-- `CODEOWNERS` still routes everything to @paras6999 until the other usernames are filled in.

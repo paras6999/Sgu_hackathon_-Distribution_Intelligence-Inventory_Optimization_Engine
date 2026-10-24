@@ -1,4 +1,4 @@
-# M3 · Antigravity — analytics pages, map, assumptions, deck
+# M3 · Antigravity — analytics pages, map, assumptions, deck (@vinitchougale05)
 
 Tool: **Antigravity** (Argon or a Claude model). Add a workspace rule that tells the agent to read `AGENTS.md` first (check Antigravity's settings for where workspace rules live).
 
