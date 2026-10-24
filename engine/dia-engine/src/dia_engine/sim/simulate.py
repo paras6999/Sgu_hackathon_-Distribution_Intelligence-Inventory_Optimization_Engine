@@ -21,7 +21,7 @@ from dia_engine.forecast.dist import window
 from dia_engine.optimize import freight, validate
 from dia_types import (
     DistStock, EngineSettings, ExperimentRequest, ForecastMode, InTransit, Lot, NodeType, OpeningState, Snapshot,
-    TempClass, TruckClass,
+    PolicyName, TempClass, TruckClass, Weights,
 )
 from dia_engine.optimize.pipeline import EnginePolicy
 from dia_engine.sim.policy import Policy
@@ -387,8 +387,125 @@ def _enforce_credit(plan, snap: Snapshot, skus: dict, cut: dict):
     return plan.model_copy(update={"lines": lines, "trucks": trucks})
 
 
+SIM_TIME_LIMIT_S = 1.0      # per-solve cap for the engine inside experiments (the API default is 30 s)
+SUBSET_SEEDS = 10           # ablations and non-default frontier points (FR-09)
+KEEP_LOG_SEEDS = 2          # sim_log / sim_trips are stored for the first seeds only; KPIs for every run
+FRONTIER = {                # (parameter, values) per policy (FR-11); the default value is added from the headline run
+    "engine": ("pi_mult", [0.25, 0.5, 2.0, 4.0], 1.0),
+    "baseline_b": ("service_level", [0.80, 0.90, 0.98, 0.995], 0.95),
+    "baseline_a": ("cover_days", [7, 10, 21], 14),
+}
+FRONTIER_KPIS = ("fill_rate", "cost_to_serve_inr")
+
+
+def _frontier_policy(name: str, value: float, seed: int) -> Policy:
+    if name == "engine":
+        return EnginePolicy("engine", EngineSettings(weights=Weights(pi_mult=value), time_limit_s=SIM_TIME_LIMIT_S))
+    if name == "baseline_b":
+        return BaselineB(service_level=value, seed=seed)
+    return BaselineA(cover_days=int(value))
+
+
+def _policy_for(name: str, seed: int) -> Policy:
+    if name in POLICY_SETTINGS:
+        return EnginePolicy(name, POLICY_SETTINGS[name].model_copy(update={"time_limit_s": SIM_TIME_LIMIT_S}))
+    return make_policy(name, seed)
+
+
+def _run_seed(task: tuple) -> tuple[int, list, list, list]:
+    """One seed: every opening state and policy in this process, so the rolling forecasts are computed once.
+    Returns (seed, kpi rows, sim_log frames, sim_trips frames)."""
+    from dia_engine.sim import kpi
+    seed, headline, extra, states = task
+    sid = _ensure_scenario(seed)
+    sc = load_scenario(sid)
+    rows: list = []
+    logs: list = []
+    trips: list = []
+
+    def keep(df: pd.DataFrame, tag: str | None, names=None) -> None:
+        if names is not None:
+            df = df[df["kpi"].isin(names)]
+        if tag:
+            df = df.assign(kpi=df["kpi"] + tag)
+        rows.append(df)
+
+    for state in states:
+        for name in headline:
+            pol = _policy_for(name, seed)
+            log, trip = run_policy(sid, pol, state, seed)
+            k = kpi.compute_kpis(log, trip, sc)
+            keep(k, None)
+            if name in FRONTIER and seed <= SUBSET_SEEDS:
+                param, _, default = FRONTIER[name]
+                keep(k, f"@{param}={default}", FRONTIER_KPIS)
+            if seed <= KEEP_LOG_SEEDS:
+                logs.append(log)
+                trips.append(trip)
+        if seed > SUBSET_SEEDS:
+            continue
+        for name in extra:                       # ablations
+            log, trip = run_policy(sid, _policy_for(name, seed), state, seed)
+            keep(kpi.compute_kpis(log, trip, sc), None)
+        for name in headline:                    # non-default frontier points
+            if name not in FRONTIER:
+                continue
+            param, values, _ = FRONTIER[name]
+            for v in values:
+                log, trip = run_policy(sid, _frontier_policy(name, v, seed), state, seed)
+                keep(kpi.compute_kpis(log, trip, sc).assign(policy=name), f"@{param}={v}", FRONTIER_KPIS)
+    return seed, rows, logs, trips
+
+
+def _ensure_scenario(seed: int) -> str:
+    from dia_engine.data.generate import generate, scenario_id_for
+    sid = scenario_id_for(seed)
+    if not store.table_exists("nodes", sid):
+        generate(get_config(), seed)
+    return sid
+
+
 def run_experiment(experiment_id: str, req: ExperimentRequest,
                    progress: Callable[[float], None] | None = None) -> None:
     """Run all seeds x opening states x policies in parallel; write sim_log, sim_trips and kpi_results
-    via dia_engine.store, then store.save_results(kpi.summarise(...))."""
-    raise NotImplementedError("M1: FR-09")
+    via dia_engine.store, then store.save_results(kpi.summarise(...)).
+
+    Headline policies (engine, baselines) run on every seed; ablations and non-default frontier points on the
+    first SUBSET_SEEDS. One process per seed. Seed k uses scenario seedNN (generated if missing) and delay
+    draws keyed on k."""
+    import os
+    from concurrent.futures import ProcessPoolExecutor, as_completed
+    from dia_engine.sim import kpi
+
+    os.environ.setdefault("OMP_NUM_THREADS", "1")          # one solver thread per process (determinism, no oversubscription)
+    os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+    names = [PolicyName(p).value for p in req.policies]
+    headline = [n for n in names if not n.startswith("abl_")]
+    extra = [n for n in names if n.startswith("abl_")]
+    states = [OpeningState(s) for s in req.opening_states]
+    tasks = [(seed, headline, extra, states) for seed in range(1, req.seeds + 1)]
+    workers = max(1, min(len(tasks), (os.cpu_count() or 2) - 1, 8))
+    done: list[tuple] = []
+    if progress:
+        progress(0.0)
+    if workers == 1:
+        for t in tasks:
+            done.append(_run_seed(t))
+            if progress:
+                progress(100.0 * len(done) / len(tasks))
+    else:
+        with ProcessPoolExecutor(max_workers=workers) as pool:
+            for fut in as_completed([pool.submit(_run_seed, t) for t in tasks]):
+                done.append(fut.result())
+                if progress:
+                    progress(100.0 * len(done) / len(tasks))
+    done.sort(key=lambda r: r[0])
+    frames = [df for _, rows, _, _ in done for df in rows]
+    results = pd.concat(frames, ignore_index=True)[["policy", "opening_state", "seed", "kpi", "value"]]
+    store.write_table("kpi_results", results, experiment_id)
+    logs = [df for _, _, ls, _ in done for df in ls]
+    trips = [df for _, _, _, ts in done for df in ts]
+    if logs:
+        store.write_table("sim_log", pd.concat(logs, ignore_index=True), experiment_id)
+        store.write_table("sim_trips", pd.concat(trips, ignore_index=True), experiment_id)
+    store.save_results(kpi.summarise(experiment_id, results))
