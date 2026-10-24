@@ -2,7 +2,7 @@
 
 Items are written to be turned into Kiro specs (`docs/Kiro.md`). **OPUS** = Opus 5.5 must write `design.md` first and a human reviews it; Haiku implements only after that. **HAIKU** = small and concrete enough to implement directly from `tasks.md`. Size: S under 1 hour, M about half a day, L more. "Compute" = needs an experiment run (about 1 hour on 12 cores).
 
-Facts and file locations are in `docs/Handoff.md`. Keep `bun run test` green after every item.
+Run `docs/Kiro-first-prompt.md` first; where `docs/Ground-truth.md` disagrees with this file, it wins. Facts and file locations are in `docs/Handoff.md`. Keep `bun run test` green after every item.
 
 | ID | Item | Who | Size | Compute |
 |---|---|---|---|---|

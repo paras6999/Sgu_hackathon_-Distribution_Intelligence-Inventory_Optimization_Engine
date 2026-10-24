@@ -12,6 +12,7 @@ apps/dia-web (React) ──/v1──▶ apps/dia-backend (Bun + Hono, SQLite) �
 |---|---|
 | [docs/Handoff.md](docs/Handoff.md) | **Start here when taking over**: state, run steps, architecture, gaps, gotchas |
 | [docs/Kiro.md](docs/Kiro.md) | Working in Kiro: Opus 5.5 plans, Haiku 5.5 implements; prompts and templates |
+| [docs/Kiro-first-prompt.md](docs/Kiro-first-prompt.md) | Run 0: the first prompt for Opus, gathers evidence into `docs/Ground-truth.md` |
 | [docs/Backlog.md](docs/Backlog.md) | What to do next (B01 to B19), sized for small tasks |
 | [AGENTS.md](AGENTS.md) | Rules and commands for AI agents |
 | [docs/Team.md](docs/Team.md) | Ownership, git workflow, GitHub settings |

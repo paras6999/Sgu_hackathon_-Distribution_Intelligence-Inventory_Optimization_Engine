@@ -65,7 +65,7 @@ apps/dia-web (React + Vite, :3000) ──/v1──▶ apps/dia-backend (Bun + Ho
 - **Python only in `engine/dia-engine`**; TypeScript on Bun everywhere else.
 - **The engine owns analytical data (parquet in `data/engine/`); the backend owns app state (SQLite in `data/backend/`).** Only `store.py` touches parquet; only `db/repo.ts` touches SQLite.
 - **Quantities come only from the optimiser or a baseline, never from an LLM.** The AI layer explains numbers; every figure it quotes is checked against the data (`apps/dia-backend/src/ai/analyse.ts`).
-- Everything that plans (the API and the simulator) goes through `optimize/pipeline.make_plan`, which runs forecast → targets → optimise → explain → **validate**. Never return an unvalidated plan.
+- The engine's plans (the API and the simulator's engine runs) go through `optimize/pipeline.make_plan`, which runs forecast → targets → optimise → explain → **validate**. The baselines have their own `plan()`; the simulator validates their plans directly with `validate.validate_plan` (a small exception to the rule that only `make_plan` calls the validator). Never return or ship an unvalidated plan.
 
 ### Where things live
 

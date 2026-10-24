@@ -22,12 +22,14 @@ Model ids (Anthropic): Opus 5.5 = `claude-opus-5-5`, Haiku 5.5 = `claude-haiku-5
 
 Opus-only items (it must write `design.md` and a human reviews it before any Haiku task starts): anything touching the optimiser model (`optimize/optimize.py`), the validator, the simulator semantics (`sim/simulate.py`), the forecaster, schema contracts, or the experiment protocol. Backlog marks these **OPUS**.
 
-## 3. First run (Opus 5.5)
+## 3. First runs (Opus 5.5)
 
-Open a new Kiro spec session with Opus 5.5 and paste this:
+**Run 0, gather evidence:** use the prompt in `docs/Kiro-first-prompt.md`. It tests the handoff's claims against the repo and writes `docs/Ground-truth.md`. Do this before the spec run.
+
+**Run 1, specs:** open a new Kiro spec session with Opus 5.5 and paste this:
 
 ```
-Read, in this order: AGENTS.md, docs/Handoff.md, docs/Backlog.md, docs/Rules.md, and the .kiro/steering files.
+Read, in this order: AGENTS.md, docs/Ground-truth.md (where it disagrees with Handoff.md or Backlog.md, it wins), docs/Handoff.md, docs/Backlog.md, docs/Rules.md, and the .kiro/steering files.
 Do not change code in this run. Create one Kiro spec per backlog item B01 to B14, in the order of the backlog (B15 to B19 are future scope: do not spec them),
 under .kiro/specs/<id>-<short-name>/ with requirements.md (EARS style, each requirement testable),
 design.md (files to touch, interfaces, risks, what you deliberately did not decide) and tasks.md.
