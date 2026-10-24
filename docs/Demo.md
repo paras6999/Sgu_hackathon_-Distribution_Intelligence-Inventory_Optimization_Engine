@@ -49,3 +49,9 @@ Open http://localhost:3000. Pre-warm once: Plan tab → Generate plan (first cal
 - **What did you tune on the evaluation seeds?** One setting: the stockout penalty (1.2 → 2.4 × margin), chosen from the first run's frontier on seeds 1–5, which are also in the evaluation. It is disclosed in the Assumptions tab.
 - **What is not built?** Real AI narration, a basemap on the network map, live data connectors, carbon pricing in the UI (the optimiser accepts it), multi-drop routes, and ablations (c) no-credit and (f) home-depot.
 - **How is the result protected from a bug?** Every plan is re-checked by an independent validator before it is shown; the simulator asserts stock conservation on every node, SKU and day (0 failures in about half a million rows per run).
+
+## Future scope
+- **Decisions:** multi-drop routes for chilled (FR-17), lateral rebalancing between distributors and depots (FR-18), and a two-stage, multi-period model for festival pre-build (FR-28; today the model is single-period and pre-builds by lengthening the cover window).
+- **Planner tools:** a what-if panel for a demand shock, a depot outage or diesel +10% (FR-19); planner line overrides with the ₹ cost shown (FR-22); a near-expiry list and per-SKU drill-down (FR-20, FR-21); a heat-season evaluation window (FR-23); a timed scale benchmark (FR-24).
+- **Real world:** a 4-week shadow pilot in one real region; messy distributor Excel ingestion and live DMS connectors (FR-26); WhatsApp Business messaging (FR-29); carbon price in the UI (FR-13; the optimiser already accepts it); optional AI narration (FR-25).
+- **Model work the results point to:** close the fill-rate gap (the lost-sales model assumes a shipment is available on day 0 although it arrives after the lead time) and revisit per-SKU service levels, which did not pay in the ablation.
