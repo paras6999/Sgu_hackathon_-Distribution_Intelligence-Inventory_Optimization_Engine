@@ -125,3 +125,74 @@ def test_stock_already_at_distributor_reduces_need():
                                                             expiry_date=date(2027, 1, 1))]})
     plan = BaselineA().plan(sc, full, fc, TempClass.AMBIENT)
     assert not [l for l in plan.lines if l.sku_id == "HC-02" and l.to_id == "D01-Pune"]
+
+
+# --------------------------------------------------------------------------- Baseline B
+
+from dia_engine.baselines.baseline_b import TOP_UP_THRESHOLD, BaselineB  # noqa: E402
+
+
+@pytest.mark.parametrize("temp_class", [TempClass.AMBIENT, TempClass.CHILLED])
+def test_baseline_b_obeys_limits(temp_class):
+    sc, snap, fc = _fx()
+    plan = BaselineB(seed=1).plan(sc, snap, fc, temp_class)
+    assert plan.policy.value == "baseline_b" and plan.lines
+    check_limits(plan, sc, snap)
+    if temp_class is TempClass.CHILLED:
+        assert all(t.mode is ShipMode.FTL and t.truck_class is TruckClass.REEF17 for t in plan.trucks)
+
+
+def test_baseline_b_serves_from_nearest_depot_with_stock():
+    sc, snap, fc = _fx()
+    plan = BaselineB().plan(sc, snap, fc, TempClass.AMBIENT)
+    km = {(l.from_id, l.to_id): l.km for l in sc.lanes}
+    assert all(km[(l.from_id, l.to_id)] == min(v for (w, j), v in km.items() if j == l.to_id
+                                               and any(x.depot_id == w and x.sku_id == l.sku_id for x in snap.depot_lots))
+               for l in plan.lines)
+
+
+def test_baseline_b_no_order_above_reorder_point():
+    sc, snap, fc = _fx()
+    full = snap.model_copy(update={"dist_stock": [DistStock(dist_id=j, sku_id=s, lot_id=None, qty_cases=10_000,
+                                                            expiry_date=date(2027, 1, 1))
+                                                  for j in ("D01-Pune", "D09-Bengaluru", "D10-Coimbatore")
+                                                  for s in ("SN-01", "HC-02")]})
+    assert BaselineB().plan(sc, full, fc, TempClass.AMBIENT).lines == []
+
+
+def test_baseline_b_fefo():
+    sc, snap, fc = _fx()
+    extra = Lot(lot_id="BHW-HC02-0050", sku_id="HC-02", depot_id="W1-Bhiwandi", qty_cases=500,
+                mfg_date=date(2025, 8, 1), expiry_date=date(2027, 3, 1))     # expires before BHW-HC02-0101
+    plan = BaselineB().plan(sc, snap.model_copy(update={"depot_lots": [*snap.depot_lots, extra]}), fc, TempClass.AMBIENT)
+    hc = [l for l in plan.lines if l.sku_id == "HC-02" and l.to_id == "D01-Pune"]
+    assert hc and hc[0].lot_id == "BHW-HC02-0050"
+
+
+def test_baseline_b_light_loads_go_ptl_heavy_loads_fill_trucks():
+    sc, snap, fc = _fx()
+    plan = BaselineB().plan(sc, snap, fc, TempClass.AMBIENT)
+    for t in plan.trucks:
+        if t.mode is ShipMode.PTL:
+            cap = get_config().costs.ftl["AMB32"]
+            assert max(t.kg / cap.kg, t.m3 / cap.m3) < TOP_UP_THRESHOLD
+    # Make Pune's order big enough to pass 70% of a truck: it must then be topped up close to full.
+    big = [f.model_copy(update={"mean": [m * 4 for m in f.mean], "var": [v * 4 for v in f.var]})
+           if f.dist_id == "D01-Pune" else f for f in fc.pairs]
+    lots = [l.model_copy(update={"qty_cases": 5000}) if l.depot_id == "W1-Bhiwandi" else l for l in snap.depot_lots]
+    roomy = snap.model_copy(update={"depot_lots": lots, "storage_free_m3": {**snap.storage_free_m3, "D01-Pune": 500},
+                                    "credit_available_inr": {**snap.credit_available_inr, "D01-Pune": 50_000_000}})
+    plan = BaselineB().plan(sc, roomy, fc.model_copy(update={"pairs": big}), TempClass.AMBIENT)
+    check_limits(plan, sc, roomy)
+    pune = [t for t in plan.trucks if t.to_id == "D01-Pune"]
+    assert pune and all(t.mode is ShipMode.FTL for t in pune)
+    assert max(max(t.kg_pct, t.m3_pct) for t in pune) >= 95
+
+
+def test_baseline_b_order_is_seeded():
+    sc, snap, fc = _fx()
+    scarce = [l.model_copy(update={"qty_cases": 150}) if l.lot_id == "HSR-SN01-0388" else l for l in snap.depot_lots]
+    snap = snap.model_copy(update={"depot_lots": scarce})
+    a = BaselineB(seed=3).plan(sc, snap, fc, TempClass.AMBIENT)
+    b = BaselineB(seed=3).plan(sc, snap, fc, TempClass.AMBIENT)
+    assert [(l.to_id, l.cases) for l in a.lines] == [(l.to_id, l.cases) for l in b.lines]
