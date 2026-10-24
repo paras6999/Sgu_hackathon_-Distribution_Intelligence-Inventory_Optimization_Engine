@@ -49,7 +49,7 @@ flowchart LR
 │   ├── dia-types/      schema/ fixtures/ dist/ ts/ py/ scripts/
 │   └── dia-config/     config.yaml  climate.yaml
 ├── tools/release/                     binary builds (next PR: m1/build-release)
-├── .github/            ci.yml  CODEOWNERS  PR template
+├── .github/            ci.yml  PR template
 ├── package.json  turbo.json  bun.lock      Bun workspaces
 └── pyproject.toml  uv.lock  .python-version uv workspace
 ```
