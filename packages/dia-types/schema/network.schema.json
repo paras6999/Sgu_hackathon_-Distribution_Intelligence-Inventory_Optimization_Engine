@@ -1,0 +1,384 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dia/network",
+  "title": "network",
+  "$defs": {
+    "Node": {
+      "additionalProperties": false,
+      "properties": {
+        "node_id": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/NodeType"
+        },
+        "city": {
+          "type": "string"
+        },
+        "region": {
+          "$ref": "#/$defs/Region"
+        },
+        "lat": {
+          "type": "number"
+        },
+        "lon": {
+          "type": "number"
+        },
+        "storage_m3": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "credit_limit_inr": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "mrsl_fraction": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "home_depot_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "node_id",
+        "type",
+        "city",
+        "region",
+        "lat",
+        "lon"
+      ],
+      "type": "object"
+    },
+    "Sku": {
+      "additionalProperties": false,
+      "properties": {
+        "sku_id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "temp_class": {
+          "$ref": "#/$defs/TempClass"
+        },
+        "shelf_life_days": {
+          "type": "integer"
+        },
+        "kg_per_case": {
+          "type": "number"
+        },
+        "m3_per_case": {
+          "type": "number"
+        },
+        "price_inr": {
+          "type": "number"
+        },
+        "landed_cost_inr": {
+          "type": "number"
+        },
+        "margin_inr": {
+          "type": "number"
+        },
+        "disposal_inr": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "sku_id",
+        "name",
+        "category",
+        "temp_class",
+        "shelf_life_days",
+        "kg_per_case",
+        "m3_per_case",
+        "price_inr",
+        "landed_cost_inr",
+        "margin_inr",
+        "disposal_inr"
+      ],
+      "type": "object"
+    },
+    "Lane": {
+      "additionalProperties": false,
+      "properties": {
+        "from_id": {
+          "type": "string"
+        },
+        "to_id": {
+          "type": "string"
+        },
+        "km": {
+          "type": "number"
+        },
+        "lead_days_mean": {
+          "type": "number"
+        },
+        "p_delay": {
+          "type": "number"
+        },
+        "ftl_cost_inr": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/TruckClass"
+          },
+          "type": "object"
+        },
+        "ptl_rate_inr_per_kg": {
+          "type": "number"
+        },
+        "ptl_min_charge_inr": {
+          "type": "number"
+        },
+        "co2_kg_per_trip": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/TruckClass"
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "from_id",
+        "to_id",
+        "km",
+        "lead_days_mean",
+        "p_delay",
+        "ftl_cost_inr",
+        "ptl_rate_inr_per_kg",
+        "ptl_min_charge_inr",
+        "co2_kg_per_trip"
+      ],
+      "type": "object"
+    },
+    "Lot": {
+      "additionalProperties": false,
+      "properties": {
+        "lot_id": {
+          "type": "string"
+        },
+        "sku_id": {
+          "type": "string"
+        },
+        "depot_id": {
+          "type": "string"
+        },
+        "qty_cases": {
+          "type": "number"
+        },
+        "mfg_date": {
+          "format": "date",
+          "type": "string"
+        },
+        "expiry_date": {
+          "format": "date",
+          "type": "string"
+        }
+      },
+      "required": [
+        "lot_id",
+        "sku_id",
+        "depot_id",
+        "qty_cases",
+        "mfg_date",
+        "expiry_date"
+      ],
+      "type": "object"
+    },
+    "Scenario": {
+      "additionalProperties": false,
+      "properties": {
+        "scenario_id": {
+          "type": "string"
+        },
+        "seed": {
+          "type": "integer"
+        },
+        "nodes": {
+          "items": {
+            "$ref": "#/$defs/Node"
+          },
+          "type": "array"
+        },
+        "skus": {
+          "items": {
+            "$ref": "#/$defs/Sku"
+          },
+          "type": "array"
+        },
+        "lanes": {
+          "items": {
+            "$ref": "#/$defs/Lane"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "scenario_id",
+        "seed",
+        "nodes",
+        "skus",
+        "lanes"
+      ],
+      "type": "object"
+    },
+    "DistStock": {
+      "additionalProperties": false,
+      "properties": {
+        "dist_id": {
+          "type": "string"
+        },
+        "sku_id": {
+          "type": "string"
+        },
+        "lot_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "qty_cases": {
+          "type": "number"
+        },
+        "expiry_date": {
+          "format": "date",
+          "type": "string"
+        }
+      },
+      "required": [
+        "dist_id",
+        "sku_id",
+        "lot_id",
+        "qty_cases",
+        "expiry_date"
+      ],
+      "type": "object"
+    },
+    "InTransit": {
+      "additionalProperties": false,
+      "properties": {
+        "to_id": {
+          "type": "string"
+        },
+        "sku_id": {
+          "type": "string"
+        },
+        "lot_id": {
+          "type": "string"
+        },
+        "qty_cases": {
+          "type": "number"
+        },
+        "eta": {
+          "format": "date",
+          "type": "string"
+        },
+        "expiry_date": {
+          "format": "date",
+          "type": "string"
+        }
+      },
+      "required": [
+        "to_id",
+        "sku_id",
+        "lot_id",
+        "qty_cases",
+        "eta",
+        "expiry_date"
+      ],
+      "type": "object"
+    },
+    "Snapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "scenario_id": {
+          "type": "string"
+        },
+        "as_of": {
+          "format": "date",
+          "type": "string"
+        },
+        "depot_lots": {
+          "items": {
+            "$ref": "#/$defs/Lot"
+          },
+          "type": "array"
+        },
+        "dist_stock": {
+          "items": {
+            "$ref": "#/$defs/DistStock"
+          },
+          "type": "array"
+        },
+        "in_transit": {
+          "items": {
+            "$ref": "#/$defs/InTransit"
+          },
+          "type": "array"
+        },
+        "credit_available_inr": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "type": "object"
+        },
+        "storage_free_m3": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "scenario_id",
+        "as_of",
+        "depot_lots",
+        "dist_stock",
+        "in_transit",
+        "credit_available_inr",
+        "storage_free_m3"
+      ],
+      "type": "object"
+    }
+  }
+}

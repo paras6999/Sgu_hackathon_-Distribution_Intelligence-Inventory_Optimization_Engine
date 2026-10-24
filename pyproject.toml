@@ -1,9 +1,8 @@
-[project]
-name = "vitaran"
-version = "0.1.0"
-description = "Distribution intelligence and inventory optimisation engine (hackathon PS2)"
-requires-python = ">=3.11"
+# uv workspace root (virtual: no package here). Python is used only by the engine and the generated types.
+[tool.uv.workspace]
+members = ["engine/dia-engine", "packages/dia-types/py"]
 
-[tool.pytest.ini_options]
-pythonpath = ["."]
-testpaths = ["tests"]
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["packages/dia-types/py/dia_types/models.py"]

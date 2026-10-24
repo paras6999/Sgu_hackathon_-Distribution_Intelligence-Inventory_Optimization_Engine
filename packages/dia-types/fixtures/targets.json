@@ -1,0 +1,92 @@
+[
+  {
+    "sku_id": "SN-01",
+    "dist_id": "D01-Pune",
+    "S": 274.78709341572744,
+    "critical_ratio": 0.9,
+    "z": 1.28,
+    "cover_days": 10,
+    "mu": 250.0,
+    "sigma": 19.364916731037084
+  },
+  {
+    "sku_id": "SN-01",
+    "dist_id": "D09-Bengaluru",
+    "S": 222.17025033688162,
+    "critical_ratio": 0.9,
+    "z": 1.28,
+    "cover_days": 10,
+    "mu": 200.0,
+    "sigma": 17.320508075688775
+  },
+  {
+    "sku_id": "SN-01",
+    "dist_id": "D10-Coimbatore",
+    "S": 137.17300206719838,
+    "critical_ratio": 0.9,
+    "z": 1.28,
+    "cover_days": 10,
+    "mu": 120.0,
+    "sigma": 13.416407864998739
+  },
+  {
+    "sku_id": "HC-02",
+    "dist_id": "D01-Pune",
+    "S": 169.2,
+    "critical_ratio": 0.9,
+    "z": 1.28,
+    "cover_days": 10,
+    "mu": 150.0,
+    "sigma": 15.0
+  },
+  {
+    "sku_id": "HC-02",
+    "dist_id": "D09-Bengaluru",
+    "S": 115.67673435381234,
+    "critical_ratio": 0.9,
+    "z": 1.28,
+    "cover_days": 10,
+    "mu": 100.0,
+    "sigma": 12.24744871391589
+  },
+  {
+    "sku_id": "HC-02",
+    "dist_id": "D10-Coimbatore",
+    "S": 94.02169747213225,
+    "critical_ratio": 0.9,
+    "z": 1.28,
+    "cover_days": 10,
+    "mu": 80.0,
+    "sigma": 10.954451150103322
+  },
+  {
+    "sku_id": "DY-03",
+    "dist_id": "D01-Pune",
+    "S": 25.86,
+    "critical_ratio": 0.62,
+    "z": 0.31,
+    "cover_days": 4,
+    "mu": 24.0,
+    "sigma": 6.0
+  },
+  {
+    "sku_id": "DY-03",
+    "dist_id": "D09-Bengaluru",
+    "S": 34.14774300138541,
+    "critical_ratio": 0.62,
+    "z": 0.31,
+    "cover_days": 4,
+    "mu": 32.0,
+    "sigma": 6.928203230275509
+  },
+  {
+    "sku_id": "DY-03",
+    "dist_id": "D10-Coimbatore",
+    "S": 21.697939928266017,
+    "critical_ratio": 0.62,
+    "z": 0.31,
+    "cover_days": 4,
+    "mu": 20.0,
+    "sigma": 5.477225575051661
+  }
+]

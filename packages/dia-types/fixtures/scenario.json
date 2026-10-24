@@ -1,0 +1,211 @@
+{
+  "scenario_id": "seed01",
+  "seed": 1,
+  "nodes": [
+    {
+      "node_id": "W1-Bhiwandi",
+      "type": "depot",
+      "city": "Bhiwandi",
+      "region": "W",
+      "lat": 19.3,
+      "lon": 73.06,
+      "storage_m3": null,
+      "credit_limit_inr": null,
+      "mrsl_fraction": null,
+      "home_depot_id": null
+    },
+    {
+      "node_id": "S1-Hosur",
+      "type": "depot",
+      "city": "Hosur",
+      "region": "S",
+      "lat": 12.74,
+      "lon": 77.83,
+      "storage_m3": null,
+      "credit_limit_inr": null,
+      "mrsl_fraction": null,
+      "home_depot_id": null
+    },
+    {
+      "node_id": "D01-Pune",
+      "type": "distributor",
+      "city": "Pune",
+      "region": "W",
+      "lat": 18.52,
+      "lon": 73.86,
+      "storage_m3": 120.0,
+      "credit_limit_inr": 1500000.0,
+      "mrsl_fraction": 0.6,
+      "home_depot_id": "W1-Bhiwandi"
+    },
+    {
+      "node_id": "D09-Bengaluru",
+      "type": "distributor",
+      "city": "Bengaluru",
+      "region": "S",
+      "lat": 12.97,
+      "lon": 77.59,
+      "storage_m3": 150.0,
+      "credit_limit_inr": 1000000.0,
+      "mrsl_fraction": 0.6,
+      "home_depot_id": "S1-Hosur"
+    },
+    {
+      "node_id": "D10-Coimbatore",
+      "type": "distributor",
+      "city": "Coimbatore",
+      "region": "S",
+      "lat": 11.02,
+      "lon": 76.96,
+      "storage_m3": 100.0,
+      "credit_limit_inr": 600000.0,
+      "mrsl_fraction": 0.6,
+      "home_depot_id": "S1-Hosur"
+    }
+  ],
+  "skus": [
+    {
+      "sku_id": "DY-03",
+      "name": "Paneer 200 g",
+      "category": "dairy",
+      "temp_class": "chilled",
+      "shelf_life_days": 15,
+      "kg_per_case": 4.8,
+      "m3_per_case": 0.012,
+      "price_inr": 1800.0,
+      "landed_cost_inr": 1300.0,
+      "margin_inr": 500.0,
+      "disposal_inr": 50.0
+    },
+    {
+      "sku_id": "SN-01",
+      "name": "Masala Chips 50 g",
+      "category": "snacks",
+      "temp_class": "ambient",
+      "shelf_life_days": 120,
+      "kg_per_case": 3.0,
+      "m3_per_case": 0.045,
+      "price_inr": 1200.0,
+      "landed_cost_inr": 850.0,
+      "margin_inr": 350.0,
+      "disposal_inr": 20.0
+    },
+    {
+      "sku_id": "HC-02",
+      "name": "Detergent 1 kg",
+      "category": "home_care",
+      "temp_class": "ambient",
+      "shelf_life_days": 730,
+      "kg_per_case": 12.5,
+      "m3_per_case": 0.03,
+      "price_inr": 2100.0,
+      "landed_cost_inr": 1600.0,
+      "margin_inr": 500.0,
+      "disposal_inr": 30.0
+    }
+  ],
+  "lanes": [
+    {
+      "from_id": "W1-Bhiwandi",
+      "to_id": "D01-Pune",
+      "km": 160.0,
+      "lead_days_mean": 1.0,
+      "p_delay": 0.1,
+      "ftl_cost_inr": {
+        "AMB32": 15000.0,
+        "REEF17": 12800.0
+      },
+      "ptl_rate_inr_per_kg": 4.5,
+      "ptl_min_charge_inr": 1500.0,
+      "co2_kg_per_trip": {
+        "AMB32": 122.51428571428572,
+        "REEF17": 107.2
+      }
+    },
+    {
+      "from_id": "W1-Bhiwandi",
+      "to_id": "D09-Bengaluru",
+      "km": 1000.0,
+      "lead_days_mean": 3.0,
+      "p_delay": 0.2,
+      "ftl_cost_inr": {
+        "AMB32": 48000.0,
+        "REEF17": 48500.0
+      },
+      "ptl_rate_inr_per_kg": 15.0,
+      "ptl_min_charge_inr": 1500.0,
+      "co2_kg_per_trip": {
+        "AMB32": 765.7142857142858,
+        "REEF17": 670.0
+      }
+    },
+    {
+      "from_id": "W1-Bhiwandi",
+      "to_id": "D10-Coimbatore",
+      "km": 1300.0,
+      "lead_days_mean": 4.0,
+      "p_delay": 0.2,
+      "ftl_cost_inr": {
+        "AMB32": 60000.0,
+        "REEF17": 61250.0
+      },
+      "ptl_rate_inr_per_kg": 15.0,
+      "ptl_min_charge_inr": 1500.0,
+      "co2_kg_per_trip": {
+        "AMB32": 995.4285714285716,
+        "REEF17": 871.0
+      }
+    },
+    {
+      "from_id": "S1-Hosur",
+      "to_id": "D01-Pune",
+      "km": 1000.0,
+      "lead_days_mean": 3.0,
+      "p_delay": 0.2,
+      "ftl_cost_inr": {
+        "AMB32": 48000.0,
+        "REEF17": 48500.0
+      },
+      "ptl_rate_inr_per_kg": 15.0,
+      "ptl_min_charge_inr": 1500.0,
+      "co2_kg_per_trip": {
+        "AMB32": 765.7142857142858,
+        "REEF17": 670.0
+      }
+    },
+    {
+      "from_id": "S1-Hosur",
+      "to_id": "D09-Bengaluru",
+      "km": 40.0,
+      "lead_days_mean": 1.0,
+      "p_delay": 0.1,
+      "ftl_cost_inr": {
+        "AMB32": 15000.0,
+        "REEF17": 10000.0
+      },
+      "ptl_rate_inr_per_kg": 4.5,
+      "ptl_min_charge_inr": 1500.0,
+      "co2_kg_per_trip": {
+        "AMB32": 30.62857142857143,
+        "REEF17": 26.8
+      }
+    },
+    {
+      "from_id": "S1-Hosur",
+      "to_id": "D10-Coimbatore",
+      "km": 260.0,
+      "lead_days_mean": 1.0,
+      "p_delay": 0.1,
+      "ftl_cost_inr": {
+        "AMB32": 18400.0,
+        "REEF17": 17050.0
+      },
+      "ptl_rate_inr_per_kg": 4.5,
+      "ptl_min_charge_inr": 1500.0,
+      "co2_kg_per_trip": {
+        "AMB32": 199.08571428571432,
+        "REEF17": 174.20000000000002
+      }
+    }
+  ]
+}

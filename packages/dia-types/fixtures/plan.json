@@ -1,0 +1,215 @@
+{
+  "plan_id": "PL-FAKE01",
+  "version": 1,
+  "scenario_id": "seed01",
+  "as_of": "2025-10-13",
+  "temp_class": "ambient",
+  "policy": "engine",
+  "settings": {
+    "weights": {
+      "pi_mult": 1.0,
+      "omega_mult": 1.0,
+      "carbon_inr_per_kg": 0.0
+    },
+    "no_expiry_term": false,
+    "no_truck_steps": false,
+    "forecast_model": "full",
+    "no_credit": false,
+    "uniform_service_level": false,
+    "home_depot_only": false,
+    "time_limit_s": 30.0,
+    "mip_gap": 0.01
+  },
+  "status": "DRAFT",
+  "lines": [
+    {
+      "line_id": "PL-FAKE01-v1-001",
+      "sku_id": "SN-01",
+      "sku_name": "Masala Chips 50 g",
+      "lot_id": "BHW-SN01-0420",
+      "expiry": "2025-12-30",
+      "from_id": "W1-Bhiwandi",
+      "to_id": "D01-Pune",
+      "cases": 120,
+      "mode": "FTL",
+      "truck_id": "T-W1-D01-01",
+      "consignment_id": null,
+      "truck_class": "AMB32",
+      "ship_date": "2025-10-13",
+      "eta": "2025-10-14",
+      "rsl_on_arrival_days": 77,
+      "freight_alloc_inr": 2175.19,
+      "reasons": [
+        {
+          "code": "FESTIVAL_UPLIFT",
+          "detail": "Diwali x1.38 in the cover window (18-20 Oct).",
+          "impact_inr": 0.0
+        }
+      ],
+      "proposal_version": 1,
+      "status": "PROPOSED"
+    },
+    {
+      "line_id": "PL-FAKE01-v1-002",
+      "sku_id": "HC-02",
+      "sku_name": "Detergent 1 kg",
+      "lot_id": "BHW-HC02-0101",
+      "expiry": "2027-07-01",
+      "from_id": "W1-Bhiwandi",
+      "to_id": "D01-Pune",
+      "cases": 400,
+      "mode": "FTL",
+      "truck_id": "T-W1-D01-01",
+      "consignment_id": null,
+      "truck_class": "AMB32",
+      "ship_date": "2025-10-13",
+      "eta": "2025-10-14",
+      "rsl_on_arrival_days": 625,
+      "freight_alloc_inr": 15824.81,
+      "reasons": [
+        {
+          "code": "CHEAPEST_SOURCE",
+          "detail": "From Bhiwandi at Rs 40/case vs Rs 98/case from Hosur.",
+          "impact_inr": 23200.0
+        }
+      ],
+      "proposal_version": 1,
+      "status": "PROPOSED"
+    },
+    {
+      "line_id": "PL-FAKE01-v1-003",
+      "sku_id": "SN-01",
+      "sku_name": "Masala Chips 50 g",
+      "lot_id": "HSR-SN01-0388",
+      "expiry": "2025-12-28",
+      "from_id": "S1-Hosur",
+      "to_id": "D09-Bengaluru",
+      "cases": 150,
+      "mode": "PTL",
+      "truck_id": null,
+      "consignment_id": "C-S1-D09-01",
+      "truck_class": null,
+      "ship_date": "2025-10-13",
+      "eta": "2025-10-14",
+      "rsl_on_arrival_days": 75,
+      "freight_alloc_inr": 7593.75,
+      "reasons": [
+        {
+          "code": "CHEAPEST_SOURCE",
+          "detail": "From Hosur at Rs 51/case vs Rs 300/case from Bhiwandi.",
+          "impact_inr": 37350.0
+        }
+      ],
+      "proposal_version": 1,
+      "status": "PROPOSED"
+    },
+    {
+      "line_id": "PL-FAKE01-v1-004",
+      "sku_id": "SN-01",
+      "sku_name": "Masala Chips 50 g",
+      "lot_id": "HSR-SN01-0388",
+      "expiry": "2025-12-28",
+      "from_id": "S1-Hosur",
+      "to_id": "D10-Coimbatore",
+      "cases": 100,
+      "mode": "PTL",
+      "truck_id": null,
+      "consignment_id": "C-S1-D10-01",
+      "truck_class": null,
+      "ship_date": "2025-10-13",
+      "eta": "2025-10-14",
+      "rsl_on_arrival_days": 75,
+      "freight_alloc_inr": 5062.5,
+      "reasons": [
+        {
+          "code": "STOCK_LIMITED",
+          "detail": "Short 20 cases of target: all usable Hosur stock committed.",
+          "impact_inr": 0.0
+        }
+      ],
+      "proposal_version": 1,
+      "status": "PROPOSED"
+    }
+  ],
+  "shortfalls": [
+    {
+      "sku_id": "SN-01",
+      "dist_id": "D10-Coimbatore",
+      "short_cases": 20.0,
+      "reasons": [
+        {
+          "code": "STOCK_LIMITED",
+          "detail": "All usable stock committed.",
+          "impact_inr": 0.0
+        }
+      ]
+    }
+  ],
+  "trucks": [
+    {
+      "truck_id": "T-W1-D01-01",
+      "mode": "FTL",
+      "truck_class": "AMB32",
+      "from_id": "W1-Bhiwandi",
+      "to_id": "D01-Pune",
+      "ship_date": "2025-10-13",
+      "kg": 5360.0,
+      "m3": 17.4,
+      "kg_pct": 76.57142857142857,
+      "m3_pct": 31.636363636363633,
+      "cost_inr": 18000.0,
+      "line_ids": [
+        "PL-FAKE01-v1-001",
+        "PL-FAKE01-v1-002"
+      ]
+    },
+    {
+      "truck_id": "C-S1-D09-01",
+      "mode": "PTL",
+      "truck_class": null,
+      "from_id": "S1-Hosur",
+      "to_id": "D09-Bengaluru",
+      "ship_date": "2025-10-13",
+      "kg": 450.0,
+      "m3": 6.75,
+      "kg_pct": 0.0,
+      "m3_pct": 0.0,
+      "cost_inr": 7593.75,
+      "line_ids": [
+        "PL-FAKE01-v1-003"
+      ]
+    },
+    {
+      "truck_id": "C-S1-D10-01",
+      "mode": "PTL",
+      "truck_class": null,
+      "from_id": "S1-Hosur",
+      "to_id": "D10-Coimbatore",
+      "ship_date": "2025-10-13",
+      "kg": 300.0,
+      "m3": 4.5,
+      "kg_pct": 0.0,
+      "m3_pct": 0.0,
+      "cost_inr": 5062.5,
+      "line_ids": [
+        "PL-FAKE01-v1-004"
+      ]
+    }
+  ],
+  "expected_kpis": {
+    "freight_inr": 30656.25,
+    "lost_margin_inr": 8400.0,
+    "holding_inr": 3100.0,
+    "expiry_inr": 0.0,
+    "carbon_kg": 0.0,
+    "total_inr": 42156.25,
+    "cases": 770.0
+  },
+  "solve": {
+    "status": "optimal",
+    "seconds": 0.4,
+    "mip_gap": 0.0,
+    "solver": "highs"
+  },
+  "created_at": "2025-10-13T09:00:00Z"
+}

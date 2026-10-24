@@ -1,0 +1,22 @@
+{
+  "name": "@dia/types",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./ts/index.ts",
+    "./schema": "./dist/dia.schema.json",
+    "./fixtures/*": "./fixtures/*"
+  },
+  "scripts": {
+    "gen": "bun scripts/gen.ts",
+    "check": "bun scripts/gen.ts --check",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "json-schema-to-typescript": "^15.0.0"
+  }
+}

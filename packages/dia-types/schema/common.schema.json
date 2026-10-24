@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dia/common",
+  "title": "common",
+  "$defs": {
+    "TempClass": {
+      "enum": [
+        "ambient",
+        "chilled"
+      ],
+      "type": "string"
+    },
+    "NodeType": {
+      "enum": [
+        "depot",
+        "distributor"
+      ],
+      "type": "string"
+    },
+    "TruckClass": {
+      "enum": [
+        "AMB32",
+        "REEF17"
+      ],
+      "type": "string"
+    },
+    "ShipMode": {
+      "enum": [
+        "FTL",
+        "PTL"
+      ],
+      "type": "string"
+    },
+    "ReasonCode": {
+      "enum": [
+        "CHEAPEST_SOURCE",
+        "EXPIRY_PUSH",
+        "CLIFF_RESCUE",
+        "FTL_TOPUP",
+        "FESTIVAL_UPLIFT",
+        "WEATHER_SHIFT",
+        "STOCK_LIMITED",
+        "CREDIT_LIMITED",
+        "STORAGE_LIMITED",
+        "MRSL_BLOCKED",
+        "FAIR_SHARE_FLOOR"
+      ],
+      "type": "string"
+    },
+    "PlanStatus": {
+      "enum": [
+        "DRAFT",
+        "PROPOSED",
+        "FINAL"
+      ],
+      "type": "string"
+    },
+    "LineStatus": {
+      "enum": [
+        "PROPOSED",
+        "ACCEPTED",
+        "TRIMMED",
+        "REJECTED"
+      ],
+      "type": "string"
+    },
+    "ProposalStatus": {
+      "enum": [
+        "PROPOSED",
+        "ACCEPTED",
+        "TRIMMED",
+        "REJECTED",
+        "EXPIRED"
+      ],
+      "type": "string"
+    },
+    "ResponseAction": {
+      "enum": [
+        "accept",
+        "trim",
+        "reject"
+      ],
+      "type": "string"
+    },
+    "ExperimentStatus": {
+      "enum": [
+        "queued",
+        "running",
+        "done",
+        "failed"
+      ],
+      "type": "string"
+    },
+    "PolicyName": {
+      "type": "string",
+      "enum": [
+        "engine",
+        "baseline_a",
+        "baseline_b",
+        "abl_no_expiry",
+        "abl_no_truck_steps",
+        "abl_naive_forecast",
+        "abl_no_credit",
+        "abl_uniform_service",
+        "abl_home_depot"
+      ],
+      "description": "Policy and ablation ids (FR-10, FR-12)."
+    },
+    "OpeningState": {
+      "type": "string",
+      "enum": [
+        "neutral",
+        "imbalanced"
+      ]
+    },
+    "ForecastMode": {
+      "enum": [
+        "full",
+        "seasonal_naive"
+      ],
+      "type": "string"
+    },
+    "ForecastModelKind": {
+      "enum": [
+        "AutoETS",
+        "TSB",
+        "SeasonalNaive"
+      ],
+      "type": "string"
+    },
+    "LockKind": {
+      "enum": [
+        "fix",
+        "cap",
+        "min"
+      ],
+      "type": "string"
+    },
+    "PlanEventAction": {
+      "enum": [
+        "accept",
+        "trim",
+        "reject",
+        "override",
+        "grow",
+        "publish",
+        "replan"
+      ],
+      "type": "string"
+    },
+    "Region": {
+      "enum": [
+        "N",
+        "S",
+        "E",
+        "W"
+      ],
+      "type": "string"
+    },
+    "SolveStatus": {
+      "enum": [
+        "optimal",
+        "time_limit",
+        "lp_round",
+        "fallback_baseline_b",
+        "not_solved"
+      ],
+      "type": "string"
+    },
+    "ViolationConstraint": {
+      "enum": [
+        "lot_stock",
+        "truck_kg",
+        "truck_m3",
+        "storage",
+        "credit",
+        "mrsl",
+        "lock",
+        "missing_truck",
+        "missing_reason"
+      ],
+      "type": "string"
+    }
+  }
+}

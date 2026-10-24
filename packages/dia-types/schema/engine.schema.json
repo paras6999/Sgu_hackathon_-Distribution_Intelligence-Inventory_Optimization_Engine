@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dia/engine",
+  "title": "engine",
+  "$defs": {
+    "EngineForecastRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "scenario_id": {
+          "type": "string"
+        },
+        "as_of": {
+          "format": "date",
+          "type": "string"
+        },
+        "horizon_days": {
+          "default": 28,
+          "type": "integer"
+        },
+        "model": {
+          "$ref": "#/$defs/ForecastMode",
+          "default": "full"
+        }
+      },
+      "required": [
+        "scenario_id",
+        "as_of"
+      ],
+      "type": "object"
+    },
+    "EnginePlanRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "scenario_id": {
+          "type": "string"
+        },
+        "as_of": {
+          "format": "date",
+          "type": "string"
+        },
+        "temp_class": {
+          "$ref": "#/$defs/TempClass"
+        },
+        "opening_state": {
+          "$ref": "#/$defs/OpeningState",
+          "default": "imbalanced"
+        },
+        "settings": {
+          "$ref": "#/$defs/EngineSettings",
+          "default": {
+            "weights": {
+              "carbon_inr_per_kg": 0.0,
+              "omega_mult": 1.0,
+              "pi_mult": 1.0
+            },
+            "no_expiry_term": false,
+            "no_truck_steps": false,
+            "forecast_model": "full",
+            "no_credit": false,
+            "uniform_service_level": false,
+            "home_depot_only": false,
+            "time_limit_s": 30.0,
+            "mip_gap": 0.01
+          }
+        },
+        "locks": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Lock"
+          },
+          "type": "array"
+        },
+        "plan_id": {
+          "type": "string"
+        },
+        "version": {
+          "default": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "scenario_id",
+        "as_of",
+        "temp_class",
+        "plan_id"
+      ],
+      "type": "object"
+    },
+    "EngineResolveRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "plan": {
+          "$ref": "#/$defs/Plan"
+        },
+        "proposals": {
+          "items": {
+            "$ref": "#/$defs/Proposal"
+          },
+          "type": "array"
+        },
+        "response": {
+          "$ref": "#/$defs/ResponseRequest"
+        },
+        "opening_state": {
+          "$ref": "#/$defs/OpeningState",
+          "default": "imbalanced"
+        }
+      },
+      "required": [
+        "plan",
+        "proposals",
+        "response"
+      ],
+      "type": "object"
+    },
+    "EngineHealth": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "data_dir": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "version",
+        "data_dir"
+      ],
+      "type": "object"
+    }
+  }
+}

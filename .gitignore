@@ -1,9 +1,27 @@
+# dependencies and builds
+node_modules/
 .venv/
+dist/
+!packages/dia-types/dist/
+.turbo/
 __pycache__/
 *.pyc
 .pytest_cache/
+/build/
+engine/dia-engine/build/work/
+*.spec.bak
+
+# data and secrets
 data/
 *.lp
 .env
-.streamlit/secrets.toml
+.env.*
+!.env.example
+*.db
+service-account*.json
+
+# editors / OS
 .DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json

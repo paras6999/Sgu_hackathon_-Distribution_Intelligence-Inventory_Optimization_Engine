@@ -1,0 +1,65 @@
+{
+  "scenario_id": "seed01",
+  "as_of": "2025-10-13",
+  "depot_lots": [
+    {
+      "lot_id": "HSR-DY03-1187",
+      "sku_id": "DY-03",
+      "depot_id": "S1-Hosur",
+      "qty_cases": 200.0,
+      "mfg_date": "2025-10-13",
+      "expiry_date": "2025-10-28"
+    },
+    {
+      "lot_id": "BHW-SN01-0420",
+      "sku_id": "SN-01",
+      "depot_id": "W1-Bhiwandi",
+      "qty_cases": 600.0,
+      "mfg_date": "2025-09-01",
+      "expiry_date": "2025-12-30"
+    },
+    {
+      "lot_id": "HSR-SN01-0388",
+      "sku_id": "SN-01",
+      "depot_id": "S1-Hosur",
+      "qty_cases": 300.0,
+      "mfg_date": "2025-08-30",
+      "expiry_date": "2025-12-28"
+    },
+    {
+      "lot_id": "BHW-HC02-0101",
+      "sku_id": "HC-02",
+      "depot_id": "W1-Bhiwandi",
+      "qty_cases": 800.0,
+      "mfg_date": "2025-07-01",
+      "expiry_date": "2027-07-01"
+    }
+  ],
+  "dist_stock": [
+    {
+      "dist_id": "D01-Pune",
+      "sku_id": "SN-01",
+      "lot_id": "BHW-SN01-0377",
+      "qty_cases": 40.0,
+      "expiry_date": "2025-12-01"
+    },
+    {
+      "dist_id": "D09-Bengaluru",
+      "sku_id": "DY-03",
+      "lot_id": "HSR-DY03-1170",
+      "qty_cases": 12.0,
+      "expiry_date": "2025-10-20"
+    }
+  ],
+  "in_transit": [],
+  "credit_available_inr": {
+    "D01-Pune": 1200000.0,
+    "D09-Bengaluru": 900000.0,
+    "D10-Coimbatore": 500000.0
+  },
+  "storage_free_m3": {
+    "D01-Pune": 80.0,
+    "D09-Bengaluru": 100.0,
+    "D10-Coimbatore": 60.0
+  }
+}

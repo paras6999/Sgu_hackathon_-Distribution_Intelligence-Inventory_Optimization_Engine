@@ -1,0 +1,24 @@
+{
+  "name": "dia",
+  "private": true,
+  "packageManager": "bun@1.4.4",
+  "workspaces": ["apps/dia-backend", "apps/dia-web", "packages/dia-types"],
+  "scripts": {
+    "setup": "bun install && uv sync --all-packages",
+    "dev": "turbo run dev --parallel",
+    "dev:fake": "turbo run dev:fake --parallel",
+    "build": "turbo run build",
+    "test": "turbo run test && bun run test:engine",
+    "test:engine": "uv run --package dia-engine pytest engine/dia-engine -q -rs",
+    "typecheck": "turbo run typecheck",
+    "gen:types": "bun run --cwd packages/dia-types gen",
+    "check:types": "bun run --cwd packages/dia-types check",
+    "engine": "uv run --package dia-engine dia-engine serve",
+    "data": "uv run --package dia-engine dia-engine generate --seeds 1"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.0",
+    "turbo": "^2.5.0",
+    "typescript": "^5.6.0"
+  }
+}
