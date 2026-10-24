@@ -26,6 +26,7 @@ Read this first in any new chat or AI tool. Each PR adds 2–3 lines under its m
 ## M2 · Claude Code lead
 - `m2/forecast`: FR-03 done. Factors learned from history (season, festival uplift, heat/rain), level by vectorised NumPy ETS (simple vs damped, AIC) or TSB, bands from the 12-origin backtest. seed01: WAPE 14.6% (naive 29.3%), bias -0.6%, P10-P90 coverage 79.9%, festival WAPE 15.3%; backtest 6 s, forecast 0.2-0.4 s. statsforecast removed (28 s import, 7.5 s/fit, numba). Caveat: WAPE is flattered because generator and model share structure (PRD risk 10). _next: targets.py_
 - `m2/dist`: `forecast/dist.py` done — NB/Poisson window distribution (`window_dist`), `quantile`, `expected_shortfall` (C2), `expected_leftover` (C8); exact, within 2% of mean vs 400k Monte Carlo draws. M1 can build the curves on it. _next: forecast.py_
+- `m2/targets` (stacked on `m2/forecast`): FR-04 done. S = mu + z(CR) sigma over R+L (ambient festival pre-build per A26). seed01 CR: lassi 0.45, dahi 0.52, paneer 0.60, flavoured milk 0.68, atta 0.74, snacks/biscuits/beverages 0.89-0.95, personal/home care 0.98. **Judgment:** P(expire) = cover / RSL on arrival, because the exact newsvendor term is ~0 at our cadences and would put chilled above ambient (M1/M4 may revisit). _next: Baseline A_
 - Rescaffold PR opened; CODEOWNERS filled with all four usernames. _next: branch protection after first CI run, `dist.py`, forecast_
 
 ## M3 · Antigravity
