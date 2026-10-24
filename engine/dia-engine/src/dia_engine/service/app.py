@@ -80,7 +80,7 @@ def scenario_backtest(scenario_id: str) -> BacktestMetrics:
 
 @app.post("/forecast", response_model=ForecastBundle)
 def post_forecast(req: EngineForecastRequest) -> ForecastBundle:
-    return forecast(req.scenario_id, req.as_of, req.horizon_days, req.model.value)
+    return forecast(req.scenario_id, req.as_of, req.horizon_days, ForecastMode(req.model).value)
 
 
 @app.post("/plan", response_model=Plan)
