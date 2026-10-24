@@ -36,10 +36,10 @@ catalogue:
 
   # mrp_inr: per consumer unit. base_cases_per_day: secondary sales at size_factor 1 in a neutral month.
   skus:
-    - {id: DY-01, name: "Dahi 400 g cup",           category: dairy,         temp_class: chilled, shelf_life_days: 12,   units_per_case: 24,  mrp_inr: 45,  kg_per_case: 10.5, m3_per_case: 0.018, base_cases_per_day: 3.0}
-    - {id: DY-02, name: "Sweet Lassi 200 ml",       category: dairy,         temp_class: chilled, shelf_life_days: 10,   units_per_case: 30,  mrp_inr: 25,  kg_per_case: 6.6,  m3_per_case: 0.012, base_cases_per_day: 2.0}
-    - {id: DY-03, name: "Paneer 200 g",             category: dairy,         temp_class: chilled, shelf_life_days: 15,   units_per_case: 40,  mrp_inr: 95,  kg_per_case: 8.8,  m3_per_case: 0.020, base_cases_per_day: 1.5}
-    - {id: DY-04, name: "Flavoured Milk 180 ml",    category: dairy,         temp_class: chilled, shelf_life_days: 21,   units_per_case: 30,  mrp_inr: 35,  kg_per_case: 6.2,  m3_per_case: 0.011, base_cases_per_day: 2.0}
+    - {id: DY-01, name: "Dahi 400 g cup",           category: dairy,         temp_class: chilled, shelf_life_days: 12,   units_per_case: 24,  mrp_inr: 45,  kg_per_case: 10.5, m3_per_case: 0.018, base_cases_per_day: 9.0}
+    - {id: DY-02, name: "Sweet Lassi 200 ml",       category: dairy,         temp_class: chilled, shelf_life_days: 10,   units_per_case: 30,  mrp_inr: 25,  kg_per_case: 6.6,  m3_per_case: 0.012, base_cases_per_day: 6.0}
+    - {id: DY-03, name: "Paneer 200 g",             category: dairy,         temp_class: chilled, shelf_life_days: 15,   units_per_case: 40,  mrp_inr: 95,  kg_per_case: 8.8,  m3_per_case: 0.020, base_cases_per_day: 4.5}
+    - {id: DY-04, name: "Flavoured Milk 180 ml",    category: dairy,         temp_class: chilled, shelf_life_days: 21,   units_per_case: 30,  mrp_inr: 35,  kg_per_case: 6.2,  m3_per_case: 0.011, base_cases_per_day: 6.0}
     - {id: SN-01, name: "Masala Chips 52 g",        category: snacks,        temp_class: ambient, shelf_life_days: 120,  units_per_case: 48,  mrp_inr: 20,  kg_per_case: 3.0,  m3_per_case: 0.060, base_cases_per_day: 3.0}
     - {id: SN-02, name: "Aloo Bhujia 200 g",        category: snacks,        temp_class: ambient, shelf_life_days: 180,  units_per_case: 30,  mrp_inr: 55,  kg_per_case: 6.4,  m3_per_case: 0.030, base_cases_per_day: 1.5}
     - {id: SN-03, name: "Corn Puffs 30 g",          category: snacks,        temp_class: ambient, shelf_life_days: 120,  units_per_case: 96,  mrp_inr: 10,  kg_per_case: 3.2,  m3_per_case: 0.065, base_cases_per_day: 2.0}
@@ -120,7 +120,7 @@ costs:
   diesel_inr_per_l: 97.8
   ftl:
     AMB32:  {min_inr: 15000, fixed_inr: 8000, non_fuel_per_km_inr: 12, km_per_l: 3.5, kg: 7000, m3: 55}
-    REEF17: {min_inr: 10000, fixed_inr: 6000, non_fuel_per_km_inr: 18, km_per_l: 4.0, kg: 3000, m3: 15}
+    REEF17: {min_inr: 5000, fixed_inr: 3000, non_fuel_per_km_inr: 16, km_per_l: 6.0, kg: 1500, m3: 9}   # refrigerated LCV, ~1.5 t; class code kept for contract stability
   lane_rate_overrides: {}
   ptl:
     slabs: [[300, 4.5], [800, 8.0], [99999, 15.0]]
@@ -149,13 +149,15 @@ assumptions:
   catalogue.size_factor: {source: judgment, rationale: "A distributor serves a few hundred outlets, so demand grows slower than city size"}
   catalogue.skus: {unit: "INR MRP, kg, m3 per case", source: judgment, rationale: "Typical Indian FMCG pack sizes and MRPs, 2025"}
   categories: {source: judgment, rationale: "Gross margins in line with listed Indian FMCG firms (dairy ~25%, personal care ~50%)"}
-  demand.volume_scale: {source: judgment, rationale: "Calibrated so a distributor turns over ~Rs 4 cr/yr (inside the PRD 2.7 segment) and a weekly ambient load is close to one 32 ft truck"}
+  demand.volume_scale: {source: judgment, rationale: "Calibrated so a weekly ambient load is close to one 32 ft truck (~7 t); with dairy at 3x its original base volume a distributor turns over ~Rs 6 cr/yr, inside the 1.5-8 cr realism band"}
   demand.weekday_profile: {source: judgment, rationale: "GT distributors run fewer Sunday beats"}
   demand.annual_growth: {unit: "per year", source: judgment}
   demand.history_stockout_prob: {source: "Between NielsenIQ ~4% and Gruen & Corsten ~8.3% OOS rates (PRD 2.3)"}
   calendar.festivals: {source: "Published Indian festival dates 2023-2025", rationale: "Uplifts are judgment"}
   supply.plant_output_x_base_demand: {source: judgment, rationale: "A21: plant output fixed, short in festival peaks"}
   planning.mrsl_fraction.GT: {unit: "share of shelf life", source: judgment, rationale: "Typical GT minimum life on receipt"}
+  catalogue.skus.dairy_volume: {unit: "cases/day at size 1", source: judgment, rationale: "Dairy base volumes tripled (9 / 6 / 4.5 / 6 cases) so a 2-day chilled drop (~1.3 t) fills a refrigerated LCV; at the original volume a drop was ~340 kg and chilled freight was ~60% of chilled value"}
+  costs.ftl.REEF17: {unit: "INR", source: judgment, rationale: "Refrigerated LCV (~1.5 t, 9 m3) in place of a 17 ft reefer; class code kept for contract stability. Rates are approximate, not fitted to market data"}
   costs.ftl.AMB32: {unit: "INR", source: "Least-squares fit to 8 FR8 32 ft SXL market rates (A11)"}
   costs.diesel_inr_per_l: {unit: "INR/l", source: "Upstox, Mumbai retail diesel, Oct 2026"}
   costs.stockout_penalty_x_margin: {unit: "x unit margin", source: judgment, rationale: "Goodwill factor (A16)"}

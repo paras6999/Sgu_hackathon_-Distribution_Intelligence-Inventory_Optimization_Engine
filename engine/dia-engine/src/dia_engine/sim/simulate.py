@@ -264,6 +264,12 @@ def run_policy(scenario_id: str, policy: Policy, opening_state: OpeningState, se
         expired: dict[tuple[str, str], int] = defaultdict(int)
         cut: dict[tuple[str, str], int] = defaultdict(int)
 
+        # ---- plant receipts land at the depot before dispatch, so fresh dairy can ship the day it is made.
+        # (PRD 6.6.5 lists them after planning; that leaves 2-day-old dairy below the 60% shelf-life floor.)
+        for r in receipts_by_day.get(day, ()):
+            depot_lots[r["lot_id"]] = _DepotLot(r["sku_id"], r["depot_id"], int(r["qty_cases"]), r["expiry_date"])
+            receipts[(r["depot_id"], r["sku_id"])] += int(r["qty_cases"])
+
         # ---- planning and dispatch
         for ci, tc in enumerate((TempClass.CHILLED, TempClass.AMBIENT)):
             if not _is_plan_day(day, t0, tc):
@@ -293,15 +299,12 @@ def run_policy(scenario_id: str, policy: Policy, opening_state: OpeningState, se
                 trip_rows.append([*tag, day, t.truck_id, t.mode.value, t.from_id, t.to_id, t.kg_pct, t.m3_pct,
                                   t.cost_inr, co2])
 
-        # ---- arrivals, plant receipts
+        # ---- arrivals
         due = [sh for sh in in_transit if sh.arrive <= day]
         in_transit = [sh for sh in in_transit if sh.arrive > day]
         for sh in due:
             dist_lots[(sh.to_id, sh.sku_id)].append([sh.expiry, sh.qty, sh.lot_id])
             receipts[(sh.to_id, sh.sku_id)] += sh.qty
-        for r in receipts_by_day.get(day, ()):
-            depot_lots[r["lot_id"]] = _DepotLot(r["sku_id"], r["depot_id"], int(r["qty_cases"]), r["expiry_date"])
-            receipts[(r["depot_id"], r["sku_id"])] += int(r["qty_cases"])
 
         # ---- sales (FEFO), settle credit
         sold_value: dict[str, float] = defaultdict(float)
