@@ -30,7 +30,7 @@ Tool: **Kiro** (Opus 5.5 for the MILP and simulation, Sonnet 5.5 for routine edi
 ## Build and deploy rules
 - Demo = **local release binaries**, network off. A hosted URL is optional and only after the hour-18 freeze.
 - PyInstaller can't cross-compile: build `dia-engine` on each OS in CI. Bun can cross-compile `dia-server`.
-- statsforecast uses numba: if bundling fails by hour 3, tell M2 so forecast switches to hand-written ETS/TSB.
+- No numba in the engine: the forecast uses vectorised NumPy ETS/TSB (statsforecast was dropped in `m2/forecast`), so PyInstaller only has to bundle numpy, scipy, pandas, pyarrow, PuLP and HiGHS.
 - Binary paths: the backend finds the engine via `ENGINE_BIN`; config via `DIA_CONFIG_DIR` or `sys._MEIPASS/dia-config` (already handled in `config.py`).
 
 ## Vertex AI (you hold the access)
