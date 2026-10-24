@@ -227,7 +227,7 @@ export function ResultsPage() {
               <h3 style={{ marginTop: 0 }}>Where the engine is worse, and why</h3>
               {worse.map(({ kpi, e }) => (
                 <p key={kpi}>
-                  <b>{metaOf(kpi).label}</b>: {fmtDelta(e.delta_vs_best_baseline!, metaOf(kpi).fmt)} vs the better baseline
+                  <b>{metaOf(kpi).label}</b>: {fmtDelta(e.delta_vs_best_baseline!, metaOf(kpi).fmt)} vs the better baseline{" "}
                   {ci(e, metaOf(kpi).fmt)}. {WORSENS_CAUSE[kpi] ?? ""}
                 </p>
               ))}
@@ -281,7 +281,7 @@ function FrontierChart({ points }: { points: FrontierPoint[] }) {
         const colour = POLICY_COLOUR[pol] ?? "var(--neutral)";
         return (
           <g key={pol}>
-            <polyline fill="none" stroke={colour} strokeWidth="2" points={pts.map((p) => `${sx(p.cost_to_serve_inr)},${sy(p.fill_rate)}`).join(" ")} />
+            <polyline fill="none" stroke={colour} strokeWidth="2" strokeDasharray={pol === "baseline_b" ? "6 4" : undefined} points={pts.map((p) => `${sx(p.cost_to_serve_inr)},${sy(p.fill_rate)}`).join(" ")} />
             {pts.map((p) => (
               <g key={p.value}>
                 <circle cx={sx(p.cost_to_serve_inr)} cy={sy(p.fill_rate)} r={5} fill={colour}>
@@ -354,7 +354,7 @@ export function FrontierPage() {
           <h3>What each mechanism is worth</h3>
           <p style={{ color: "var(--neutral)" }}>
             Cost to serve when one mechanism is switched off, relative to the full engine on the same seeds. A red bar to the right means the
-            mechanism saves that much; the line is the 90% interval.
+            mechanism saves that much; a green bar to the left means the engine does better without it; the line is the 90% interval.
           </p>
           {ablation.length > 0 ? (
             <>

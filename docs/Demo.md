@@ -15,14 +15,30 @@ Open http://localhost:3000. Pre-warm once: Plan tab → Generate plan (first cal
 | 0:45 | Map | The imbalanced start: one depot holds snack lots at 62–70% of shelf life (just above the 60% floor), the North is short before Diwali, one distributor is overstocked on slow SKUs. |
 | 1:30 | Plan → Generate plan | The engine plans one cycle in about 2–3 s. Every line carries the reason: cheapest source, expiry push, cliff rescue, festival uplift, credit limit. Quantities come only from the optimiser, never from an AI model. |
 | 2:30 | Send to distributors → Distributor inbox | Distributor trims a line. The plan re-solves in about 2 s: the trimmed stock stays at the depot or goes to distributors who can use it, nobody who has already answered is touched. The log shows the ₹ impact. |
-| 3:30 | Results | 10 seeds × 2 opening states, identical demand, delays and promotions for every policy. Engine vs the better of two baselines, with 90% intervals. Point at the red box: **fill rate is lower** and why. |
+| 3:30 | Results | 10 seeds × 2 opening states, identical demand, delays and promotions for every policy. Engine vs the better of two baselines, with 90% intervals. Point at the red box: **fill rate, stockouts and cover extremes are worse** and why. |
 | 4:30 | Frontier & Ablation (frontier) | Each policy swept over its own knob: more stock buys fill rate at a price; the engine's curve sits up and to the left. |
-| 5:15 | Frontier & Ablation (ablation) | Switch off the expiry term or whole-truck costs and cost to serve rises by ₹ — each mechanism earns its place. One mechanism (uniform service level) does not matter. Say so. |
+| 5:15 | Frontier & Ablation (ablation) | Switch off the expiry term or whole-truck costs and cost to serve rises by ₹ — expiry terms and whole-truck steps earn their place; the per-SKU service levels do not (the engine is slightly cheaper without them). Say so. |
 | 6:00 | Plan line → reason code | Pick one reason code and show the number behind it (e.g. cliff rescue: the lot, the date, the write-off avoided). |
 | 6:30 | Assumptions | Every business number, with a source or marked "judgment". The data is simulated except weather (real Open-Meteo), city locations and populations, and festival dates. |
 
-## Numbers to quote
-See the final section, filled from the cached run.
+## Numbers to quote (run `EX-de4798536119`: real weather, 10 seeds, both opening states, 90% paired intervals; engine vs the better baseline)
+| KPI | Neutral start | Imbalanced start | Target met? |
+|---|---|---|---|
+| Total cost to serve | ₹1.75 cr vs ₹2.06 cr: **−₹31 lakh (−15%)** | ₹1.84 cr vs ₹2.17 cr: **−₹33 lakh (−15%)** | yes / yes |
+| Wastage | ₹1.9 lakh vs ₹7.0 lakh: **−72%** | ₹1.6 lakh vs ₹8.9 lakh: **−82%** | yes / yes |
+| Freight per case | ₹72 vs ₹89: **−20%** | ₹72 vs ₹89: **−19%** | yes / yes |
+| FTL utilisation | 80% vs 64% | 80% vs 64% | no (target 85%) |
+| CO₂ per case | 0.63 vs 0.80 kg: **−22%** | 0.63 vs 0.81 kg: **−22%** | yes / yes |
+| Fill rate | 95.6% vs 96.0%: **−0.4 pp** | 94.1% vs 94.9%: **−0.8 pp** | no (target +2 / +4 pp) |
+| Stockout rate | 3.7% vs 3.2%: +0.4 pp | 5.7% vs 4.8%: +0.9 pp | no |
+| Lost margin | +₹1.8 lakh | +₹2.6 lakh | no |
+| Cover extremes | 10.9% vs 3.6% | 12.2% vs 5.4% | no |
+
+**Say it plainly:** the engine cuts cost to serve by about 15%, waste by three quarters and CO₂ by a fifth, and gives up 0.4–0.8 points of fill rate. Four of the PRD's ten targets are met (cost, wastage, freight per case, CO₂); fill rate, stockouts, lost margin, FTL utilisation (80% against 85%) and cover extremes are not.
+
+**Ablations (cost to serve when a mechanism is switched off, neutral / imbalanced):** expiry terms +₹18 lakh / +₹18 lakh (about +10%); whole-truck freight steps +₹37 lakh / +₹40 lakh (about +21%); a single service level for every SKU **−₹6 lakh / −₹2 lakh** — the engine does slightly better without its per-SKU service levels, so that mechanism does not pay in this setup.
+
+**Frontier (engine, stockout weight 0.5 / 1 / 2, imbalanced):** fill 93.3% / 93.9% / 94.1%, cost ₹1.79 / ₹1.82 / ₹1.89 cr. Baseline A needs 14 days of cover to reach 94.7% fill, at ₹2.18 cr (the engine reaches 94.1% at ₹1.89 cr); Baseline B never gets above 86.5%, even at ₹3.14 cr. Frontier points use the first 5 seeds.
 
 ## Likely questions
 - **Is the data real?** Demand, stock lots, orders and delays are simulated — no brand publishes them. Weather is real (Open-Meteo, 16 cities, Sep 2023 – Dec 2025), as are locations, populations and festival dates. The simulator is checked against real-world benchmarks (turnover per distributor, Diwali uplift, summer beverages, a ~4% stockout rate, ~7 t per distributor-week).
