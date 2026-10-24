@@ -3,6 +3,7 @@
 Project: **Vitaran (DIAgent)**, a distribution intelligence and inventory optimisation engine (hackathon PS2). Built solo by @paras6999 with Claude Code.
 
 ## Read first, in this order
+0. **Taking over the repo? Start with `docs/Handoff.md`, then `docs/Kiro.md` (two-model workflow) and `docs/Backlog.md`.** Kiro steering is in `.kiro/steering/`.
 1. `docs/Memory.md` — current state and open issues.
 2. `docs/Phases.md` — what to build next and the drop order.
 3. `docs/Rules.md` — boundaries. `docs/Architecture.md` — how parts connect. `docs/PRD.md` — requirements.

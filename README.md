@@ -10,13 +10,17 @@ apps/dia-web (React) ──/v1──▶ apps/dia-backend (Bun + Hono, SQLite) �
 ## Read in this order
 | File | What |
 |---|---|
+| [docs/Handoff.md](docs/Handoff.md) | **Start here when taking over**: state, run steps, architecture, gaps, gotchas |
+| [docs/Kiro.md](docs/Kiro.md) | Working in Kiro: Opus 5.5 plans, Haiku 5.5 implements; prompts and templates |
+| [docs/Backlog.md](docs/Backlog.md) | What to do next (B01 to B19), sized for small tasks |
 | [AGENTS.md](AGENTS.md) | Rules and commands for AI agents |
-| [docs/Team.md](docs/Team.md) | Solo build: what's done, what's left, git workflow, GitHub settings |
+| [docs/Team.md](docs/Team.md) | Ownership, git workflow, GitHub settings |
 | [docs/Architecture.md](docs/Architecture.md) | Languages, folders, database, APIs, contracts |
 | [docs/PRD.md](docs/PRD.md) | Requirements |
 | [docs/Phases.md](docs/Phases.md) | Solo build plan and drop order |
 | [docs/Rules.md](docs/Rules.md) | Boundaries, realism rules, AI rules |
 | [docs/Design.md](docs/Design.md) | Screens, colours, fonts |
+| [docs/Demo.md](docs/Demo.md) | Demo script, results of record, judge Q&A |
 | [docs/Memory.md](docs/Memory.md) | Progress log; update every PR |
 
 ## Quick start

@@ -106,7 +106,11 @@ Parquet tables and columns: `store.TABLES` in `engine/dia-engine/src/dia_engine/
 |---|---|---|
 | `GET /v1/health` | Liveness, engine mode and status | — |
 | `GET /v1/scenarios` | Scenario ids | `string[]` |
-| `GET /v1/scenarios/{id}/snapshot?as_of=&opening_state=` | Stock state | `Snapshot` |
+| `GET /v1/scenarios/{id}` | Nodes (with coordinates), SKUs, lanes | `Scenario` |
+| `GET /v1/scenarios/{id}/history?dist_id=&sku_id=` | Two years of weekly demand, backtest forecasts, festival windows | `DemandHistory` |
+| `GET /v1/scenarios/{id}/effects` | Seasonal, weather and festival effects the forecaster learned | `LearnedEffects` |
+| `GET /v1/scenarios/{id}/backtest` | Forecast accuracy (WAPE, bias, coverage) | `BacktestMetrics` |
+| `GET /v1/scenarios/{id}/snapshot?as_of=&opening_state=` | Stock state; any day of the test window (later days replay Baseline A) | `Snapshot` |
 | `POST /v1/forecasts` | Weekly forecast + backtest | `ForecastRequest` → `ForecastResponse` |
 | `POST /v1/plans` | New plan, or new version with `base_plan_id` | `PlanRequest` → `Plan` |
 | `GET /v1/plans/{id}?version=` | Plan (latest by default) | `Plan` |
@@ -121,12 +125,14 @@ Parquet tables and columns: `store.TABLES` in `engine/dia-engine/src/dia_engine/
 | `GET /v1/experiments/{id}` | Job status | `ExperimentInfo` |
 | `GET /v1/experiments/{id}/results` | Results (404 until done) | `ExperimentResults` |
 | `GET /v1/assumptions` | FR-15 table | `AssumptionRow[]` |
+| `GET /v1/ai/status` | Whether an AI model is configured, else rules-based analysis | `{enabled, provider, model, reason}` |
+| `POST /v1/ai/analyse` | Analysis on demand for a plan, a line or the results; figures verified against the data; never sets a quantity | `{kind, plan_id or experiment_id, question?}` → `{text, source, verified, …}` |
 
 Rules: line ids belong to one version (re-fetch after a response); responses for one plan are serialised by an in-process lock; the 409 check is per distributor; engine 501 passes through as 501 (unbuilt module), engine 422 (validator violation) becomes 500.
 
 ### 6.2 Internal engine API (`dia-engine serve`, 127.0.0.1 only; models `Engine*` in dia-types)
 
-`GET /health` · `GET /scenarios` · `GET /scenarios/{id}` · `GET /scenarios/{id}/snapshot` · `GET /scenarios/{id}/backtest` · `POST /forecast` · `POST /plan` · `POST /resolve` · `GET /assumptions`
+`GET /health` · `GET /scenarios` · `GET /scenarios/{id}` · `GET /scenarios/{id}/snapshot` · `GET /scenarios/{id}/backtest` · `GET /scenarios/{id}/history` · `GET /scenarios/{id}/effects` · `POST /forecast` · `POST /plan` · `POST /resolve` · `GET /assumptions`
 
 Experiments do not use HTTP: the backend runs `dia-engine experiment --id EX-… --request req.json`, reads `PROGRESS <pct>` lines, then `DONE` (exit 0), `NOT_IMPLEMENTED` (exit 3) or an error (exit 1), and serves `data/engine/experiments/<id>/results.json`.
 

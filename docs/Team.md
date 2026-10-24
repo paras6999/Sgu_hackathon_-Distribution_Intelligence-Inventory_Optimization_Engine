@@ -1,6 +1,6 @@
 # Team.md — Solo build
 
-Vitaran is built by **one person, @paras6999, working with Claude Code**. The earlier four-person split (Kiro, Antigravity and data members) is retired; all of that work is now on this plan. Git history keeps the old per-member guides (`docs/team/`, removed in the solo switch).
+Vitaran was built by **one person, @paras6999, working with Claude Code**, and is being **handed to a team member working in Kiro** (see `docs/Handoff.md` and `docs/Kiro.md`). Direct pushes to `main` stay allowed; CI runs on every push. The earlier four-person split (Kiro, Antigravity and data members) is retired; all of that work is now on this plan. Git history keeps the old per-member guides (`docs/team/`, removed in the solo switch).
 
 ## 1. What one person owns
 
