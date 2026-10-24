@@ -3,9 +3,12 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import date, timedelta
+from functools import lru_cache
 from typing import Callable
 
+import numpy as np
 import pandas as pd
 
 from dia_engine.baselines.baseline_a import BaselineA
@@ -15,8 +18,10 @@ from dia_engine.config import get_config
 from dia_engine.data.generate import load_scenario
 from dia_engine.forecast.forecast import forecast
 from dia_engine.forecast.dist import window
+from dia_engine.optimize import freight, validate
 from dia_types import (
-    DistStock, EngineSettings, ExperimentRequest, ForecastMode, Lot, NodeType, OpeningState, Snapshot, TempClass,
+    DistStock, EngineSettings, ExperimentRequest, ForecastMode, InTransit, Lot, NodeType, OpeningState, Snapshot,
+    TempClass, TruckClass,
 )
 from dia_engine.optimize.pipeline import EnginePolicy
 from dia_engine.sim.policy import Policy
@@ -139,11 +144,244 @@ def _overstock_slow(stock: dict, fc, scenario) -> None:
         stock[key] = max(stock[key], sum(pf.mean) / len(pf.mean) * 7 * weeks)
 
 
+@dataclass
+class _DepotLot:
+    sku_id: str
+    depot_id: str
+    qty: int
+    expiry: date
+
+
+@dataclass
+class _Shipment:
+    arrive: date
+    to_id: str
+    sku_id: str
+    lot_id: str
+    qty: int
+    expiry: date
+
+
+class SimulationError(AssertionError):
+    """Stock conservation or plan validation failed inside the simulator."""
+
+
+@lru_cache(maxsize=512)
+def _forecast_for(data_dir: str, scenario_id: str, as_of: date, mode: str):
+    return forecast(scenario_id, as_of, 28, mode)
+
+
+def _is_plan_day(day: date, t0: date, temp_class: TempClass) -> bool:
+    """Chilled every 2nd day from t0; ambient every 7th (Mondays when t0 is a Monday)."""
+    every = 2 if temp_class == TempClass.CHILLED else 7
+    return (day - t0).days % every == 0
+
+
 def run_policy(scenario_id: str, policy: Policy, opening_state: OpeningState, seed: int,
                ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Daily loop over the test window. Returns (sim_log, sim_trips) with store.TABLES columns.
-    Enforces credit cuts identically for every policy and asserts stock conservation every day."""
-    raise NotImplementedError("M1: FR-09")
+    Enforces credit cuts identically for every policy and asserts stock conservation every day.
+
+    Demand comes from the scenario's `demand_daily` (identical for every policy); shipment delays are drawn
+    from a generator keyed on (seed, day, lane, class), so they are identical too. In sim_log a depot's
+    `sales` column holds cases dispatched, a distributor's holds cases sold to outlets."""
+    cfg = get_config()
+    t0, t1 = cfg.simulation.test_window
+    days = [t0 + timedelta(days=i) for i in range((t1 - t0).days + 1)]
+    sc = load_scenario(scenario_id)
+    skus = {s.sku_id: s for s in sc.skus}
+    nodes = {n.node_id: n for n in sc.nodes}
+    depots = [n.node_id for n in sc.nodes if n.type == NodeType.DEPOT]
+    dists = [n.node_id for n in sc.nodes if n.type == NodeType.DISTRIBUTOR]
+    lanes = {(l.from_id, l.to_id): l for l in sc.lanes}
+    lane_index = {k: i for i, k in enumerate(sorted(lanes))}
+    sku_ids = [s.sku_id for s in sc.skus]
+    ddir = str(store.data_dir())
+    mode = ForecastMode(getattr(getattr(policy, "settings", None), "forecast_model", ForecastMode.FULL)).value
+
+    demand_tbl = store.read_table("demand_daily", scenario_id)
+    window_tbl = demand_tbl[(demand_tbl["date"] >= t0) & (demand_tbl["date"] <= t1)]
+    demand: dict[date, dict[tuple[str, str], int]] = defaultdict(dict)
+    for d, j, i, q in zip(window_tbl["date"], window_tbl["dist_id"], window_tbl["sku_id"], window_tbl["true_demand"]):
+        demand[d][(j, i)] = int(q)
+    receipts_by_day: dict[date, list] = defaultdict(list)
+    for r in store.read_table("plant_receipts", scenario_id).to_dict("records"):
+        receipts_by_day[r["date"]].append(r)
+
+    # ---- opening state
+    snap0 = get_snapshot(scenario_id, t0, opening_state)
+    depot_lots = {l.lot_id: _DepotLot(l.sku_id, l.depot_id, int(round(l.qty_cases)), l.expiry_date)
+                  for l in snap0.depot_lots}
+    dist_lots: dict[tuple[str, str], list[list]] = defaultdict(list)     # [expiry, qty, lot_id]
+    for n, d in enumerate(snap0.dist_stock):
+        dist_lots[(d.dist_id, d.sku_id)].append([d.expiry_date, int(round(d.qty_cases)), d.lot_id or f"OPEN-{n:05d}"])
+    in_transit: list[_Shipment] = []
+    outstanding = {j: nodes[j].credit_limit_inr - snap0.credit_available_inr[j] for j in dists}
+    payments: dict[date, dict[str, float]] = defaultdict(lambda: defaultdict(float))
+    lag = cfg.simulation.payment_lag_days
+    hist = demand_tbl[(demand_tbl["date"] >= t0 - timedelta(days=lag)) & (demand_tbl["date"] < t0)]
+    for d, j, i, q in zip(hist["date"], hist["dist_id"], hist["sku_id"], hist["sold"]):
+        payments[d + timedelta(days=lag)][j] += q * skus[i].price_inr
+
+    def totals() -> dict[tuple[str, str], int]:
+        out: dict[tuple[str, str], int] = defaultdict(int)
+        for l in depot_lots.values():
+            out[(l.depot_id, l.sku_id)] += l.qty
+        for (j, i), ls in dist_lots.items():
+            out[(j, i)] += sum(x[1] for x in ls)
+        return out
+
+    def snapshot(day: date) -> Snapshot:
+        held = defaultdict(float)
+        stock = []
+        for (j, i), ls in sorted(dist_lots.items()):
+            for exp, q, lot in ls:
+                if q > 0:
+                    stock.append(DistStock(dist_id=j, sku_id=i, lot_id=lot, qty_cases=float(q), expiry_date=exp))
+                    held[j] += q * skus[i].m3_per_case
+        for sh in in_transit:
+            held[sh.to_id] += sh.qty * skus[sh.sku_id].m3_per_case
+        return Snapshot(
+            scenario_id=scenario_id, as_of=day,
+            depot_lots=[Lot(lot_id=k, sku_id=l.sku_id, depot_id=l.depot_id, qty_cases=float(l.qty),
+                            mfg_date=l.expiry - timedelta(days=skus[l.sku_id].shelf_life_days), expiry_date=l.expiry)
+                        for k, l in sorted(depot_lots.items()) if l.qty >= 1],
+            dist_stock=stock,
+            in_transit=[InTransit(to_id=sh.to_id, sku_id=sh.sku_id, lot_id=sh.lot_id, qty_cases=float(sh.qty),
+                                  eta=sh.arrive, expiry_date=sh.expiry) for sh in in_transit],
+            credit_available_inr={j: max(nodes[j].credit_limit_inr - outstanding[j], 0.0) for j in dists},
+            storage_free_m3={j: max(nodes[j].storage_m3 - held[j], 0.0) for j in dists})
+
+    log_rows: list[list] = []
+    trip_rows: list[list] = []
+    tag = [seed, policy.name, opening_state.value]
+
+    for day in days:
+        opening = totals()
+        receipts: dict[tuple[str, str], int] = defaultdict(int)
+        out_: dict[tuple[str, str], int] = defaultdict(int)       # sales (distributor) or dispatch (depot)
+        lost: dict[tuple[str, str], int] = defaultdict(int)
+        expired: dict[tuple[str, str], int] = defaultdict(int)
+        cut: dict[tuple[str, str], int] = defaultdict(int)
+
+        # ---- planning and dispatch
+        for ci, tc in enumerate((TempClass.CHILLED, TempClass.AMBIENT)):
+            if not _is_plan_day(day, t0, tc):
+                continue
+            snap = snapshot(day)
+            plan = policy.plan(sc, snap, _forecast_for(ddir, scenario_id, day, mode), tc)
+            report = validate.validate_plan(plan, sc, snap, [], require_reasons=False)
+            if not report.ok:
+                raise SimulationError(f"{policy.name} {day} {tc.value}: {report.violations[:3]}")
+            plan = _enforce_credit(plan, snap, skus, cut)
+            for line in plan.lines:
+                lane = lanes[(line.from_id, line.to_id)]
+                rng = np.random.default_rng([seed, day.toordinal(), lane_index[(line.from_id, line.to_id)], ci])
+                extra = 1 if rng.random() < lane.p_delay else 0
+                lot = depot_lots[line.lot_id]
+                if lot.qty < line.cases:
+                    raise SimulationError(f"{policy.name} {day}: lot {line.lot_id} has {lot.qty}, line ships {line.cases}")
+                lot.qty -= line.cases
+                out_[(line.from_id, line.sku_id)] += line.cases
+                outstanding[line.to_id] += line.cases * skus[line.sku_id].price_inr
+                in_transit.append(_Shipment(day + timedelta(days=math.ceil(lane.lead_days_mean) + extra), line.to_id,
+                                            line.sku_id, line.lot_id, line.cases, line.expiry))
+            for t in plan.trucks:
+                lane = lanes[(t.from_id, t.to_id)]
+                co2 = (lane.co2_kg_per_trip[t.truck_class.value] if t.truck_class is not None else
+                       lane.co2_kg_per_trip["AMB32"] / (freight.capacity(TruckClass.AMB32).kg * cfg.carbon.ptl_load_factor) * t.kg)
+                trip_rows.append([*tag, day, t.truck_id, t.mode.value, t.from_id, t.to_id, t.kg_pct, t.m3_pct,
+                                  t.cost_inr, co2])
+
+        # ---- arrivals, plant receipts
+        due = [sh for sh in in_transit if sh.arrive <= day]
+        in_transit = [sh for sh in in_transit if sh.arrive > day]
+        for sh in due:
+            dist_lots[(sh.to_id, sh.sku_id)].append([sh.expiry, sh.qty, sh.lot_id])
+            receipts[(sh.to_id, sh.sku_id)] += sh.qty
+        for r in receipts_by_day.get(day, ()):
+            depot_lots[r["lot_id"]] = _DepotLot(r["sku_id"], r["depot_id"], int(r["qty_cases"]), r["expiry_date"])
+            receipts[(r["depot_id"], r["sku_id"])] += int(r["qty_cases"])
+
+        # ---- sales (FEFO), settle credit
+        sold_value: dict[str, float] = defaultdict(float)
+        for (j, i), want in demand[day].items():
+            ls = sorted(dist_lots.get((j, i), []), key=lambda x: (x[0], x[2]))
+            left = want
+            for x in ls:
+                take = min(left, x[1])
+                x[1] -= take
+                left -= take
+                if left == 0:
+                    break
+            sold = want - left
+            out_[(j, i)] += sold
+            lost[(j, i)] += left
+            sold_value[j] += sold * skus[i].price_inr
+        for j, v in payments.pop(day, {}).items():
+            outstanding[j] = max(outstanding[j] - v, 0.0)
+        for j, v in sold_value.items():
+            payments[day + timedelta(days=lag)][j] += v
+
+        # ---- expiry
+        for l in depot_lots.values():
+            if l.expiry <= day and l.qty > 0:
+                expired[(l.depot_id, l.sku_id)] += l.qty
+                l.qty = 0
+        for (j, i), ls in dist_lots.items():
+            for x in ls:
+                if x[0] <= day and x[1] > 0:
+                    expired[(j, i)] += x[1]
+                    x[1] = 0
+            dist_lots[(j, i)] = [x for x in ls if x[1] > 0]
+        depot_lots = {k: l for k, l in depot_lots.items() if l.qty > 0}
+
+        # ---- conservation: opening + receipts - sales - expired = closing, on every node x SKU
+        closing = totals()
+        for n in depots + dists:
+            for i in sku_ids:
+                k = (n, i)
+                o, r, s_, e = opening.get(k, 0), receipts.get(k, 0), out_.get(k, 0), expired.get(k, 0)
+                c = closing.get(k, 0)
+                if o + r - s_ - e != c:
+                    raise SimulationError(f"conservation {policy.name} {day} {n} {i}: {o}+{r}-{s_}-{e} != {c}")
+                log_rows.append([*tag, day, n, i, o, r, s_, lost.get(k, 0), e, cut.get(k, 0), c])
+
+    sim_log = pd.DataFrame(log_rows, columns=store.TABLES["sim_log"][1])
+    sim_trips = pd.DataFrame(trip_rows, columns=store.TABLES["sim_trips"][1])
+    return sim_log, sim_trips
+
+
+def _enforce_credit(plan, snap: Snapshot, skus: dict, cut: dict):
+    """Same rule for every policy: a distributor's shipments above credit available are cut pro rata across its
+    lines (whole cases, rounded down). Cut cases stay at the depot and are logged as credit_cut."""
+    value: dict[str, float] = defaultdict(float)
+    for l in plan.lines:
+        value[l.to_id] += l.cases * skus[l.sku_id].price_inr
+    factor = {j: min(snap.credit_available_inr.get(j, math.inf) / v, 1.0) for j, v in value.items() if v > 0}
+    if all(f >= 1.0 for f in factor.values()):
+        return plan
+    lines = []
+    for l in plan.lines:
+        n = int(math.floor(l.cases * factor.get(l.to_id, 1.0) + 1e-9))
+        if n < l.cases:
+            cut[(l.to_id, l.sku_id)] += l.cases - n
+        if n > 0:
+            lines.append(l.model_copy(update={"cases": n}))
+    by_truck: dict[str, list] = defaultdict(list)
+    for l in lines:
+        by_truck[l.truck_id or l.consignment_id].append(l)
+    trucks = []
+    for t in plan.trucks:
+        ls = by_truck.get(t.truck_id)
+        if not ls:
+            continue
+        kg = sum(l.cases * skus[l.sku_id].kg_per_case for l in ls)
+        m3 = sum(l.cases * skus[l.sku_id].m3_per_case for l in ls)
+        scale_kg, scale_m3 = (kg / t.kg if t.kg else 1.0), (m3 / t.m3 if t.m3 else 1.0)
+        trucks.append(t.model_copy(update={"kg": kg, "m3": m3, "kg_pct": t.kg_pct * scale_kg,
+                                           "m3_pct": t.m3_pct * scale_m3, "line_ids": [l.line_id for l in ls]}))
+    return plan.model_copy(update={"lines": lines, "trucks": trucks})
 
 
 def run_experiment(experiment_id: str, req: ExperimentRequest,
