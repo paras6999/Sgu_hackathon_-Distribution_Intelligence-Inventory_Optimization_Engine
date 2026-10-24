@@ -27,6 +27,15 @@ Read with `PRD.md` (what), `Architecture.md` (how it connects) and `Team.md` (wh
 - No real brand names; mark unsourced values `judgment`; never invent a citation.
 - Quantities come only from the optimiser (or a baseline). Never from an LLM.
 
+## Simulated data must be realistic, not random
+The data is simulated, but judges will test whether it is believable. Every generated number needs a real basis.
+- **Anchor to real sources:** Open-Meteo weather for each city; actual festival dates by region (Diwali 12 Nov 2023, 1 Nov 2024, 20 Oct 2025; Durga Puja, Pongal, Onam, etc.); freight fitted to FR8 market rates and the current diesel price; real city coordinates.
+- **Realistic SKU economics:** prices, margins, case weights and volumes, and shelf lives typical of Indian FMCG (dairy 10–21 days, snacks 3–6 months, detergents 18–36 months). Margins and costs consistent with each other (price > landed cost > 0).
+- **Realistic demand structure:** base demand scaled by city size and region, weekday pattern (weekend peaks for GT), monthly seasonality (summer beverages and dairy, monsoon dip in footfall), festival uplift by category and region, promo uplift with a post-promo dip.
+- **Randomness only as calibrated noise:** negative-binomial noise around a realistic mean, with dispersion set so the coefficient of variation is plausible at SKU × distributor × day level. No uniform random draws for business quantities.
+- **Sanity checks in tests:** total network sales, festival uplift, freight as % of revenue (about 2–3%), expiry rate (about 0.5–2% of value), stockout rate and distributor stock cover all fall within the ranges in `PRD.md` §2.3 and §8.2. A failing check is a generator bug.
+- Every generator parameter lives in `config.yaml` with a source or a `judgment` tag and a one-line rationale.
+
 ## Determinism
 - Seed everything. Same config + seed ⇒ same parquet hash and same KPI hash.
 - Common random numbers: within a seed, every policy sees identical demand, delay and promo draws.
