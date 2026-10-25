@@ -23,10 +23,16 @@ class WhatIf(BaseModel):
     diesel_pct: confloat(ge=-50.0, le=200.0) = 0
 
 
+class HolderType(str, Enum):
+    DEPOT = "depot"
+    DISTRIBUTOR = "distributor"
+
+
 class AtRisk(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
+    holder_type: HolderType
     dist_id: str
     dist_city: str
     sku_id: str

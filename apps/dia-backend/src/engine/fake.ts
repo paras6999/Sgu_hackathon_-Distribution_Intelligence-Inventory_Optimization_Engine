@@ -46,7 +46,7 @@ export class FakeEngine implements EngineClient {
           dist_id: r.dist_id, dist_city: city.get(r.dist_id) ?? r.dist_id, sku_id: r.sku_id, sku_name: name.get(r.sku_id) ?? r.sku_id,
           lot_id: r.lot_id, expiry: r.expiry_date, days_left: daysLeft, stock_cases: r.qty_cases, daily_demand_cases: daily,
           expected_days_to_sell: Math.round((r.qty_cases / daily) * 10) / 10, expected_expired_cases: expired,
-          suggested_action: expired > 0 ? `Discount or return before ${r.expiry_date}` : "Watch",
+          suggested_action: expired > 0 ? `Discount or return before ${r.expiry_date}` : "Watch", holder_type: "distributor",
         };
       });
   }

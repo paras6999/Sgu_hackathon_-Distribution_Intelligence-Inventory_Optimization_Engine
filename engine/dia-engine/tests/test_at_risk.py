@@ -40,8 +40,16 @@ def test_rows_are_sorted_by_expected_expired_cases_descending(rows):
     assert expired == sorted(expired, reverse=True)
 
 
-def test_every_row_is_expected_to_expire_or_already_past_expiry(rows):
-    assert all(r.expected_expired_cases >= 0.5 or r.days_left <= 0 for r in rows)
+def test_distributor_rows_sell_too_slowly_for_their_shelf_life_or_are_past_expiry(rows):
+    dist = [r for r in rows if r.holder_type == "distributor"]
+    assert all(r.days_left <= 0 or r.expected_days_to_sell > r.days_left for r in dist)
+
+
+def test_depot_rows_are_listed_at_depots_and_include_the_floor_cases(rows):
+    depot = [r for r in rows if r.holder_type == "depot"]
+    assert depot, "seed01 imbalanced stock at 2025-09-29 has depot lots near the shelf-life floor"
+    assert all(r.dist_id.split("-")[0] in {"W1", "N1", "S1", "E1"} for r in depot)
+    assert any(r.suggested_action.startswith("Ship within") for r in depot)
 
 
 def test_days_left_is_expiry_minus_as_of(rows):

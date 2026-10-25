@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vitaran · Frontend options</title>
+<style>
+  body { margin:0; font-family:"Segoe UI", Arial, sans-serif; background:#f3f3f3; color:#181818; }
+  main { max-width:860px; margin:0 auto; padding:28px 20px; }
+  h1 { font-size:22px; font-weight:600; margin:0 0 6px; }
+  p.lead { color:#5c5b59; margin:0 0 18px; }
+  ul { list-style:none; padding:0; margin:0; }
+  li { background:#fff; border:1px solid #dddbda; border-radius:4px; padding:14px 16px; margin-bottom:10px; }
+  li a { color:#014486; font-weight:600; text-decoration:none; font-size:15px; }
+  li div { color:#5c5b59; margin-top:4px; }
+</style>
+</head>
+<body>
+  <main>
+    <h1>Vitaran: four layout options</h1>
+    <p class="lead">Same content in each. Headline numbers are from the demo run (290 lines, 16,071 cases, 40 lots at risk on 29 Sep 2025). Some shipment rows are examples, not run output. Pick one, or mix parts of two. Automation and human checks are shown in every option.</p>
+    <ul>
+      <li><a href="01-cycle-record.html">1. Cycle record</a><div>Salesforce-style record page. One plan, a step bar, tabs for shipments, distributors, stock at risk, what-if and results. Most familiar to a planner.</div></li>
+      <li><a href="02-guided-run.html">2. Guided run</a><div>A wizard. One decision per screen, with the automation choice made once at the end. Easiest to explain to a first-time user.</div></li>
+      <li><a href="03-exceptions-queue.html">3. Exceptions queue</a><div>Inbox style. The system does the routine work and shows only what needs a person. Best for showing automation with a human in the loop.</div></li>
+      <li><a href="04-stage-board.html">4. Stage board</a><div>Kanban by stage. Each column is a step with its own automation switch. Shows the whole week at a glance.</div></li>
+    </ul>
+  </main>
+</body>
+</html>

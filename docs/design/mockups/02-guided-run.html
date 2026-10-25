@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vitaran · Option 2 · Guided run</title>
+<style>
+  :root { --bg:#f3f3f3; --card:#ffffff; --text:#181818; --muted:#5c5b59; --line:#dddbda; --brand:#0176d3; --brand-ink:#014486; --ok:#2e844a; --warn:#b85c00; --soft:#eef4fb; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Segoe UI", Arial, sans-serif; font-size:14px; color:var(--text); background:var(--bg); }
+  .topbar { height:48px; background:#fff; border-bottom:1px solid var(--line); display:flex; align-items:center; padding:0 16px; }
+  .app-name { font-weight:700; color:var(--brand-ink); }
+  .topbar .where { margin-left:24px; color:var(--muted); }
+  .wrap { display:grid; grid-template-columns:260px 1fr; gap:16px; padding:16px; max-width:1200px; margin:0 auto; }
+  .run-card { background:#fff; border:1px solid var(--line); border-radius:4px; }
+  .run-card h2 { margin:0; padding:12px 14px; font-size:14px; border-bottom:1px solid var(--line); }
+  .run-card .meta { padding:10px 14px; color:var(--muted); font-size:12px; border-bottom:1px solid var(--line); }
+  .step { display:flex; gap:10px; padding:11px 14px; border-bottom:1px solid #efefef; color:var(--muted); }
+  .step .dot { width:22px; height:22px; border-radius:50%; border:2px solid #c9c7c5; text-align:center; line-height:18px; font-size:12px; flex:none; }
+  .step.done { color:var(--text); }
+  .step.done .dot { background:var(--ok); border-color:var(--ok); color:#fff; }
+  .step.now { color:var(--brand-ink); font-weight:600; background:var(--soft); }
+  .step.now .dot { border-color:var(--brand); color:var(--brand); }
+  .step small { display:block; font-weight:400; color:var(--muted); font-size:12px; }
+  .main { display:flex; flex-direction:column; gap:14px; }
+  .panel { background:#fff; border:1px solid var(--line); border-radius:4px; padding:18px 20px; }
+  .eyebrow { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  h1 { font-size:22px; margin:4px 0 6px; font-weight:600; }
+  .lead { color:var(--muted); margin:0; max-width:70ch; }
+  .summary { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:14px; }
+  .summary div { border:1px solid var(--line); border-radius:4px; padding:12px; }
+  .summary .v { font-size:20px; font-weight:600; }
+  .summary .l { color:var(--muted); font-size:12px; }
+  .decision { border:1px solid var(--line); border-radius:4px; padding:12px 14px; display:flex; gap:12px; align-items:flex-start; }
+  .decision + .decision { margin-top:10px; }
+  .decision .text { flex:1; }
+  .decision .text b { font-weight:600; }
+  .decision .text div { color:var(--muted); font-size:13px; margin-top:2px; }
+  .choices { display:flex; flex-direction:column; gap:6px; min-width:200px; }
+  .choices label { display:flex; gap:6px; align-items:center; font-size:13px; }
+  .radio-block { border:1px solid var(--line); border-radius:4px; padding:12px 14px; margin-top:6px; }
+  .radio-block label { display:block; padding:6px 0; }
+  .radio-block small { display:block; color:var(--muted); margin-left:20px; }
+  .footer { display:flex; align-items:center; gap:8px; }
+  .footer .spacer { flex:1; }
+  .btn { border:1px solid #c9c7c5; background:#fff; color:var(--brand-ink); padding:8px 14px; border-radius:4px; font-weight:600; }
+  .btn.primary { background:var(--brand); border-color:var(--brand); color:#fff; }
+  .hint { color:var(--muted); font-size:12px; }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <span class="app-name">Vitaran</span>
+    <span class="where">Weekly plan · ambient · week of 29 Sep 2025</span>
+  </header>
+
+  <div class="wrap">
+    <aside class="run-card">
+      <h2>Weekly plan</h2>
+      <div class="meta">Run started automatically Mon 06:00. Waiting for step 3.</div>
+      <div class="step done"><span class="dot">&#10003;</span><div>Get the demand forecast<small>Done · 16 distributors, 24 products</small></div></div>
+      <div class="step done"><span class="dot">&#10003;</span><div>Build the shipment plan<small>Done · 290 lines, 26 trucks</small></div></div>
+      <div class="step now"><span class="dot">3</span><div>Check the plan<small>You decide</small></div></div>
+      <div class="step"><span class="dot">4</span><div>Send to distributors<small>Waits for step 3</small></div></div>
+      <div class="step"><span class="dot">5</span><div>Dispatch sheets<small>After replies</small></div></div>
+    </aside>
+
+    <section class="main">
+      <div class="panel">
+        <div class="eyebrow">Step 3 of 5</div>
+        <h1>Check the plan before it goes to distributors</h1>
+        <p class="lead">The system built the plan and found three things that need your call. Everything else is in order, so you can approve the rest as it stands.</p>
+        <div class="summary">
+          <div><div class="v">16,071</div><div class="l">cases to ship</div></div>
+          <div><div class="v">26 full trucks</div><div class="l">average 93% full</div></div>
+          <div><div class="v">40 lots</div><div class="l">at risk of expiring</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="decision">
+          <div class="text"><b>Sweet Lassi 200 ml at Dankuni: 99 cases expire 6 Oct</b><div>Ship within 1 day to the 4 distributors this depot serves. Recommended: send now.</div></div>
+          <div class="choices"><label><input type="radio" name="a" checked> Accept the suggestion</label><label><input type="radio" name="a"> Change the quantity</label><label><input type="radio" name="a"> Decide later</label></div>
+        </div>
+        <div class="decision">
+          <div class="text"><b>Credit limit reached at Chandigarh</b><div>Lines to this distributor are capped by its credit. Raising the limit would let more cases ship.</div></div>
+          <div class="choices"><label><input type="radio" name="b"> Ask finance to raise it</label><label><input type="radio" name="b" checked> Keep the cap</label></div>
+        </div>
+        <div class="decision">
+          <div class="text"><b>Pune trimmed Packaged Water 1 L from 179 to 90 cases</b><div>Already replied. The freed cases went to Surat, Chennai and Hyderabad.</div></div>
+          <div class="choices"><label><input type="radio" name="c" checked> Accept the re-plan</label><label><input type="radio" name="c"> Look at the change first</label></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="eyebrow">How should the next steps run?</div>
+        <div class="radio-block">
+          <label><input type="radio" name="mode"> Run everything automatically <small>Sends to distributors as soon as the plan is built. Use only when you trust the last few cycles.</small></label>
+          <label><input type="radio" name="mode" checked> Pause before sending <small>Recommended. You approve once; replies and dispatch then run automatically.</small></label>
+          <label><input type="radio" name="mode"> I will do each step by hand <small>The system only calculates when you press Run.</small></label>
+        </div>
+      </div>
+
+      <div class="panel footer">
+        <span class="hint">Nothing is sent until you press Approve.</span>
+        <span class="spacer"></span>
+        <button class="btn">Save and come back later</button>
+        <button class="btn primary">Approve and send to 16 distributors</button>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

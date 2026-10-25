@@ -18,6 +18,7 @@
       "additionalProperties": false,
       "description": "One lot of stock held by a distributor that is expected to expire before it sells (PRD FR-20).",
       "properties": {
+        "holder_type": { "enum": ["depot", "distributor"], "type": "string" },
         "dist_id": { "type": "string" },
         "dist_city": { "type": "string" },
         "sku_id": { "type": "string" },
@@ -31,7 +32,7 @@
         "expected_expired_cases": { "type": "number" },
         "suggested_action": { "type": "string" }
       },
-      "required": ["dist_id", "dist_city", "sku_id", "sku_name", "lot_id", "expiry", "days_left", "stock_cases",
+      "required": ["holder_type", "dist_id", "dist_city", "sku_id", "sku_name", "lot_id", "expiry", "days_left", "stock_cases",
         "daily_demand_cases", "expected_days_to_sell", "expected_expired_cases", "suggested_action"],
       "type": "object"
     },

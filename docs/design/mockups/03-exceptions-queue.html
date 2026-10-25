@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vitaran · Option 3 · Exceptions queue</title>
+<style>
+  :root { --bg:#f3f3f3; --card:#ffffff; --text:#181818; --muted:#5c5b59; --line:#dddbda; --brand:#0176d3; --brand-ink:#014486; --ok:#2e844a; --warn:#b85c00; --bad:#ba0517; --soft:#eef4fb; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Segoe UI", Arial, sans-serif; font-size:14px; color:var(--text); background:var(--bg); height:100vh; display:flex; flex-direction:column; }
+  .topbar { height:48px; flex:none; background:#fff; border-bottom:1px solid var(--line); display:flex; align-items:center; padding:0 16px; gap:24px; }
+  .app-name { font-weight:700; color:var(--brand-ink); }
+  .topbar .tab { color:var(--text); }
+  .topbar .tab.on { color:var(--brand-ink); font-weight:600; }
+  .band { flex:none; background:#fff; border-bottom:1px solid var(--line); padding:10px 16px; display:flex; gap:20px; align-items:center; }
+  .band .status { font-weight:600; }
+  .band .pill { padding:2px 8px; border-radius:3px; font-size:12px; }
+  .band .auto { background:#e6f4ea; color:var(--ok); }
+  .band .you { background:#fdf1e0; color:var(--warn); }
+  .band .sp { flex:1; }
+  .band .muted { color:var(--muted); }
+  .layout { flex:1; min-height:0; display:grid; grid-template-columns:340px 1fr; }
+  .queue { background:#fff; border-right:1px solid var(--line); overflow:auto; }
+  .queue h3 { margin:0; padding:12px 14px 6px; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+  .q { padding:11px 14px; border-bottom:1px solid #efefef; cursor:pointer; }
+  .q.sel { background:var(--soft); border-left:3px solid var(--brand); padding-left:11px; }
+  .q b { font-weight:600; display:block; }
+  .q span { color:var(--muted); font-size:12px; }
+  .q .tag { float:right; font-size:11px; padding:1px 6px; border-radius:3px; background:#fdf1e0; color:var(--warn); }
+  .q .tag.ok { background:#e6f4ea; color:var(--ok); }
+  .detail { overflow:auto; padding:18px 22px; }
+  .detail h1 { margin:0 0 4px; font-size:20px; font-weight:600; }
+  .detail .sub { color:var(--muted); margin-bottom:14px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:4px; padding:14px 16px; margin-bottom:12px; }
+  .card h2 { margin:0 0 8px; font-size:14px; }
+  .facts { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .facts div { font-size:12px; color:var(--muted); }
+  .facts b { display:block; font-size:18px; color:var(--text); font-weight:600; }
+  .option { display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-bottom:1px solid #efefef; }
+  .option:last-child { border-bottom:none; }
+  .option .title { font-weight:600; }
+  .option .txt { color:var(--muted); font-size:13px; }
+  .option .btn { margin-left:auto; flex:none; }
+  .btn { border:1px solid #c9c7c5; background:#fff; color:var(--brand-ink); padding:6px 12px; border-radius:4px; font-weight:600; }
+  .btn.primary { background:var(--brand); border-color:var(--brand); color:#fff; }
+  .after { color:var(--muted); font-size:12px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid #efefef; }
+  th { color:var(--muted); font-weight:600; font-size:12px; background:#fafaf9; }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <span class="app-name">Vitaran</span>
+    <span class="tab on">Work queue</span>
+    <span class="tab">Plans</span>
+    <span class="tab">Distributors</span>
+    <span class="tab">Results</span>
+  </header>
+
+  <div class="band">
+    <span class="status">Automatic: 12 steps done this week</span>
+    <span class="pill you">1 waiting for you</span>
+    <span class="sp"></span>
+    <span class="muted">Next automatic run: Mon 06:00 · Mode: pause before sending</span>
+  </div>
+
+  <div class="layout">
+    <aside class="queue">
+      <h3>Needs you (3)</h3>
+      <div class="q sel"><span class="tag">Today</span><b>Sweet Lassi 200 ml, Dankuni</b><span>99 cases expire 6 Oct</span></div>
+      <div class="q"><span class="tag">Today</span><b>Credit limit, Chandigarh</b><span>3 lines capped by the limit</span></div>
+      <div class="q"><span class="tag">Review</span><b>Pune trimmed one line</b><span>Freed cases moved to three distributors</span></div>
+      <h3>Automatic (done)</h3>
+      <div class="q"><span class="tag ok">Done</span><b>Forecast updated</b><span>16 distributors, 24 products</span></div>
+      <div class="q"><span class="tag ok">Done</span><b>Plan built</b><span>290 lines, 26 full trucks</span></div>
+      <div class="q"><span class="tag ok">Done</span><b>Replies logged</b><span>1 of 16 distributors replied</span></div>
+    </aside>
+
+    <section class="detail">
+      <h1>Sweet Lassi 200 ml at Dankuni</h1>
+      <div class="sub">Stock at risk · ambient · the plan for week of 29 Sep 2025</div>
+
+      <div class="card">
+        <h2>What is happening</h2>
+        <div class="facts">
+          <div>Cases at Dankuni<b>99</b></div>
+          <div>Expire<b>6 Oct</b></div>
+          <div>Days of life left<b>7</b></div>
+          <div>Sold per day, all 4 nearby distributors<b>58.6</b></div>
+        </div>
+        <p style="margin:12px 0 0;color:var(--muted)">At this rate the 4 nearby distributors sell the 99 cases in about 2 days, so the stock can still ship before it expires.</p>
+      </div>
+
+      <div class="card">
+        <h2>Your options</h2>
+        <div class="option">
+          <div><div class="title">Send now, as the plan suggests</div><div class="txt">Adds 99 cases to tomorrow's trucks from Dankuni. No cost change.</div><div class="after">After: stock leaves the depot before it expires.</div></div>
+          <button class="btn primary">Accept</button>
+        </div>
+        <div class="option">
+          <div><div class="title">Send half, hold half</div><div class="txt">Ships 50 now and keeps 49 for the next cycle.</div><div class="after">After: 49 cases carry a higher expiry risk.</div></div>
+          <button class="btn">Change</button>
+        </div>
+        <div class="option">
+          <div><div class="title">Decide later</div><div class="txt">Keeps the item in the queue. It reminds you at 12:00.</div><div class="after">After: the system will not send anything for this item.</div></div>
+          <button class="btn">Later</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Similar items this week</h2>
+        <table>
+          <thead><tr><th>Where</th><th>Product</th><th>Cases</th><th>Expires</th><th>Suggested</th></tr></thead>
+          <tbody>
+            <tr><td>Hosur</td><td>Sweet Lassi 200 ml</td><td>114</td><td>7 Oct</td><td>Ship within 2 days</td></tr>
+            <tr><td>Gurugram</td><td>Sweet Lassi 200 ml</td><td>131</td><td>6 Oct</td><td>Ship within 1 day</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

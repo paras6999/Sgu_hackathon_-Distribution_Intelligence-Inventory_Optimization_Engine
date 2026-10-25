@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vitaran · Option 1 · Cycle record</title>
+<style>
+  :root { --bg:#f3f3f3; --card:#ffffff; --text:#181818; --muted:#5c5b59; --line:#dddbda; --brand:#0176d3; --brand-ink:#014486; --ok:#2e844a; --warn:#b85c00; --soft:#eef4fb; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:"Segoe UI", Arial, sans-serif; font-size:13px; color:var(--text); background:var(--bg); }
+  .topbar { height:48px; background:#fff; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:24px; padding:0 16px; }
+  .app-name { font-weight:700; color:var(--brand-ink); }
+  .topbar nav { display:flex; gap:4px; }
+  .topbar nav a { padding:14px 10px 12px; color:var(--text); text-decoration:none; border-bottom:3px solid transparent; }
+  .topbar nav a.on { border-bottom-color:var(--brand); color:var(--brand-ink); font-weight:600; }
+  .topbar .spacer { flex:1; }
+  .mode { font-size:12px; color:var(--muted); }
+  .page { padding:12px 16px 24px; }
+  .crumbs { color:var(--muted); font-size:12px; margin-bottom:6px; }
+  .record-head { background:#fff; border:1px solid var(--line); border-radius:4px; padding:14px 16px; display:flex; align-items:flex-start; gap:16px; }
+  .record-head h1 { margin:0 0 4px; font-size:20px; font-weight:600; }
+  .record-head .sub { color:var(--muted); }
+  .pill { display:inline-block; padding:2px 8px; border-radius:10px; font-size:12px; background:#fdf1e0; color:var(--warn); border:1px solid #f5d9a8; }
+  .head-actions { margin-left:auto; display:flex; gap:8px; }
+  .btn { border:1px solid #c9c7c5; background:#fff; color:var(--brand-ink); padding:6px 12px; border-radius:4px; font-weight:600; }
+  .btn.primary { background:var(--brand); border-color:var(--brand); color:#fff; }
+  .stepper { display:flex; background:#fff; border:1px solid var(--line); border-top:none; margin-bottom:12px; }
+  .stepper div { flex:1; padding:10px 14px; border-right:1px solid var(--line); color:var(--muted); }
+  .stepper div:last-child { border-right:none; }
+  .stepper .done { color:var(--ok); }
+  .stepper .now { color:var(--brand-ink); font-weight:700; background:var(--soft); }
+  .tabs { display:flex; gap:20px; border-bottom:1px solid var(--line); background:#fff; padding:0 16px; }
+  .tabs span { padding:10px 0; color:var(--muted); border-bottom:3px solid transparent; }
+  .tabs span.on { color:var(--brand-ink); border-bottom-color:var(--brand); font-weight:600; }
+  .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:12px 0; }
+  .kpi { background:#fff; border:1px solid var(--line); border-radius:4px; padding:12px 14px; }
+  .kpi .label { color:var(--muted); font-size:12px; }
+  .kpi .value { font-size:22px; font-weight:600; margin-top:4px; }
+  .kpi .note { color:var(--muted); font-size:12px; margin-top:2px; }
+  .cols { display:grid; grid-template-columns:2fr 1fr; gap:12px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:4px; }
+  .card h2 { margin:0; padding:10px 14px; font-size:14px; border-bottom:1px solid var(--line); display:flex; align-items:center; }
+  .card h2 small { color:var(--muted); font-weight:400; margin-left:6px; }
+  .card .body { padding:10px 14px; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:7px 8px; border-bottom:1px solid #efefef; vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:12px; background:#fafaf9; }
+  td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .why { color:var(--muted); font-size:12px; }
+  .item { border-bottom:1px solid #efefef; padding:9px 0; }
+  .item:last-child { border-bottom:none; }
+  .item b { font-weight:600; }
+  .modes { display:grid; grid-template-columns:1fr auto; row-gap:6px; align-items:center; }
+  .chip { font-size:12px; padding:2px 8px; border-radius:3px; background:#ecebea; }
+  .chip.auto { background:#e6f4ea; color:var(--ok); }
+  .chip.ask { background:#fdf1e0; color:var(--warn); }
+  .chip.manual { background:#ecebea; color:var(--muted); }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <span class="app-name">Vitaran</span>
+    <nav>
+      <a class="on" href="#">Planning cycles</a>
+      <a href="#">Distributors</a>
+      <a href="#">Dispatch</a>
+      <a href="#">Results</a>
+      <a href="#">Assumptions</a>
+    </nav>
+    <span class="spacer"></span>
+    <span class="mode">Automation: 4 steps automatic, 1 needs you</span>
+  </header>
+
+  <main class="page">
+    <div class="crumbs">Planning cycles &rsaquo; Ambient · week of 29 Sep 2025</div>
+
+    <section class="record-head">
+      <div>
+        <h1>Ambient plan, week of 29 Sep 2025</h1>
+        <div class="sub">Created automatically on Mon 06:00 · Last change: distributor Pune trimmed one line</div>
+      </div>
+      <span class="pill">Waiting for your approval</span>
+      <div class="head-actions">
+        <button class="btn">Ask a question</button>
+        <button class="btn">Change plan</button>
+        <button class="btn primary">Approve and send</button>
+      </div>
+    </section>
+
+    <div class="stepper">
+      <div class="done">&#10003; Forecast</div>
+      <div class="done">&#10003; Plan</div>
+      <div class="now">Check the plan (you are here)</div>
+      <div>Send to distributors</div>
+      <div>Dispatch sheets</div>
+    </div>
+
+    <div class="tabs">
+      <span class="on">Overview</span><span>Shipments</span><span>Distributors</span><span>Stock at risk</span><span>What if</span><span>Results</span>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="label">Cases to ship</div><div class="value">16,071</div><div class="note">290 shipment lines</div></div>
+      <div class="kpi"><div class="label">Full trucks</div><div class="value">26</div><div class="note">Average 93% full</div></div>
+      <div class="kpi"><div class="label">Distributors</div><div class="value">16</div><div class="note">1 has replied, 15 waiting</div></div>
+      <div class="kpi"><div class="label">Stock at risk</div><div class="value">40 lots</div><div class="note">Must ship in the next 1 to 2 days</div></div>
+    </div>
+
+    <div class="cols">
+      <section class="card">
+        <h2>Shipments to approve <small>examples from 290 lines</small></h2>
+        <table>
+          <thead><tr><th>From to</th><th>Product</th><th class="num">Cases</th><th>Truck</th><th>Why this shipment</th></tr></thead>
+          <tbody>
+            <tr><td>Dankuni to Kolkata</td><td>Cola PET 600 ml</td><td class="num">166</td><td>Full truck</td><td class="why">Cheapest depot for Kolkata: &#8377;33 a case against &#8377;202 from Gurugram</td></tr>
+            <tr><td>Dankuni to Kolkata</td><td>Masala Chips 52 g</td><td class="num">324</td><td>Full truck</td><td class="why">Truck is 100% full by weight</td></tr>
+            <tr><td>Depot to Pune</td><td>Packaged Water 1 L</td><td class="num">90</td><td>Full truck</td><td class="why">Pune trimmed this line from 179 cases</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <aside>
+        <section class="card" style="margin-bottom:12px">
+          <h2>Needs a decision <small>2</small></h2>
+          <div class="body">
+            <div class="item"><b>Sweet Lassi at Dankuni</b><div class="why">99 cases expire 6 Oct. Ship within 1 day.</div></div>
+            <div class="item"><b>Credit limit at Chandigarh</b><div class="why">Full. 3 lines capped; raise the limit or hold.</div></div>
+          </div>
+        </section>
+        <section class="card">
+          <h2>Automation for this cycle</h2>
+          <div class="body modes">
+            <span>Forecast</span><span class="chip auto">Automatic</span>
+            <span>Plan</span><span class="chip auto">Automatic</span>
+            <span>Send to distributors</span><span class="chip ask">Ask me first</span>
+            <span>Distributor replies</span><span class="chip auto">Automatic</span>
+            <span>Dispatch sheets</span><span class="chip manual">By hand</span>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>
