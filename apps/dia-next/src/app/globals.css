@@ -856,3 +856,97 @@ tr.sel td {
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .qty { width: 84px; padding: 4px 6px; border: 1px solid #c9c7c5; border-radius: 4px; font: inherit; text-align: right; }
 select { padding: 4px 6px; border: 1px solid #c9c7c5; border-radius: 4px; font: inherit; background: #fff; }
+
+/* ===== Shell and charts (added by the shell task; rules above are unchanged) ===== */
+
+:root {
+  --policy-engine: var(--brand);
+  --policy-a: #747474;
+  --policy-b: #9050e9;
+}
+
+/* Header links. The active link gets a white underline. */
+.global-nav {
+  align-self: stretch;
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  margin-left: 12px;
+}
+
+.global-nav a {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  color: #d6e4f5;
+  text-decoration: none;
+  font-size: 13px;
+  border-bottom: 3px solid transparent;
+}
+
+.global-nav a:hover {
+  color: #fff;
+}
+
+.global-nav a[aria-current="page"] {
+  color: #fff;
+  font-weight: 600;
+  border-bottom-color: #fff;
+}
+
+/* Charts (hand-written SVG) */
+
+.chart-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.chart-wrap svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.chart-wrap text {
+  fill: var(--muted);
+  font-size: 11px;
+  font-family: var(--font);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-swatch {
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.caption {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.callout {
+  padding: 10px 12px;
+  border-left: 3px solid var(--brand);
+  border-radius: 4px;
+  background: var(--soft);
+  color: var(--text);
+  line-height: 1.45;
+}

@@ -1,18 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import type { AssistantTurn, ChatTurn } from "@/hooks/useAssistant";
-import { QUICK_PROMPTS, type UiMode } from "@/lib/config";
+import { useApp } from "@/context/AppContext";
+import type { AssistantTurn } from "@/hooks/useAssistant";
+import { QUICK_PROMPTS } from "@/lib/config";
 import { WorkCard, type WorkOutcome } from "./AssistantSteps";
-
-type Props = {
-  ready: boolean;
-  mode: UiMode;
-  turns: ChatTurn[];
-  onSend: (text: string) => void;
-  onConfirm: (turn: AssistantTurn) => void;
-  onCancel: (turnId: number) => void;
-};
 
 function AssistantMessage({
   turn,
@@ -50,7 +42,10 @@ function AssistantMessage({
   );
 }
 
-export function AssistantPanel({ ready, mode, turns, onSend, onConfirm, onCancel }: Props) {
+export function AssistantPanel() {
+  const { planId, mode, turns, pageContext, ask, confirmTurn, resolve } = useApp();
+  const ready = planId !== null;
+  const prompts = pageContext?.prompts ?? QUICK_PROMPTS;
   const [draft, setDraft] = useState("");
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -64,7 +59,7 @@ export function AssistantPanel({ ready, mode, turns, onSend, onConfirm, onCancel
     const text = draft.trim();
     if (!text || !ready) return;
     setDraft("");
-    onSend(text);
+    void ask(text);
   };
 
   return (
@@ -92,13 +87,13 @@ export function AssistantPanel({ ready, mode, turns, onSend, onConfirm, onCancel
               <p>{turn.text}</p>
             </div>
           ) : (
-            <AssistantMessage key={turn.id} turn={turn} onConfirm={onConfirm} onCancel={onCancel} />
+            <AssistantMessage key={turn.id} turn={turn} onConfirm={confirmTurn} onCancel={resolve} />
           ),
         )}
       </div>
       <div className="suggest">
-        {QUICK_PROMPTS.map((prompt) => (
-          <button key={prompt} type="button" disabled={!ready} onClick={() => onSend(prompt)}>
+        {prompts.map((prompt) => (
+          <button key={prompt} type="button" disabled={!ready} onClick={() => void ask(prompt)}>
             {prompt}
           </button>
         ))}

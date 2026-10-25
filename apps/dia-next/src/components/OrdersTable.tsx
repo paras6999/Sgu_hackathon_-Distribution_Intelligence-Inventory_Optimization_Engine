@@ -25,6 +25,8 @@ type Props = {
   onApplyOrder: (order: OrderSummary, decisions: LineDecision[]) => void;
   /** Accept or reject every line of each checked order. */
   onBulk: (distIds: string[], action: ResponseAction) => void;
+  /** Order to open when the table first shows, for example from a link on the map page. */
+  initialOpenDist?: string;
 };
 
 function deltaClass(value: number): string {
@@ -33,9 +35,9 @@ function deltaClass(value: number): string {
   return "delta-0";
 }
 
-export function OrdersTable({ orders, lines, canAct, busy, onApplyOrder, onBulk }: Props) {
+export function OrdersTable({ orders, lines, canAct, busy, onApplyOrder, onBulk, initialOpenDist }: Props) {
   const [filter, setFilter] = useState<FilterId>("all");
-  const [openDist, setOpenDist] = useState<string | null>(null);
+  const [openDist, setOpenDist] = useState<string | null>(initialOpenDist ?? null);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const active = FILTERS.find((f) => f.id === filter) ?? FILTERS[0];
   const visible = orders.filter(active.test);

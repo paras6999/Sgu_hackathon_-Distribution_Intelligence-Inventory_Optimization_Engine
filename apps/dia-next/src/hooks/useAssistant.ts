@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import type { AssistantResponse } from "@dia/types";
+import type { AssistantRequest, AssistantResponse } from "@dia/types";
 import { ApiError, askAssistant, describeError } from "@/lib/api";
 import type { UiMode } from "@/lib/config";
 
@@ -41,6 +41,7 @@ export function useAssistant() {
       message: string,
       mode: UiMode,
       confirm = false,
+      scope: Pick<AssistantRequest, "page" | "context"> = {},
     ): Promise<AssistantResponse | null> => {
       const userId = nextId.current++;
       const turnId = nextId.current++;
@@ -63,6 +64,7 @@ export function useAssistant() {
           message,
           mode: mode === "automatic" ? "automatic" : "ask_first",
           ...(confirm ? { confirm: true } : {}),
+          ...scope,
         });
         setTurns((prev) => patchTurn(prev, turnId, { response }));
         return response;
