@@ -2,6 +2,7 @@
 import type { Plan } from "@dia/types";
 import { useState, type ReactNode } from "react";
 import { api } from "./api";
+import { AssistantPanel } from "./components/AssistantPanel";
 import { Icon, useLoad } from "./components/ui";
 import { DemandPage } from "./pages/DemandPage";
 import { AssumptionsPage, FrontierPage, MapPage, ResultsPage } from "./pages/AnalyticsPages";
@@ -48,6 +49,7 @@ export function App() {
           </div>
         ))}
       </nav>
+      <div className="workspace">
       <main className="main">
         <div className="page">
           {tab === "Plan" && <PlanPage plan={plan} setPlan={setPlan} />}
@@ -61,6 +63,8 @@ export function App() {
           {tab === "Assumptions" && <AssumptionsPage />}
         </div>
       </main>
+      <AssistantPanel plan={plan} setPlan={setPlan} />
+      </div>
       <footer className="foot">
         <span><b>Plan</b> {plan ? `${plan.plan_id} v${plan.version} · ${plan.status}` : "none yet"}</span>
         <span className="spacer" />

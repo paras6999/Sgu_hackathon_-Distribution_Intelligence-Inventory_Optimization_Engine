@@ -191,3 +191,57 @@ th.num { text-align: right; }
   .page { margin: 10px 10px 0; }
   .nav-group > span { display: none; }
 }
+
+/* ---------------------------------------------------------------- assistant sidebar
+ * Ported from apps/dia-next (Ammey Kuraaday's assistant), mapped onto this theme's tokens. */
+.workspace { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 12px; margin: 12px 14px 0; align-items: start; }
+.workspace .page { margin: 0; }
+.assist { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; position: sticky; top: 12px; height: calc(100vh - 150px); min-height: 420px; min-width: 0; }
+.assist-head { padding: 12px 14px; font-size: 14px; font-weight: 600; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; margin: 0; }
+.assist-head .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--primary); }
+.assist-head small { margin-left: auto; color: var(--muted); font-weight: 400; font-size: 12px; }
+.assist-modes { margin: 10px 14px 0; align-self: flex-start; }
+.assist-note { margin: 8px 14px 0; padding: 6px 10px; border-radius: var(--radius); background: var(--warning-soft); color: var(--warning); font-size: 12px; }
+.log { padding: 10px 14px; flex: 1; overflow: auto; min-height: 0; }
+.msg { border-radius: 6px; padding: 9px 11px; margin-bottom: 8px; line-height: 1.4; }
+.msg.sys { background: var(--bg); }
+.msg.you { background: var(--primary-soft); margin-left: 30px; }
+.msg .who { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+.msg .reply { margin-top: 8px; white-space: pre-wrap; }
+.msg .reply.error, .text-bad { color: var(--danger); }
+.confirm-row { display: flex; gap: 8px; margin-top: 8px; }
+.assist button.small { height: 28px; padding: 0 10px; font-size: 12px; }
+.suggest { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 14px 10px; }
+.suggest button { height: auto; font-size: 12px; font-weight: 400; padding: 4px 8px; border: 1px solid var(--border-strong); border-radius: 12px; color: var(--primary-hover); background: var(--surface); }
+.ask { padding: 10px 14px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+.ask input { flex: 1; min-width: 0; }
+.ask button { border: 0; background: var(--primary); color: #fff; padding: 0 14px; }
+.ask button:hover:not(:disabled) { background: var(--primary-hover); }
+.work { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.work-head { width: 100%; height: auto; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 0; border-radius: 0; background: none; text-align: left; color: var(--text); }
+.work-head:hover:not(:disabled) { background: none; }
+.work-head:disabled { opacity: 1; cursor: default; }
+.work-title { flex: 1; font-weight: 600; font-size: 12px; }
+.work-toggle { color: var(--primary-hover); font-size: 12px; font-weight: 600; }
+.work-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 220ms ease; }
+.work-body.open { grid-template-rows: 1fr; }
+.work-inner { overflow: hidden; min-height: 0; }
+.work-pad { padding: 0 10px 8px; }
+.pulse-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--primary); animation: pulse 1.2s ease-in-out infinite; }
+.wait-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--warning); }
+.icon-ok { color: var(--success); flex: none; }
+.icon-bad { color: var(--danger); flex: none; }
+.icon-muted { color: var(--muted); flex: none; }
+.progress { position: relative; height: 2px; margin: 6px 0 2px; background: var(--chip-bg); border-radius: 2px; overflow: hidden; }
+.progress::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 35%; background: var(--primary); animation: progress-sweep 1.4s ease-in-out infinite; }
+.steps { list-style: none; padding: 0; margin: 0; }
+.step { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; font-size: 12px; animation: step-in 260ms ease both; }
+.step svg { margin-top: 1px; }
+@keyframes pulse { 0%, 100% { opacity: 0.35; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); } }
+@keyframes progress-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+@keyframes step-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@media (max-width: 1100px) {
+  .workspace { grid-template-columns: minmax(0, 1fr); }
+  .assist { position: static; height: auto; min-height: 420px; }
+}
+@media (prefers-reduced-motion: reduce) { .assist *, .assist *::before, .assist *::after { animation: none !important; transition: none !important; } }

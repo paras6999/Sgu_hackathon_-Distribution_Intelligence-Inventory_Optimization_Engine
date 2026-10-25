@@ -1,6 +1,6 @@
 /** Typed client for the /v1 API (owner: M2). Every type comes from @dia/types, so web and backend can't drift. */
 import type {
-  AssumptionRow, AtRisk, BacktestMetrics, DemandHistory, DispatchResponse, ExperimentAccepted, ExperimentInfo, ExperimentRequest, ExperimentResults,
+  AssistantRequest, AssistantResponse, AssumptionRow, AtRisk, BacktestMetrics, DemandHistory, DispatchResponse, ExperimentAccepted, ExperimentInfo, ExperimentRequest, ExperimentResults,
   ForecastRequest, ForecastResponse, LearnedEffects, Message, OpeningState, OrdersView, Plan, PlanEvent, PlanRequest, Proposal, PublishResponse,
   ResponseRequest, ResponseResult, Scenario, Snapshot, Trajectory,
 } from "@dia/types";
@@ -49,6 +49,7 @@ export const api = {
   plan: (id: string, version?: number) => call<Plan>("GET", `/v1/plans/${id}${version ? `?version=${version}` : ""}`),
   publish: (id: string, version: number) => call<PublishResponse>("POST", `/v1/plans/${id}/publish`, { version }),
   proposals: (id: string) => call<Proposal[]>("GET", `/v1/plans/${id}/proposals`),
+  assistant: (req: AssistantRequest) => call<AssistantResponse>("POST", "/v1/assistant", req),
   orders: (id: string) => call<OrdersView>("GET", `/v1/plans/${id}/orders`),
   inbox: (id: string, dist: string) => call<Message>("GET", `/v1/plans/${id}/inbox/${dist}`),
   respond: (id: string, req: ResponseRequest) => call<ResponseResult>("POST", `/v1/plans/${id}/responses`, req),
