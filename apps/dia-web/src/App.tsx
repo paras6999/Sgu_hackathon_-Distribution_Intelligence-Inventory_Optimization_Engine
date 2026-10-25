@@ -6,6 +6,7 @@ import { AssistantPanel } from "./components/AssistantPanel";
 import { Icon, useLoad } from "./components/ui";
 import { DemandPage } from "./pages/DemandPage";
 import { AssumptionsPage, FrontierPage, MapPage, ResultsPage } from "./pages/AnalyticsPages";
+import { GuidePage } from "./pages/GuidePage";
 import { DispatchPage } from "./pages/DispatchPage";
 import { InboxPage } from "./pages/InboxPage";
 import { PlanPage } from "./pages/PlanPage";
@@ -15,7 +16,7 @@ import { WarehousesPage } from "./pages/WarehousesPage";
 const GROUPS: Array<{ title: string; items: Array<{ tab: string; icon: ReactNode }> }> = [
   { title: "Planning", items: [{ tab: "Plan", icon: Icon.plan }, { tab: "Map", icon: Icon.map }, { tab: "Dispatch", icon: Icon.truck }, { tab: "Orders by city", icon: Icon.inbox }, { tab: "Stock watch", icon: Icon.stock }, { tab: "Warehouses", icon: Icon.warehouse }] },
   { title: "Evaluation", items: [{ tab: "Demand analysis", icon: Icon.history }, { tab: "Results", icon: Icon.results }, { tab: "Frontier & Ablation", icon: Icon.frontier }] },
-  { title: "Reference", items: [{ tab: "Assumptions", icon: Icon.book }] },
+  { title: "Reference", items: [{ tab: "Guide", icon: Icon.book }, { tab: "Assumptions", icon: Icon.book }] },
 ];
 type Tab = (typeof GROUPS)[number]["items"][number]["tab"];
 
@@ -62,6 +63,7 @@ export function App() {
           {tab === "Demand analysis" && <DemandPage />}
           {tab === "Results" && <ResultsPage />}
           {tab === "Frontier & Ablation" && <FrontierPage />}
+          {tab === "Guide" && <GuidePage />}
           {tab === "Assumptions" && <AssumptionsPage />}
         </div>
       </main>
