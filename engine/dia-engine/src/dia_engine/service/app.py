@@ -14,15 +14,18 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from dia_engine import __version__, store
+from dia_engine.at_risk import at_risk
 from dia_engine.config import get_config
 from dia_engine.data.generate import list_scenarios, load_scenario
 from dia_engine.forecast.analysis import demand_history, learned_effects
 from dia_engine.forecast.forecast import backtest, forecast
 from dia_engine.optimize.pipeline import PlanInvalid, apply_response, make_plan
 from dia_engine.sim.simulate import get_snapshot
+from dia_engine.sim.trajectory import trajectory
+from dia_engine.whatif import apply_what_if
 from dia_types import (
-    AssumptionRow, BacktestMetrics, EngineForecastRequest, EngineHealth, EnginePlanRequest, EngineResolveRequest,
-    DemandHistory, ForecastBundle, ForecastMode, LearnedEffects, OpeningState, Plan, Scenario, Snapshot,
+    AssumptionRow, AtRisk, BacktestMetrics, EngineForecastRequest, EngineHealth, EnginePlanRequest, EngineResolveRequest,
+    DemandHistory, ForecastBundle, ForecastMode, LearnedEffects, OpeningState, Plan, Scenario, Snapshot, Trajectory,
 )
 
 app = FastAPI(title="dia-engine (internal)", version=__version__)
@@ -74,6 +77,20 @@ def snapshot(scenario_id: str, as_of: date, opening_state: OpeningState = Openin
     return get_snapshot(scenario_id, as_of, opening_state)
 
 
+@app.get("/scenarios/{scenario_id}/at-risk", response_model=list[AtRisk])
+def scenario_at_risk(scenario_id: str, as_of: date, opening_state: OpeningState = OpeningState.IMBALANCED) -> list[AtRisk]:
+    sc = _scenario(scenario_id)
+    snap = get_snapshot(scenario_id, as_of, opening_state)
+    fc = forecast(scenario_id, as_of, 28, ForecastMode("full").value)
+    return at_risk(sc, snap, fc, as_of)
+
+
+@app.get("/experiments/{experiment_id}/trajectory", response_model=Trajectory)
+def experiment_trajectory(experiment_id: str, sku_id: str, dist_id: str,
+                          opening_state: OpeningState = OpeningState.IMBALANCED, seed: int = 1) -> Trajectory:
+    return trajectory(experiment_id, sku_id, dist_id, opening_state, seed)
+
+
 @app.get("/scenarios/{scenario_id}/backtest", response_model=BacktestMetrics)
 def scenario_backtest(scenario_id: str) -> BacktestMetrics:
     return backtest(scenario_id)
@@ -99,6 +116,8 @@ def post_plan(req: EnginePlanRequest) -> Plan:
     sc = _scenario(req.scenario_id)
     snap = get_snapshot(req.scenario_id, req.as_of, req.opening_state)
     fc = forecast(req.scenario_id, req.as_of, 28, ForecastMode(req.settings.forecast_model).value)
+    if req.what_if is not None:
+        sc, snap, fc = apply_what_if(sc, snap, fc, req.what_if)
     return make_plan(sc, snap, fc, req.temp_class, plan_id=req.plan_id, settings=req.settings,
                      locks=req.locks, version=req.version)
 

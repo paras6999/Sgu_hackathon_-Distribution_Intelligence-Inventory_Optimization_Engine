@@ -3,6 +3,196 @@
   "$id": "dia",
   "title": "Dia",
   "$defs": {
+    "WhatIf": {
+      "additionalProperties": false,
+      "description": "Scenario changes applied before a plan is generated (PRD FR-19). Defaults change nothing.",
+      "properties": {
+        "demand_shock_pct": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 300,
+          "default": 0
+        },
+        "shock_region": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "depot_outage_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "diesel_pct": {
+          "type": "number",
+          "minimum": -50,
+          "maximum": 200,
+          "default": 0
+        }
+      },
+      "type": "object"
+    },
+    "AtRisk": {
+      "additionalProperties": false,
+      "description": "One lot of stock held by a distributor that is expected to expire before it sells (PRD FR-20).",
+      "properties": {
+        "dist_id": {
+          "type": "string"
+        },
+        "dist_city": {
+          "type": "string"
+        },
+        "sku_id": {
+          "type": "string"
+        },
+        "sku_name": {
+          "type": "string"
+        },
+        "lot_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expiry": {
+          "format": "date",
+          "type": "string"
+        },
+        "days_left": {
+          "type": "integer"
+        },
+        "stock_cases": {
+          "type": "number"
+        },
+        "daily_demand_cases": {
+          "type": "number"
+        },
+        "expected_days_to_sell": {
+          "type": "number"
+        },
+        "expected_expired_cases": {
+          "type": "number"
+        },
+        "suggested_action": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "dist_id",
+        "dist_city",
+        "sku_id",
+        "sku_name",
+        "lot_id",
+        "expiry",
+        "days_left",
+        "stock_cases",
+        "daily_demand_cases",
+        "expected_days_to_sell",
+        "expected_expired_cases",
+        "suggested_action"
+      ],
+      "type": "object"
+    },
+    "TrajectoryPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "date": {
+          "format": "date",
+          "type": "string"
+        },
+        "closing_cases": {
+          "type": "number"
+        },
+        "sales_cases": {
+          "type": "number"
+        },
+        "lost_cases": {
+          "type": "number"
+        },
+        "expired_cases": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "date",
+        "closing_cases",
+        "sales_cases",
+        "lost_cases",
+        "expired_cases"
+      ],
+      "type": "object"
+    },
+    "TrajectorySeries": {
+      "additionalProperties": false,
+      "properties": {
+        "policy": {
+          "type": "string"
+        },
+        "points": {
+          "items": {
+            "$ref": "#/$defs/TrajectoryPoint"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "policy",
+        "points"
+      ],
+      "type": "object"
+    },
+    "Trajectory": {
+      "additionalProperties": false,
+      "description": "Stock of one SKU at one distributor, day by day, for each policy in one experiment seed (PRD FR-21). Only seeds 1 and 2 keep sim logs.",
+      "properties": {
+        "experiment_id": {
+          "type": "string"
+        },
+        "sku_id": {
+          "type": "string"
+        },
+        "dist_id": {
+          "type": "string"
+        },
+        "opening_state": {
+          "$ref": "#/$defs/OpeningState"
+        },
+        "seed": {
+          "type": "integer"
+        },
+        "series": {
+          "items": {
+            "$ref": "#/$defs/TrajectorySeries"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "experiment_id",
+        "sku_id",
+        "dist_id",
+        "opening_state",
+        "seed",
+        "series"
+      ],
+      "type": "object"
+    },
     "ForecastRequest": {
       "additionalProperties": false,
       "properties": {
@@ -77,6 +267,17 @@
             "$ref": "#/$defs/Lock"
           },
           "type": "array"
+        },
+        "what_if": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WhatIf"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "base_plan_id": {
           "anyOf": [
@@ -706,6 +907,17 @@
     "EnginePlanRequest": {
       "additionalProperties": false,
       "properties": {
+        "what_if": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WhatIf"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "scenario_id": {
           "type": "string"
         },

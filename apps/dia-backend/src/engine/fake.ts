@@ -3,8 +3,8 @@
  * work before any engine code exists. resolve() applies actions directly (no re-solve, nothing grows).
  */
 import type {
-  AssumptionRow, BacktestMetrics, DemandHistory, EnginePlanRequest, EngineResolveRequest, ExperimentResults, ForecastBundle,
-  LearnedEffects, Plan, Scenario, Snapshot,
+  AssumptionRow, AtRisk, BacktestMetrics, DemandHistory, EnginePlanRequest, EngineResolveRequest, ExperimentResults, ForecastBundle,
+  LearnedEffects, OpeningState, Plan, Scenario, Snapshot, Trajectory, TrajectoryPoint,
 } from "@dia/types";
 import assumptions from "@dia/types/fixtures/assumptions.json";
 import backtest from "@dia/types/fixtures/backtest.json";
@@ -26,6 +26,30 @@ export class FakeEngine implements EngineClient {
   async scenarios() { return [(scenario as Scenario).scenario_id]; }
   async scenario() { return clone<Scenario>(scenario); }
   async snapshot() { return clone<Snapshot>(snapshot); }
+
+  /**
+   * FAKE DATA (not engine output): at-risk lots are the snapshot fixture's distributor stock rows that have a lot and stock.
+   * Demand is a flat 8% of stock per day and expected values follow from that. Scenario id, as-of and opening state
+   * do not change the result beyond the days-left calculation.
+   */
+  async atRisk(_scenarioId: string, asOf: string): Promise<AtRisk[]> {
+    const city = new Map((scenario as Scenario).nodes.map((n) => [n.node_id, n.city]));
+    const name = new Map((scenario as Scenario).skus.map((s) => [s.sku_id, s.name]));
+    const asOfMs = Date.parse(asOf);
+    return (snapshot as Snapshot).dist_stock
+      .filter((r) => r.lot_id && r.qty_cases > 0)
+      .map((r) => {
+        const daysLeft = Math.round((Date.parse(r.expiry_date) - asOfMs) / 86400000);
+        const daily = Math.max(0.1, Math.round(r.qty_cases * 0.8) / 10);
+        const expired = Math.min(r.qty_cases, Math.max(0, Math.round((r.qty_cases - daily * daysLeft) * 10) / 10));
+        return {
+          dist_id: r.dist_id, dist_city: city.get(r.dist_id) ?? r.dist_id, sku_id: r.sku_id, sku_name: name.get(r.sku_id) ?? r.sku_id,
+          lot_id: r.lot_id, expiry: r.expiry_date, days_left: daysLeft, stock_cases: r.qty_cases, daily_demand_cases: daily,
+          expected_days_to_sell: Math.round((r.qty_cases / daily) * 10) / 10, expected_expired_cases: expired,
+          suggested_action: expired > 0 ? `Discount or return before ${r.expiry_date}` : "Watch",
+        };
+      });
+  }
   async forecast() { return clone<ForecastBundle>(forecast); }
   async backtest() { return clone<BacktestMetrics>(backtest); }
 
@@ -89,5 +113,38 @@ export class FakeEngine implements EngineClient {
   }
 
   async experimentResults(id: string) { return this.results.get(id) ?? null; }
+
+  /**
+   * FAKE DATA (not engine output): a 28-day stock walk per policy, derived from sku, distributor, seed and opening state.
+   * Unknown experiment ids (never run in this process) return null.
+   */
+  async trajectory(experimentId: string, q: { sku_id: string; dist_id: string; opening_state: OpeningState; seed: number }): Promise<Trajectory | null> {
+    if (!this.results.has(experimentId)) return null;
+    const hash = [...`${q.sku_id}|${q.dist_id}`].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 997, 0);
+    const demand = 4 + ((hash + q.seed * 7) % 9);   // cases per day
+    const weekday = [1.1, 1.0, 0.95, 0.9, 1.0, 1.2, 1.25];
+    const start = Date.UTC(2025, 9, 13);
+    const policies: [string, number][] = [["engine", 1], ["baseline_a", 0.9], ["baseline_b", 0.8]];   // receipt size as a share of plan
+    const opening = demand * (q.opening_state === "neutral" ? 7 : 3);
+    const series = policies.map(([policy, receiptShare]) => {
+      let closing = opening;
+      const points: TrajectoryPoint[] = [];
+      for (let d = 0; d < 28; d++) {
+        const receipt = d % 7 === 0 ? Math.round(demand * 7.4 * receiptShare) : 0;
+        const available = closing + receipt;
+        const want = Math.round(demand * weekday[d % 7]!);
+        const sales = Math.min(available, want);
+        closing = available - sales;
+        const expired = Math.max(0, closing - 14 * demand);   // written off above 14 days of cover
+        closing -= expired;
+        points.push({
+          date: new Date(start + d * 86400000).toISOString().slice(0, 10),
+          closing_cases: closing, sales_cases: sales, lost_cases: want - sales, expired_cases: expired,
+        });
+      }
+      return { policy, points };
+    });
+    return { experiment_id: experimentId, sku_id: q.sku_id, dist_id: q.dist_id, opening_state: q.opening_state, seed: q.seed, series };
+  }
   async close() {}
 }

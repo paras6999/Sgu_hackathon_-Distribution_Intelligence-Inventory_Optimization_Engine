@@ -10,8 +10,8 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import type {
-  AssumptionRow, BacktestMetrics, DemandHistory, EngineForecastRequest, EngineHealth, EnginePlanRequest, EngineResolveRequest,
-  ExperimentRequest, ExperimentResults, ForecastBundle, LearnedEffects, OpeningState, Plan, Scenario, Snapshot,
+  AssumptionRow, AtRisk, BacktestMetrics, DemandHistory, EngineForecastRequest, EngineHealth, EnginePlanRequest, EngineResolveRequest,
+  ExperimentRequest, ExperimentResults, ForecastBundle, LearnedEffects, OpeningState, Plan, Scenario, Snapshot, Trajectory,
 } from "@dia/types";
 import { env, repoRoot } from "../env";
 import { EngineError, type EngineClient, type ExperimentOutcome } from "./client";
@@ -77,6 +77,10 @@ export class HttpEngine implements EngineClient {
     const q = new URLSearchParams({ as_of: asOf, opening_state: openingState });
     return this.call<Snapshot>("GET", `/scenarios/${encodeURIComponent(id)}/snapshot?${q}`);
   }
+  atRisk(id: string, asOf: string, openingState: OpeningState) {
+    const q = new URLSearchParams({ as_of: asOf, opening_state: openingState });
+    return this.call<AtRisk[]>("GET", `/scenarios/${encodeURIComponent(id)}/at-risk?${q}`);
+  }
   forecast(req: EngineForecastRequest) { return this.call<ForecastBundle>("POST", "/forecast", req); }
   backtest(id: string) { return this.call<BacktestMetrics>("GET", `/scenarios/${encodeURIComponent(id)}/backtest`); }
   history(id: string, distId?: string, skuId?: string) {
@@ -115,6 +119,16 @@ export class HttpEngine implements EngineClient {
   async experimentResults(id: string): Promise<ExperimentResults | null> {
     const path = join(env.engineDataDir, "experiments", id, "results.json");
     return existsSync(path) ? ((await Bun.file(path).json()) as ExperimentResults) : null;
+  }
+
+  async trajectory(id: string, q: { sku_id: string; dist_id: string; opening_state: OpeningState; seed: number }): Promise<Trajectory | null> {
+    const params = new URLSearchParams({ sku_id: q.sku_id, dist_id: q.dist_id, opening_state: q.opening_state, seed: String(q.seed) });
+    try {
+      return await this.call<Trajectory>("GET", `/experiments/${encodeURIComponent(id)}/trajectory?${params}`);
+    } catch (e) {
+      if (e instanceof EngineError && e.status === 404) return null;
+      throw e;
+    }
   }
 
   async close(): Promise<void> {
