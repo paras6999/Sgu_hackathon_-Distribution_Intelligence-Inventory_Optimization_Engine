@@ -8,6 +8,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { AnalysisPanel } from "../components/AnalysisPanel";
 import { EmptyState, ErrorText, Kpi, PageHeader, ReasonChips, Segmented, useLoad } from "../components/ui";
+import { ValueCell } from "../components/ValueView";
 
 /** MapLibre is large; it loads only when the Map tab is opened. */
 const NetworkMap = lazy(() => import("../components/NetworkMap").then((m) => ({ default: m.NetworkMap })));
@@ -505,7 +506,7 @@ export function AssumptionsPage() {
             {shown.map((r) => (
               <tr key={r.parameter}>
                 <td className="mono">{r.parameter}</td>
-                <td className="mono" style={{ maxWidth: 260, overflowWrap: "anywhere" }}>{typeof r.value === "object" ? JSON.stringify(r.value) : String(r.value)}</td>
+                <td style={{ whiteSpace: "nowrap" }}><ValueCell row={r} /></td>
                 <td>{r.unit ?? ""}</td>
                 <td>{r.source ? (r.source === "judgment" ? <span className="badge warn">judgment</span> : r.source) : <span className="badge">no source</span>}</td>
                 <td className="muted">{r.rationale ?? ""}</td>
