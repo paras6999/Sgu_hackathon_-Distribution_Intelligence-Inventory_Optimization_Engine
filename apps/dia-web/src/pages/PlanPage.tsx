@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api, inr } from "../api";
 import { AnalysisPanel } from "../components/AnalysisPanel";
 import { EmptyState, ErrorText, Kpi, PageHeader, ReasonChips, useLoad } from "../components/ui";
+import { WhatIfPanel } from "../components/WhatIfPanel";
 
 export const STATUS_TONE: Record<string, string> = { PROPOSED: "info", ACCEPTED: "ok", TRIMMED: "warn", REJECTED: "bad" };
 const SOLVE_LABEL: Record<string, string> = { optimal: "Optimal", time_limit: "Best within the time budget", lp_round: "Rounded from the LP relaxation", fallback_baseline_b: "Fell back to Baseline B", not_solved: "Baseline (no solver)" };
@@ -81,6 +82,7 @@ export function PlanPage({ plan, setPlan }: { plan: Plan | null; setPlan: (p: Pl
             <Kpi label="Cases shipped" value={(k.cases ?? 0).toLocaleString("en-IN")} hint={`${plan.lines.length} lines on ${plan.trucks.length} trucks`} />
             <Kpi label="Solve" value={`${plan.solve.seconds.toFixed(1)} s`} hint={SOLVE_LABEL[plan.solve.status] ?? plan.solve.status} />
           </div>
+          <WhatIfPanel key={`${plan.plan_id}-${plan.version}`} plan={plan} />
           <AnalysisPanel title="Analysis of this plan" request={{ kind: "plan", plan_id: plan.plan_id, version: plan.version }} />
           <h2>Plan lines <span className="muted" style={{ fontWeight: 400 }}>· {plan.plan_id} v{plan.version}</span></h2>
           <div className="table-wrap scroll" style={{ marginTop: 10 }}>

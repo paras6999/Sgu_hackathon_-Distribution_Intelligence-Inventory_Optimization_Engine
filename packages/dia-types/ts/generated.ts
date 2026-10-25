@@ -2,6 +2,11 @@
 
 /**
  * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "OpeningState".
+ */
+export type OpeningState = "neutral" | "imbalanced";
+/**
+ * This interface was referenced by `Dia`'s JSON-Schema
  * via the `definition` "TempClass".
  */
 export type TempClass = "ambient" | "chilled";
@@ -84,11 +89,6 @@ export type PolicyName =
   | "abl_home_depot";
 /**
  * This interface was referenced by `Dia`'s JSON-Schema
- * via the `definition` "OpeningState".
- */
-export type OpeningState = "neutral" | "imbalanced";
-/**
- * This interface was referenced by `Dia`'s JSON-Schema
  * via the `definition` "ForecastMode".
  */
 export type ForecastMode = "full" | "seasonal_naive";
@@ -119,6 +119,71 @@ export type SolveStatus = "optimal" | "time_limit" | "lp_round" | "fallback_base
 export type ViolationConstraint =
   "lot_stock" | "truck_kg" | "truck_m3" | "storage" | "credit" | "mrsl" | "lock" | "missing_truck" | "missing_reason";
 
+/**
+ * Scenario changes applied before a plan is generated (PRD FR-19). Defaults change nothing.
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "WhatIf".
+ */
+export interface WhatIf {
+  demand_shock_pct?: number;
+  shock_region?: string | null;
+  depot_outage_id?: string | null;
+  diesel_pct?: number;
+}
+/**
+ * One lot of stock held by a distributor that is expected to expire before it sells (PRD FR-20).
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "AtRisk".
+ */
+export interface AtRisk {
+  dist_id: string;
+  dist_city: string;
+  sku_id: string;
+  sku_name: string;
+  lot_id: string | null;
+  expiry: string;
+  days_left: number;
+  stock_cases: number;
+  daily_demand_cases: number;
+  expected_days_to_sell: number;
+  expected_expired_cases: number;
+  suggested_action: string;
+}
+/**
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "TrajectoryPoint".
+ */
+export interface TrajectoryPoint {
+  date: string;
+  closing_cases: number;
+  sales_cases: number;
+  lost_cases: number;
+  expired_cases: number;
+}
+/**
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "TrajectorySeries".
+ */
+export interface TrajectorySeries {
+  policy: string;
+  points: TrajectoryPoint[];
+}
+/**
+ * Stock of one SKU at one distributor, day by day, for each policy in one experiment seed (PRD FR-21). Only seeds 1 and 2 keep sim logs.
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "Trajectory".
+ */
+export interface Trajectory {
+  experiment_id: string;
+  sku_id: string;
+  dist_id: string;
+  opening_state: OpeningState;
+  seed: number;
+  series: TrajectorySeries[];
+}
 /**
  * This interface was referenced by `Dia`'s JSON-Schema
  * via the `definition` "ForecastRequest".
@@ -175,6 +240,7 @@ export interface PlanRequest {
   temp_class: TempClass;
   weights?: Weights;
   locks?: Lock[];
+  what_if?: WhatIf | null;
   base_plan_id?: string | null;
 }
 /**
@@ -389,6 +455,7 @@ export interface EngineForecastRequest {
  * via the `definition` "EnginePlanRequest".
  */
 export interface EnginePlanRequest {
+  what_if?: WhatIf | null;
   scenario_id: string;
   as_of: string;
   temp_class: TempClass;

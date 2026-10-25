@@ -1,8 +1,8 @@
 /** Typed client for the /v1 API (owner: M2). Every type comes from @dia/types, so web and backend can't drift. */
 import type {
-  AssumptionRow, BacktestMetrics, DemandHistory, DispatchResponse, ExperimentAccepted, ExperimentInfo, ExperimentRequest, ExperimentResults,
-  ForecastRequest, ForecastResponse, LearnedEffects, Message, Plan, PlanEvent, PlanRequest, Proposal, PublishResponse,
-  ResponseRequest, ResponseResult, Scenario, Snapshot,
+  AssumptionRow, AtRisk, BacktestMetrics, DemandHistory, DispatchResponse, ExperimentAccepted, ExperimentInfo, ExperimentRequest, ExperimentResults,
+  ForecastRequest, ForecastResponse, LearnedEffects, Message, OpeningState, Plan, PlanEvent, PlanRequest, Proposal, PublishResponse,
+  ResponseRequest, ResponseResult, Scenario, Snapshot, Trajectory,
 } from "@dia/types";
 
 export class ApiError extends Error {
@@ -43,6 +43,7 @@ export const api = {
   backtest: (id: string) => call<BacktestMetrics>("GET", `/v1/scenarios/${id}/backtest`),
   scenario: (id: string) => call<Scenario>("GET", `/v1/scenarios/${id}`),
   snapshot: (id: string, asOf: string) => call<Snapshot>("GET", `/v1/scenarios/${id}/snapshot?as_of=${asOf}`),
+  atRisk: (id: string, asOf: string) => call<AtRisk[]>("GET", `/v1/scenarios/${id}/at-risk?as_of=${asOf}`),
   forecasts: (req: ForecastRequest) => call<ForecastResponse>("POST", "/v1/forecasts", req),
   createPlan: (req: PlanRequest) => call<Plan>("POST", "/v1/plans", req),
   plan: (id: string, version?: number) => call<Plan>("GET", `/v1/plans/${id}${version ? `?version=${version}` : ""}`),
@@ -56,6 +57,8 @@ export const api = {
   startExperiment: (req: ExperimentRequest = MAIN_EXPERIMENT) => call<ExperimentAccepted>("POST", "/v1/experiments", req),
   experiment: (id: string) => call<ExperimentInfo>("GET", `/v1/experiments/${id}`),
   results: (id: string) => call<ExperimentResults>("GET", `/v1/experiments/${id}/results`),
+  trajectory: (expId: string, p: { sku_id: string; dist_id: string; opening_state: OpeningState; seed: number }) =>
+    call<Trajectory>("GET", `/v1/experiments/${expId}/trajectory?${new URLSearchParams({ sku_id: p.sku_id, dist_id: p.dist_id, opening_state: p.opening_state, seed: String(p.seed) })}`),
   assumptions: () => call<AssumptionRow[]>("GET", "/v1/assumptions"),
   aiStatus: () => call<AiStatus>("GET", "/v1/ai/status"),
   analyse: (req: AnalyseRequest) => call<Analysis>("POST", "/v1/ai/analyse", req),

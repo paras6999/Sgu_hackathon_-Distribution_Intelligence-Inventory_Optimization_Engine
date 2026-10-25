@@ -114,6 +114,12 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
     return c.json(await engine.snapshot(c.req.param("id"), asOf, openingState(c.req.query("opening_state"))));
   });
 
+  app.get("/v1/scenarios/:id/at-risk", async (c) => {
+    const asOf = c.req.query("as_of");
+    if (!asOf) throw new HTTPException(422, { message: "as_of is required" });
+    return c.json(await engine.atRisk(c.req.param("id"), asOf, openingState(c.req.query("opening_state"))));
+  });
+
   app.post("/v1/forecasts", async (c) => {
     const req = validate<ForecastRequest>("ForecastRequest", await c.req.json());
     const bundle = await engine.forecast({ scenario_id: req.scenario_id, as_of: req.as_of, horizon_days: (req.horizon_weeks ?? 4) * 7 });
@@ -133,7 +139,7 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
     const plan = await engine.plan({
       scenario_id: req.scenario_id, as_of: req.as_of, temp_class: req.temp_class,
       opening_state: openingState(c.req.query("opening_state")), settings: { weights: req.weights },
-      locks: req.locks ?? [], plan_id: planId, version,
+      locks: req.locks ?? [], what_if: req.what_if ?? null, plan_id: planId, version,
     });
     repo.tx(() => {
       repo.savePlan(plan);
@@ -294,6 +300,21 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
     const res = await engine.experimentResults(info.experiment_id);
     if (!res) throw new HTTPException(404, { message: "results file missing" });
     return c.json(res);
+  });
+
+  app.get("/v1/experiments/:id/trajectory", async (c) => {
+    const skuId = c.req.query("sku_id");
+    const distId = c.req.query("dist_id");
+    if (!skuId || !distId) throw new HTTPException(422, { message: "sku_id and dist_id are required" });
+    const seedRaw = c.req.query("seed") ?? "1";
+    if (!/^-?\d+$/.test(seedRaw)) throw new HTTPException(422, { message: "seed must be an integer" });
+    const info = repo.getExperiment(c.req.param("id"));
+    if (!info || info.status !== "done") throw new HTTPException(404, { message: "trajectory not ready" });
+    const traj = await engine.trajectory(info.experiment_id, {
+      sku_id: skuId, dist_id: distId, opening_state: openingState(c.req.query("opening_state")), seed: Number(seedRaw),
+    });
+    if (!traj) throw new HTTPException(404, { message: "no trajectory for this sku, distributor and seed" });
+    return c.json(traj);
   });
 
   // ------------------------------------------------------------------ analysis on demand (FR-25)

@@ -2,15 +2,62 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date as date_aliased
 from enum import Enum
 from typing import Any
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, RootModel
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, RootModel, confloat
 
 
 class Dia(RootModel[Any]):
     root: Any = Field(..., title="Dia")
+
+
+class WhatIf(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    demand_shock_pct: confloat(ge=-90.0, le=300.0) = 0
+    shock_region: str | None = None
+    depot_outage_id: str | None = None
+    diesel_pct: confloat(ge=-50.0, le=200.0) = 0
+
+
+class AtRisk(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    dist_id: str
+    dist_city: str
+    sku_id: str
+    sku_name: str
+    lot_id: str | None = None
+    expiry: date_aliased
+    days_left: int
+    stock_cases: float
+    daily_demand_cases: float
+    expected_days_to_sell: float
+    expected_expired_cases: float
+    suggested_action: str
+
+
+class TrajectoryPoint(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    date: date_aliased
+    closing_cases: float
+    sales_cases: float
+    lost_cases: float
+    expired_cases: float
+
+
+class TrajectorySeries(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    policy: str
+    points: list[TrajectoryPoint]
 
 
 class ForecastRequest(BaseModel):
@@ -18,7 +65,7 @@ class ForecastRequest(BaseModel):
         extra="forbid",
     )
     scenario_id: str
-    as_of: date
+    as_of: date_aliased
     horizon_weeks: int = 4
 
 
@@ -243,7 +290,7 @@ class EngineForecastRequest(BaseModel):
         extra="forbid",
     )
     scenario_id: str
-    as_of: date
+    as_of: date_aliased
     horizon_days: int = 28
     model: ForecastMode = "full"
 
@@ -342,7 +389,7 @@ class PairForecast(BaseModel):
     )
     sku_id: str
     dist_id: str
-    start: date
+    start: date_aliased
     mean: list[float]
     var: list[float]
     festival: list[float]
@@ -357,7 +404,7 @@ class ForecastRow(BaseModel):
     )
     sku_id: str
     dist_id: str
-    week_start: date
+    week_start: date_aliased
     p10: float
     p50: float
     p90: float
@@ -370,7 +417,7 @@ class ForecastBundle(BaseModel):
         extra="forbid",
     )
     scenario_id: str
-    as_of: date
+    as_of: date_aliased
     horizon_days: int
     pairs: list[PairForecast]
     weekly: list[ForecastRow] = []
@@ -405,7 +452,7 @@ class DemandPoint(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    week_start: date
+    week_start: date_aliased
     actual: float
 
 
@@ -413,7 +460,7 @@ class BacktestPoint(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    week_start: date
+    week_start: date_aliased
     actual: float
     p10: float
     p50: float
@@ -426,8 +473,8 @@ class FestivalWindow(BaseModel):
         extra="forbid",
     )
     name: str
-    start: date
-    end: date
+    start: date_aliased
+    end: date_aliased
 
 
 class DemandHistory(BaseModel):
@@ -531,8 +578,8 @@ class Lot(BaseModel):
     sku_id: str
     depot_id: str
     qty_cases: float
-    mfg_date: date
-    expiry_date: date
+    mfg_date: date_aliased
+    expiry_date: date_aliased
 
 
 class Scenario(BaseModel):
@@ -554,7 +601,7 @@ class DistStock(BaseModel):
     sku_id: str
     lot_id: str | None = None
     qty_cases: float
-    expiry_date: date
+    expiry_date: date_aliased
 
 
 class InTransit(BaseModel):
@@ -565,8 +612,8 @@ class InTransit(BaseModel):
     sku_id: str
     lot_id: str
     qty_cases: float
-    eta: date
-    expiry_date: date
+    eta: date_aliased
+    expiry_date: date_aliased
 
 
 class Snapshot(BaseModel):
@@ -574,7 +621,7 @@ class Snapshot(BaseModel):
         extra="forbid",
     )
     scenario_id: str
-    as_of: date
+    as_of: date_aliased
     depot_lots: list[Lot]
     dist_stock: list[DistStock]
     in_transit: list[InTransit]
@@ -637,7 +684,7 @@ class PlanLine(BaseModel):
     sku_id: str
     sku_name: str
     lot_id: str
-    expiry: date
+    expiry: date_aliased
     from_id: str
     to_id: str
     cases: int
@@ -645,8 +692,8 @@ class PlanLine(BaseModel):
     truck_id: str | None = None
     consignment_id: str | None = None
     truck_class: TruckClass | None = None
-    ship_date: date
-    eta: date
+    ship_date: date_aliased
+    eta: date_aliased
     rsl_on_arrival_days: int
     freight_alloc_inr: float
     reasons: list[Reason] = []
@@ -673,7 +720,7 @@ class Truck(BaseModel):
     truck_class: TruckClass | None = None
     from_id: str
     to_id: str
-    ship_date: date
+    ship_date: date_aliased
     kg: float
     m3: float
     kg_pct: float
@@ -712,7 +759,7 @@ class Plan(BaseModel):
     plan_id: str
     version: int
     scenario_id: str
-    as_of: date
+    as_of: date_aliased
     temp_class: TempClass
     policy: PolicyName = "engine"
     settings: EngineSettings = Field(
@@ -806,6 +853,18 @@ class SolveOutput(BaseModel):
     diagnostics: dict[str, Any] = {}
 
 
+class Trajectory(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    experiment_id: str
+    sku_id: str
+    dist_id: str
+    opening_state: OpeningState
+    seed: int
+    series: list[TrajectorySeries]
+
+
 class ForecastResponse(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -819,7 +878,7 @@ class PlanRequest(BaseModel):
         extra="forbid",
     )
     scenario_id: str
-    as_of: date
+    as_of: date_aliased
     temp_class: TempClass
     weights: Weights = Field(
         default_factory=lambda: Weights.model_validate(
@@ -827,6 +886,7 @@ class PlanRequest(BaseModel):
         )
     )
     locks: list[Lock] = []
+    what_if: WhatIf | None = None
     base_plan_id: str | None = None
 
 
@@ -881,8 +941,9 @@ class EnginePlanRequest(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
+    what_if: WhatIf | None = None
     scenario_id: str
-    as_of: date
+    as_of: date_aliased
     temp_class: TempClass
     opening_state: OpeningState = "imbalanced"
     settings: EngineSettings = Field(

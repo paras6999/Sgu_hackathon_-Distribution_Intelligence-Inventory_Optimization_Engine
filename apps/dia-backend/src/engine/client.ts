@@ -3,8 +3,8 @@
  * Implementations: FakeEngine (fixtures, ENGINE_MODE=fake) and HttpEngine (engine process, source/binary).
  */
 import type {
-  AssumptionRow, BacktestMetrics, DemandHistory, EngineForecastRequest, EngineHealth, EnginePlanRequest, EngineResolveRequest,
-  ExperimentRequest, ExperimentResults, ForecastBundle, LearnedEffects, OpeningState, Plan, Scenario, Snapshot,
+  AssumptionRow, AtRisk, BacktestMetrics, DemandHistory, EngineForecastRequest, EngineHealth, EnginePlanRequest, EngineResolveRequest,
+  ExperimentRequest, ExperimentResults, ForecastBundle, LearnedEffects, OpeningState, Plan, Scenario, Snapshot, Trajectory,
 } from "@dia/types";
 
 /** Error carrying the engine's HTTP status (501 not implemented, 404 unknown scenario, 422 invalid plan). */
@@ -22,6 +22,8 @@ export interface EngineClient {
   scenarios(): Promise<string[]>;
   scenario(id: string): Promise<Scenario>;
   snapshot(id: string, asOf: string, openingState: OpeningState): Promise<Snapshot>;
+  /** Distributor lots expected to expire before they sell, as of a date. */
+  atRisk(scenarioId: string, asOf: string, openingState: OpeningState): Promise<AtRisk[]>;
   forecast(req: EngineForecastRequest): Promise<ForecastBundle>;
   backtest(id: string): Promise<BacktestMetrics>;
   /** Two years of weekly demand with the backtest forecasts, for one distributor and/or SKU (or the whole network). */
@@ -33,5 +35,7 @@ export interface EngineClient {
   /** Runs to completion; calls onProgress with 0..100. */
   runExperiment(id: string, req: ExperimentRequest, onProgress: (pct: number) => void): Promise<ExperimentOutcome>;
   experimentResults(id: string): Promise<ExperimentResults | null>;
+  /** One experiment seed's day-by-day stock for one SKU x distributor. Null when the engine has no data for it. */
+  trajectory(experimentId: string, q: { sku_id: string; dist_id: string; opening_state: OpeningState; seed: number }): Promise<Trajectory | null>;
   close(): Promise<void>;
 }

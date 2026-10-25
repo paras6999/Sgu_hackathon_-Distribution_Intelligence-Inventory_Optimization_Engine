@@ -78,6 +78,17 @@
           },
           "type": "array"
         },
+        "what_if": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WhatIf"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "base_plan_id": {
           "anyOf": [
             {

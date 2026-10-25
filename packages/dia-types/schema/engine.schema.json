@@ -31,6 +31,17 @@
     "EnginePlanRequest": {
       "additionalProperties": false,
       "properties": {
+        "what_if": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WhatIf"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "scenario_id": {
           "type": "string"
         },

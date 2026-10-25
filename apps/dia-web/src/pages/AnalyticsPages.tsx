@@ -32,8 +32,8 @@ const KPI_META: Record<string, KpiMeta> = {
 const KPI_ORDER = Object.keys(KPI_META);
 const metaOf = (kpi: string): KpiMeta => KPI_META[kpi] ?? { label: kpi, fmt: "inr", higherBetter: false };
 const HEADLINE = ["cost_to_serve_inr", "fill_rate", "wastage_inr", "freight_inr_per_case"];
-const POLICY_LABEL: Record<string, string> = { engine: "Engine", baseline_a: "Baseline A", baseline_b: "Baseline B" };
-const POLICY_COLOUR: Record<string, string> = { engine: "var(--primary)", baseline_a: "var(--neutral)", baseline_b: "var(--baseline-b)" };
+export const POLICY_LABEL: Record<string, string> = { engine: "Engine", baseline_a: "Baseline A", baseline_b: "Baseline B" };
+export const POLICY_COLOUR: Record<string, string> = { engine: "var(--primary)", baseline_a: "var(--neutral)", baseline_b: "var(--baseline-b)" };
 const STATES: OpeningState[] = ["neutral", "imbalanced"];
 
 function inr(v: number): string {
