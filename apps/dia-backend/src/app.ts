@@ -12,6 +12,7 @@ import type {
 } from "@dia/types";
 import type { Repo } from "./db/repo";
 import { parseIntent, type DistRef, type Intent } from "./assistant/intent";
+import { routeWithModel } from "./assistant/model";
 import { EngineError, type EngineClient } from "./engine/client";
 import { analyse } from "./ai/analyse";
 import { lineFacts, planFacts, resultsFacts } from "./ai/facts";
@@ -521,11 +522,20 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
       const scenario = await engine.scenario(plan.scenario_id);
       const dists = scenario.nodes.filter((n) => n.type === "distributor").map((n) => ({ dist_id: n.node_id, city: n.city }));
       intent = parseIntent(req.message, dists);
+      let source: "rules" | "ai" = "rules";
+      // The rules matched nothing: let the model pick a tool from the fixed list (checked in model.ts).
+      if (intent.tool === "unknown" && llm) {
+        const routed = await routeWithModel(llm, req.message, dists);
+        if (routed) {
+          intent = routed;
+          source = "ai";
+        }
+      }
       const out = await runTool(intent, plan, dists, req.mode === "ask_first" && !req.confirm);
       const res: AssistantResponse = {
         status: out.status, intent: intent.tool, reply: clip(out.reply), steps: out.steps,
         plan_id: plan.plan_id, plan_version: out.plan_version ?? plan.version, plan_status: out.plan_status ?? plan.status ?? "DRAFT",
-        pending_action: out.pending_action ?? null, source: "rules",
+        pending_action: out.pending_action ?? null, source,
       };
       return c.json(res);
     } catch (err) {
