@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vitaran · 01d · Scenario comparison</title>
+<style>
+  :root { --bg:#f3f3f3; --text:#181818; --muted:#5c5b59; --line:#dddbda; --brand:#0176d3; --brand-ink:#014486; --ok:#2e844a; --warn:#b85c00; --bad:#ba0517; --soft:#eef4fb; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Segoe UI", Arial, sans-serif; font-size:13px; color:var(--text); background:var(--bg); }
+  .global { height:48px; background:#014486; color:#fff; display:flex; align-items:center; padding:0 14px; gap:18px; }
+  .global .logo { font-weight:700; }
+  .record { margin:12px 14px; background:#fff; border:1px solid var(--line); border-radius:4px; }
+  .record-top { padding:14px 16px; display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--line); }
+  .record-top .kind { color:var(--muted); font-size:12px; }
+  .record-top h1 { margin:2px 0 0; font-size:20px; font-weight:600; }
+  .record-top .sp { flex:1; }
+  .btn { border:1px solid #c9c7c5; background:#fff; color:var(--brand-ink); padding:7px 12px; border-radius:4px; font-weight:600; }
+  .btn.primary { background:var(--brand); border-color:var(--brand); color:#fff; }
+  .scen { display:flex; gap:0; border-bottom:1px solid var(--line); }
+  .scen div { flex:1; padding:12px 14px; border-right:1px solid var(--line); }
+  .scen div:last-child { border-right:none; }
+  .scen .name { font-weight:600; }
+  .scen .what { color:var(--muted); font-size:12px; margin-top:3px; min-height:32px; }
+  .scen .tag { display:inline-block; font-size:11px; padding:1px 6px; border-radius:3px; margin-top:6px; }
+  .scen .base { background:#fff; }
+  .scen .sel { background:var(--soft); box-shadow: inset 0 -3px 0 var(--brand); }
+  .scen .use { margin-top:8px; }
+  .compare { padding:12px 16px 16px; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { padding:9px 12px; border-bottom:1px solid #efefef; text-align:right; font-variant-numeric:tabular-nums; }
+  th:first-child, td:first-child { text-align:left; }
+  th { color:var(--muted); font-size:12px; font-weight:600; background:#fafaf9; }
+  td.good { color:var(--ok); font-weight:600; }
+  td.bad { color:var(--bad); font-weight:600; }
+  td.flat { color:var(--muted); }
+  .note { color:var(--muted); font-size:12px; padding:0 16px 14px; }
+  .bottom { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:0 14px 14px; }
+  .box { background:#fff; border:1px solid var(--line); border-radius:4px; }
+  .box h2 { margin:0; padding:10px 14px; font-size:14px; border-bottom:1px solid var(--line); }
+  .box .body { padding:12px 14px; }
+  .box p { margin:0 0 8px; }
+  .box .muted { color:var(--muted); }
+  .bar { height:10px; background:#ecebea; border-radius:3px; margin-top:6px; position:relative; }
+  .bar i { position:absolute; left:0; top:0; bottom:0; border-radius:3px; background:var(--brand); }
+  .bar i.warn { background:var(--warn); }
+</style>
+</head>
+<body>
+  <header class="global"><span class="logo">Vitaran</span></header>
+
+  <section class="record">
+    <div class="record-top">
+      <div>
+        <div class="kind">Planning cycle · Ambient · Week of 29 Sep 2025</div>
+        <h1>What if the plan changes?</h1>
+      </div>
+      <span class="sp"></span>
+      <button class="btn">Discard scenarios</button>
+      <button class="btn primary">Use selected scenario as the plan</button>
+    </div>
+
+    <div class="scen">
+      <div class="base">
+        <div class="name">Current plan</div>
+        <div class="what">The plan as built on Monday</div>
+        <span class="tag" style="background:#ecebea">Base</span>
+      </div>
+      <div>
+        <div class="name">Diesel up 10%</div>
+        <div class="what">Fuel cost rises. Half of truck and part-load cost is fuel.</div>
+        <span class="tag" style="background:#fdf1e0;color:#b85c00">Freight up</span>
+      </div>
+      <div>
+        <div class="name">Gurugram depot offline</div>
+        <div class="what">Depot cannot ship for the week.</div>
+        <span class="tag" style="background:#fdf1e0;color:#b85c00">Cases down</span>
+      </div>
+      <div class="sel">
+        <div class="name">Demand up 20% in the north</div>
+        <div class="what">Extra demand in Delhi, Jaipur, Lucknow, Chandigarh.</div>
+        <span class="tag" style="background:#e6f4ea;color:#2e844a">Selected for comparison</span>
+      </div>
+    </div>
+
+    <div class="compare">
+      <table>
+        <thead>
+          <tr><th>Measure</th><th>Current plan</th><th>Diesel up 10%</th><th>Gurugram offline</th><th>Demand up 20% north</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Cases to ship</td><td>16,071</td><td class="flat">16,072</td><td class="bad">12,526</td><td class="good">16,538</td></tr>
+          <tr><td>Freight</td><td>&#8377;7.6 lakh</td><td class="bad">&#8377;8.0 lakh (+5%)</td><td class="good">&#8377;6.4 lakh</td><td class="bad">&#8377;8.4 lakh</td></tr>
+          <tr><td>Expected cost to serve</td><td>&#8377;71.1 lakh</td><td class="flat">&#8377;71.5 lakh (+0.6%)</td><td class="bad">&#8377;96.9 lakh (+36%)</td><td class="bad">&#8377;82.2 lakh (+16%)</td></tr>
+          <tr><td>Shipment lines</td><td>290</td><td class="flat">290</td><td class="flat">217</td><td class="flat">294</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">Expected figures from the optimiser on the same stock and forecast. Each scenario is one re-plan, not a forecast of what will happen.</div>
+  </section>
+
+  <div class="bottom">
+    <section class="box">
+      <h2>What the selected scenario changes</h2>
+      <div class="body">
+        <p>Demand up 20% in the north raises the cases shipped to 16,538, and the plan grows from 290 to 294 lines.</p>
+        <p class="muted">Freight rises by about &#8377;0.8 lakh. Expected cost rises by about &#8377;11 lakh, driven by demand the plan cannot serve.</p>
+      </div>
+    </section>
+    <section class="box">
+      <h2>Why this matters</h2>
+      <div class="body">
+        <p>The Gurugram outage shows what a single depot is worth: losing it cuts the week's shipments by about a fifth.</p>
+        <p class="muted">Use this before a depot maintenance window, not after.</p>
+      </div>
+    </section>
+  </div>
+</body>
+</html>
+

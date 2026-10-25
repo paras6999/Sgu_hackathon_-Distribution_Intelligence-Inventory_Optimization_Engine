@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vitaran · 01a · Path, highlights and next-step guide</title>
+<style>
+  :root { --bg:#f3f3f3; --text:#181818; --muted:#5c5b59; --line:#dddbda; --brand:#0176d3; --brand-ink:#014486; --ok:#2e844a; --warn:#b85c00; --soft:#eef4fb; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Segoe UI", Arial, sans-serif; font-size:13px; color:var(--text); background:var(--bg); }
+  .global { height:48px; background:#014486; color:#fff; display:flex; align-items:center; gap:18px; padding:0 14px; }
+  .global .logo { font-weight:700; }
+  .global .search { flex:1; max-width:460px; background:rgba(255,255,255,.14); border-radius:4px; padding:7px 10px; color:#dfe9f5; }
+  .global .me { margin-left:auto; width:28px; height:28px; border-radius:50%; background:#fff; color:var(--brand-ink); text-align:center; line-height:28px; font-weight:700; }
+  .record { margin:12px 14px 0; background:#fff; border:1px solid var(--line); border-radius:4px; }
+  .record-top { display:flex; gap:12px; align-items:center; padding:12px 16px; border-bottom:1px solid var(--line); }
+  .record-top .icon { width:40px; height:40px; border-radius:6px; background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; }
+  .record-top .kind { color:var(--muted); font-size:12px; }
+  .record-top h1 { margin:2px 0 0; font-size:20px; font-weight:600; }
+  .record-top .actions { margin-left:auto; display:flex; gap:8px; }
+  .btn { border:1px solid #c9c7c5; background:#fff; color:var(--brand-ink); padding:6px 12px; border-radius:4px; font-weight:600; }
+  .btn.primary { background:var(--brand); border-color:var(--brand); color:#fff; }
+  .path { display:flex; border-bottom:1px solid var(--line); }
+  .path div { flex:1; padding:9px 14px; color:var(--muted); background:#fafaf9; border-right:1px solid var(--line); position:relative; }
+  .path div:last-child { border-right:none; }
+  .path .done { color:var(--ok); }
+  .path .now { background:#fff; color:var(--brand-ink); font-weight:700; box-shadow: inset 0 -3px 0 var(--brand); }
+  .guide { display:flex; gap:14px; align-items:center; padding:10px 16px; background:var(--soft); border-bottom:1px solid var(--line); }
+  .guide b { color:var(--brand-ink); }
+  .guide .sp { flex:1; }
+  .tabs { display:flex; gap:22px; padding:0 16px; border-bottom:1px solid var(--line); }
+  .tabs span { padding:10px 0; color:var(--muted); border-bottom:3px solid transparent; }
+  .tabs span.on { color:var(--brand-ink); border-bottom-color:var(--brand); font-weight:600; }
+  .body { display:grid; grid-template-columns:1fr 300px; gap:12px; padding:12px 14px 60px; }
+  .highlights { display:grid; grid-template-columns:repeat(5,1fr); background:#fff; border:1px solid var(--line); border-radius:4px; }
+  .highlights div { padding:12px 14px; border-right:1px solid var(--line); }
+  .highlights div:last-child { border-right:none; }
+  .highlights .l { color:var(--muted); font-size:12px; }
+  .highlights .v { font-size:18px; font-weight:600; margin-top:2px; }
+  .highlights .n { color:var(--muted); font-size:12px; }
+  .highlights .hot .v { color:var(--warn); }
+  .panel { background:#fff; border:1px solid var(--line); border-radius:4px; margin-top:12px; }
+  .panel h2 { margin:0; padding:10px 14px; font-size:14px; border-bottom:1px solid var(--line); display:flex; }
+  .panel h2 small { margin-left:auto; color:var(--brand); font-weight:600; font-size:12px; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:7px 10px; border-bottom:1px solid #efefef; }
+  th { color:var(--muted); font-size:12px; font-weight:600; background:#fafaf9; }
+  td.num { text-align:right; }
+  .why { color:var(--muted); font-size:12px; }
+  .side .panel { margin-top:0; margin-bottom:12px; }
+  .step { padding:10px 14px; border-bottom:1px solid #efefef; }
+  .step:last-child { border-bottom:none; }
+  .step b { display:block; font-weight:600; }
+  .step span { color:var(--muted); font-size:12px; }
+  .timeline div { padding:8px 14px 8px 26px; border-bottom:1px solid #efefef; position:relative; font-size:12px; color:var(--muted); }
+  .timeline div:before { content:""; position:absolute; left:12px; top:13px; width:7px; height:7px; border-radius:50%; background:var(--brand); }
+  .timeline div b { color:var(--text); font-weight:600; display:block; }
+  .utility { position:fixed; left:0; right:0; bottom:0; height:36px; background:#fff; border-top:1px solid var(--line); display:flex; gap:22px; align-items:center; padding:0 14px; color:var(--muted); }
+  .utility b { color:var(--text); font-weight:600; }
+</style>
+</head>
+<body>
+  <header class="global">
+    <span class="logo">Vitaran</span>
+    <span class="search">Search plans, distributors, products</span>
+    <span class="me">A</span>
+  </header>
+
+  <section class="record">
+    <div class="record-top">
+      <div class="icon">P</div>
+      <div>
+        <div class="kind">Planning cycle · Ambient</div>
+        <h1>Week of 29 Sep 2025</h1>
+      </div>
+      <div class="actions">
+        <button class="btn">Change plan</button>
+        <button class="btn">Ask a question</button>
+        <button class="btn primary">Approve and send</button>
+      </div>
+    </div>
+
+    <div class="path">
+      <div class="done">&#10003; Forecast</div>
+      <div class="done">&#10003; Plan built</div>
+      <div class="now">Check and approve</div>
+      <div>Send to distributors</div>
+      <div>Replies</div>
+      <div>Dispatch</div>
+    </div>
+
+    <div class="guide">
+      <span><b>Next step:</b> check the 2 flagged items below, then approve. The rest of the plan passed every system check.</span>
+      <span class="sp"></span>
+      <span>Automatic until you approve</span>
+    </div>
+
+    <div class="tabs">
+      <span class="on">Overview</span><span>Shipments</span><span>Distributors</span><span>Stock at risk</span><span>What if</span><span>Results</span>
+    </div>
+
+    <div class="body">
+      <div>
+        <div class="highlights">
+          <div><div class="l">Cases to ship</div><div class="v">16,071</div><div class="n">290 lines</div></div>
+          <div><div class="l">Full trucks</div><div class="v">26</div><div class="n">average 93% full</div></div>
+          <div><div class="l">Cost to serve (expected)</div><div class="v">&#8377;71.1 lakh</div><div class="n">freight &#8377;7.6 lakh</div></div>
+          <div><div class="l">Distributors replied</div><div class="v">1 of 16</div><div class="n">15 still to reply</div></div>
+          <div class="hot"><div class="l">Stock at risk</div><div class="v">40 lots</div><div class="n">ship within 1 to 2 days</div></div>
+        </div>
+
+        <section class="panel">
+          <h2>Shipments to approve <small>examples</small></h2>
+          <table>
+            <thead><tr><th>Route</th><th>Product</th><th class="num">Cases</th><th>Truck</th><th>Why</th></tr></thead>
+            <tbody>
+              <tr><td>Dankuni to Kolkata</td><td>Cola PET 600 ml</td><td class="num">166</td><td>Full</td><td class="why">Cheapest depot for Kolkata: &#8377;33 a case, against &#8377;202 from Gurugram</td></tr>
+              <tr><td>Dankuni to Kolkata</td><td>Masala Chips 52 g</td><td class="num">324</td><td>Full, 100%</td><td class="why">Fills the truck by weight</td></tr>
+              <tr><td>Depot to Pune</td><td>Packaged Water 1 L</td><td class="num">90</td><td>Full</td><td class="why">Pune trimmed this line from 179 cases</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <aside class="side">
+        <section class="panel">
+          <h2>Path guide</h2>
+          <div class="step"><b>1. Check the two items</b><span>Sweet Lassi at Dankuni, Chandigarh credit</span></div>
+          <div class="step"><b>2. Approve the plan</b><span>Goes to 16 distributors at once</span></div>
+          <div class="step"><b>3. Wait for replies</b><span>Automatic. Re-plans only within each limit</span></div>
+        </section>
+        <section class="panel">
+          <h2>Recent activity</h2>
+          <div class="timeline">
+            <div><b>Pune trimmed a line</b>179 to 90 cases, Packaged Water 1 L. Freed cases offered to Surat, Chennai, Hyderabad.</div>
+            <div><b>Plan built automatically</b>Mon 06:04, 290 lines, 26 trucks.</div>
+            <div><b>Forecast updated</b>Mon 06:02, 16 distributors, 24 products.</div>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </section>
+
+  <footer class="utility">
+    <span><b>Notes</b> (2)</span><span>History</span><span>Activity</span><span>Automation log</span><span class="sp" style="flex:1"></span><span>Last saved Mon 06:10</span>
+  </footer>
+</body>
+</html>
+
