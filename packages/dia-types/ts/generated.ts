@@ -594,6 +594,10 @@ export interface EnginePlanRequest {
   opening_state?: OpeningState;
   settings?: EngineSettings;
   locks?: Lock[];
+  /**
+   * Counted stock that replaces the simulated quantity for each (node, product) before planning.
+   */
+  stock_counts?: StockCount[];
   plan_id: string;
   version?: number;
 }
@@ -613,6 +617,17 @@ export interface EngineSettings {
   home_depot_only?: boolean;
   time_limit_s?: number;
   mip_gap?: number;
+}
+/**
+ * Counted stock of one product at one depot or distributor. Replaces the simulated quantity for that pair before space is shown or a plan is made.
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "StockCount".
+ */
+export interface StockCount {
+  node_id: string;
+  sku_id: string;
+  cases: number;
 }
 /**
  * This interface was referenced by `Dia`'s JSON-Schema
@@ -1051,4 +1066,101 @@ export interface SolveOutput {
   diagnostics?: {
     [k: string]: unknown;
   };
+}
+/**
+ * Internal engine request: warehouse space on a morning with counted stock applied.
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "EngineSpaceRequest".
+ */
+export interface EngineSpaceRequest {
+  as_of: string;
+  opening_state?: "neutral" | "imbalanced";
+  stock_counts?: StockCount[];
+}
+/**
+ * A warehouse-app user. A depot or distributor user sees and changes only its own node; a planner sees every node.
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "WhUser".
+ */
+export interface WhUser {
+  user_id: string;
+  name: string;
+  role: "planner" | "depot" | "distributor";
+  node_id: string | null;
+}
+/**
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "LoginRequest".
+ */
+export interface LoginRequest {
+  user_id: string;
+  pin: string;
+}
+/**
+ * Returned by login. Send the token as 'Authorization: Bearer <token>' on every /v1/wh route.
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "Session".
+ */
+export interface Session {
+  token: string;
+  user: WhUser;
+}
+/**
+ * receipt: cases that arrived; count: cases counted on the shelf (replaces the system figure); adjust: signed change, e.g. -12 for damage.
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "MovementRequest".
+ */
+export interface MovementRequest {
+  kind: "receipt" | "count" | "adjust";
+  node_id: string;
+  sku_id: string;
+  cases: number;
+  reason?: string | null;
+  as_of?: string | null;
+}
+/**
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "Movement".
+ */
+export interface Movement {
+  movement_id: number;
+  kind: "receipt" | "count" | "adjust";
+  node_id: string;
+  sku_id: string;
+  sku_name: string;
+  cases: number;
+  reason: string | null;
+  as_of: string;
+  user_id: string;
+  ts: string;
+}
+/**
+ * One lot (or one counted product) at the user's node, oldest expiry first.
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "WhStockRow".
+ */
+export interface WhStockRow {
+  sku_id: string;
+  sku_name: string;
+  temp_class: "ambient" | "chilled";
+  lot_id: string | null;
+  cases: number;
+  m3: number;
+  expiry: string | null;
+  days_left: number | null;
+  state: "on_hand" | "in_transit" | "counted";
+}
+/**
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "WhStock".
+ */
+export interface WhStock {
+  node_id: string;
+  as_of: string;
+  rows: WhStockRow[];
 }

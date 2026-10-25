@@ -982,6 +982,120 @@ class SolveOutput(BaseModel):
     diagnostics: dict[str, Any] = {}
 
 
+class StockCount(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    node_id: str
+    sku_id: str
+    cases: confloat(ge=0.0)
+
+
+class EngineSpaceRequest(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    as_of: date_aliased
+    opening_state: OpeningState = "imbalanced"
+    stock_counts: list[StockCount] = []
+
+
+class Role(str, Enum):
+    PLANNER = "planner"
+    DEPOT = "depot"
+    DISTRIBUTOR = "distributor"
+
+
+class WhUser(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    user_id: str
+    name: str
+    role: Role
+    node_id: str | None = None
+
+
+class LoginRequest(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    user_id: constr(min_length=1)
+    pin: constr(min_length=1)
+
+
+class Session(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    token: str
+    user: WhUser
+
+
+class Kind(str, Enum):
+    RECEIPT = "receipt"
+    COUNT = "count"
+    ADJUST = "adjust"
+
+
+class MovementRequest(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Kind
+    node_id: str
+    sku_id: str
+    cases: float
+    reason: constr(max_length=200) | None = None
+    as_of: date_aliased | None = None
+
+
+class Movement(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    movement_id: int
+    kind: Kind
+    node_id: str
+    sku_id: str
+    sku_name: str
+    cases: float
+    reason: str | None = None
+    as_of: date_aliased
+    user_id: str
+    ts: str
+
+
+class State(str, Enum):
+    ON_HAND = "on_hand"
+    IN_TRANSIT = "in_transit"
+    COUNTED = "counted"
+
+
+class WhStockRow(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    sku_id: str
+    sku_name: str
+    temp_class: TempClass
+    lot_id: str | None = None
+    cases: float
+    m3: float
+    expiry: date_aliased | None = None
+    days_left: int | None = None
+    state: State
+
+
+class WhStock(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    node_id: str
+    as_of: date_aliased
+    rows: list[WhStockRow]
+
+
 class Trajectory(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -1120,6 +1234,10 @@ class EnginePlanRequest(BaseModel):
         )
     )
     locks: list[Lock] = []
+    stock_counts: list[StockCount] = Field(
+        [],
+        description="Counted stock that replaces the simulated quantity for each (node, product) before planning.",
+    )
     plan_id: str
     version: int = 1
 

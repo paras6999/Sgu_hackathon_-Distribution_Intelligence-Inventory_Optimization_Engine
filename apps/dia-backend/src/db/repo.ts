@@ -6,7 +6,7 @@ import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import type {
-  ExperimentInfo, ExperimentStatus, Plan, PlanEvent, Proposal, ProposalStatus,
+  ExperimentInfo, ExperimentStatus, Movement, Plan, PlanEvent, Proposal, ProposalStatus, StockCount, WhUser,
 } from "@dia/types";
 import { MIGRATIONS } from "./migrations";
 
@@ -142,5 +142,71 @@ export class Repo {
       config_hash: r.config_hash as string,
       error: (r.error as string | null) ?? null,
     };
+  }
+
+  /**
+   * The plans a warehouse works from on one day: the latest version of the most recently sent plan, one per
+   * temperature class. Drafts and what-if plans are never sent, so they never reach a loading list.
+   */
+  sentPlansForDay(scenarioId: string, asOf: string): Plan[] {
+    const rows = this.db.query(
+      `SELECT p.payload FROM plans p
+       JOIN (SELECT plan_id, MAX(version) AS v FROM plans WHERE scenario_id = ? AND as_of = ? GROUP BY plan_id) m
+         ON p.plan_id = m.plan_id AND p.version = m.v
+       WHERE p.status IN ('PROPOSED', 'FINAL')
+       ORDER BY p.created_at DESC`,
+    ).all(scenarioId, asOf) as Array<{ payload: string }>;
+    const byClass = new Map<string, Plan>();
+    for (const r of rows) {
+      const p = JSON.parse(r.payload) as Plan;
+      if (!byClass.has(p.temp_class)) byClass.set(p.temp_class, p);
+    }
+    return [...byClass.values()];
+  }
+
+  /** Most recent day any plan was made for, or null when there are no plans. */
+  latestPlanDay(): { scenario_id: string; as_of: string } | null {
+    return (this.db.query("SELECT scenario_id, as_of FROM plans ORDER BY created_at DESC LIMIT 1").get() as
+      | { scenario_id: string; as_of: string } | null) ?? null;
+  }
+
+  // ------------------------------------------------------------------ warehouse app
+  createSession(s: { token: string; user: WhUser }): void {
+    this.db.query("INSERT INTO wh_sessions (token, user_id, role, node_id, name, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+      .run(s.token, s.user.user_id, s.user.role, s.user.node_id, s.user.name, new Date().toISOString());
+  }
+
+  getSession(token: string): WhUser | null {
+    const r = this.db.query("SELECT user_id, role, node_id, name FROM wh_sessions WHERE token = ?").get(token) as
+      | { user_id: string; role: WhUser["role"]; node_id: string | null; name: string } | null;
+    return r ? { user_id: r.user_id, name: r.name, role: r.role, node_id: r.node_id } : null;
+  }
+
+  addMovement(m: Omit<Movement, "movement_id">, scenarioId: string): Movement {
+    const r = this.db.query(
+      `INSERT INTO stock_movements (scenario_id, as_of, kind, node_id, sku_id, sku_name, cases, reason, user_id, ts)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING movement_id`,
+    ).get(scenarioId, m.as_of, m.kind, m.node_id, m.sku_id, m.sku_name, m.cases, m.reason, m.user_id, m.ts) as { movement_id: number };
+    return { movement_id: r.movement_id, ...m };
+  }
+
+  listMovements(scenarioId: string, asOf: string, nodeIds: string[] | null): Movement[] {
+    const rows = this.db.query(
+      "SELECT * FROM stock_movements WHERE scenario_id = ? AND as_of = ? ORDER BY movement_id DESC",
+    ).all(scenarioId, asOf) as Array<Movement & { scenario_id: string }>;
+    return rows.filter((r) => !nodeIds || nodeIds.includes(r.node_id)).map(({ scenario_id: _s, ...m }) => m);
+  }
+
+  setCount(scenarioId: string, asOf: string, nodeId: string, skuId: string, cases: number): void {
+    this.db.query(
+      `INSERT INTO stock_counts (scenario_id, as_of, node_id, sku_id, cases, updated_at) VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(scenario_id, as_of, node_id, sku_id) DO UPDATE SET cases = excluded.cases, updated_at = excluded.updated_at`,
+    ).run(scenarioId, asOf, nodeId, skuId, cases, new Date().toISOString());
+  }
+
+  /** Counted stock for one day: what the engine applies before showing space or making a plan. */
+  counts(scenarioId: string, asOf: string): StockCount[] {
+    return this.db.query("SELECT node_id, sku_id, cases FROM stock_counts WHERE scenario_id = ? AND as_of = ? ORDER BY node_id, sku_id")
+      .all(scenarioId, asOf) as StockCount[];
   }
 }

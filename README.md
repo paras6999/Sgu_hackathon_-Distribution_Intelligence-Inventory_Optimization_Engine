@@ -40,6 +40,6 @@ bun run data
 bun run dev
 ```
 
-Open http://localhost:3000. `bun run dev` starts the backend on :8000, which starts the engine on :7010. Use `bun run dev:fake` to run on fixture data without the engine. API docs: http://localhost:8000/docs.
+Open http://localhost:3000 (planner app) or http://localhost:3002 (warehouse app for depot and distributor staff, phone-first; see docs/Warehouse-app.md). `bun run dev` starts the backend on :8000, which starts the engine on :7010. Use `bun run dev:fake` to run on fixture data without the engine. API docs: http://localhost:8000/docs.
 
 Solo workflow: small changes go straight to `main`, larger ones through a PR so CI runs first (`docs/Team.md` §2).

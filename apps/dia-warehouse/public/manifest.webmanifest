@@ -1,0 +1,10 @@
+{
+  "name": "Vitaran Warehouse",
+  "short_name": "Vitaran WH",
+  "description": "Space, stock, expiry and trucks for depots and distributors.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F3F3F3",
+  "theme_color": "#014486",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

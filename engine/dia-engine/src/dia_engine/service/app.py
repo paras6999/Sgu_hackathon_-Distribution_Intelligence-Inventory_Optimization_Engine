@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse
 from dia_engine import __version__, store
 from dia_engine.at_risk import at_risk
 from dia_engine.config import get_config
+from dia_engine.counts import apply_counts
 from dia_engine.data.generate import list_scenarios, load_scenario
 from dia_engine.forecast.analysis import demand_history, learned_effects
 from dia_engine.forecast.forecast import backtest, forecast
@@ -26,7 +27,7 @@ from dia_engine.space import space
 from dia_engine.whatif import apply_what_if
 from dia_types import (
     AssumptionRow, AtRisk, BacktestMetrics, EngineForecastRequest, EngineHealth, EnginePlanRequest, EngineResolveRequest,
-    DemandHistory, ForecastBundle, ForecastMode, LearnedEffects, OpeningState, Plan, Scenario, Snapshot, SpaceReport, Trajectory,
+    DemandHistory, ForecastBundle, ForecastMode, EngineSpaceRequest, LearnedEffects, OpeningState, Plan, Scenario, Snapshot, SpaceReport, Trajectory,
 )
 
 app = FastAPI(title="dia-engine (internal)", version=__version__)
@@ -92,6 +93,13 @@ def scenario_space(scenario_id: str, as_of: date, opening_state: OpeningState = 
     return space(_scenario(scenario_id), get_snapshot(scenario_id, as_of, state), state)
 
 
+@app.post("/scenarios/{scenario_id}/space", response_model=SpaceReport)
+def scenario_space_counted(scenario_id: str, req: EngineSpaceRequest) -> SpaceReport:
+    """Space with counted stock applied (warehouse app)."""
+    sc, state = _scenario(scenario_id), OpeningState(req.opening_state)
+    return space(sc, apply_counts(sc, get_snapshot(scenario_id, req.as_of, state), req.stock_counts), state)
+
+
 @app.get("/experiments/{experiment_id}/trajectory", response_model=Trajectory)
 def experiment_trajectory(experiment_id: str, sku_id: str, dist_id: str,
                           opening_state: OpeningState = OpeningState.IMBALANCED, seed: int = 1) -> Trajectory:
@@ -121,7 +129,7 @@ def post_forecast(req: EngineForecastRequest) -> ForecastBundle:
 @app.post("/plan", response_model=Plan)
 def post_plan(req: EnginePlanRequest) -> Plan:
     sc = _scenario(req.scenario_id)
-    snap = get_snapshot(req.scenario_id, req.as_of, req.opening_state)
+    snap = apply_counts(sc, get_snapshot(req.scenario_id, req.as_of, req.opening_state), req.stock_counts)
     fc = forecast(req.scenario_id, req.as_of, 28, ForecastMode(req.settings.forecast_model).value)
     if req.what_if is not None:
         sc, snap, fc = apply_what_if(sc, snap, fc, req.what_if)

@@ -5,6 +5,7 @@
   "workspaces": [
     "apps/dia-backend",
     "apps/dia-web",
+    "apps/dia-warehouse",
     "apps/dia-next",
     "packages/dia-types"
   ],

@@ -47,4 +47,36 @@ export const MIGRATIONS: string[] = [
     finished_at   TEXT,
     error         TEXT
   );`,
+  /* 002 warehouse app: sessions, stock movements, counted stock */ `
+  CREATE TABLE wh_sessions (
+    token       TEXT PRIMARY KEY,
+    user_id     TEXT NOT NULL,
+    role        TEXT NOT NULL,
+    node_id     TEXT,
+    name        TEXT NOT NULL,
+    created_at  TEXT NOT NULL
+  );
+  CREATE TABLE stock_movements (
+    movement_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scenario_id TEXT NOT NULL,
+    as_of       TEXT NOT NULL,
+    kind        TEXT NOT NULL,          -- receipt | count | adjust
+    node_id     TEXT NOT NULL,
+    sku_id      TEXT NOT NULL,
+    sku_name    TEXT NOT NULL,
+    cases       REAL NOT NULL,
+    reason      TEXT,
+    user_id     TEXT NOT NULL,
+    ts          TEXT NOT NULL
+  );
+  CREATE INDEX ix_movements_node ON stock_movements(scenario_id, as_of, node_id);
+  CREATE TABLE stock_counts (            -- counted quantity per day: counts set it, adjustments move it
+    scenario_id TEXT NOT NULL,
+    as_of       TEXT NOT NULL,
+    node_id     TEXT NOT NULL,
+    sku_id      TEXT NOT NULL,
+    cases       REAL NOT NULL,
+    updated_at  TEXT NOT NULL,
+    PRIMARY KEY (scenario_id, as_of, node_id, sku_id)
+  );`,
 ];

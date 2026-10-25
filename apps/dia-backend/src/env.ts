@@ -59,4 +59,6 @@ export const env = {
   /** Gemini Developer API (Google AI) key: the simplest option; no project or billing setup. */
   geminiApiKey: process.env.GEMINI_API_KEY,
   geminiModel: process.env.GEMINI_MODEL ?? "gemini-flash-latest",
+  /** Demo PIN shared by the warehouse-app test users (docs/Warehouse-app.md). Not a real secret: demo data only. */
+  whDemoPin: process.env.WH_DEMO_PIN ?? "1234",
 };

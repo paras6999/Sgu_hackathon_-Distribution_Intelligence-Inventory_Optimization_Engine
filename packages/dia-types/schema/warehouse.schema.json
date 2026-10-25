@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dia/warehouse",
+  "title": "warehouse",
+  "$defs": {
+    "StockCount": {
+      "additionalProperties": false,
+      "description": "Counted stock of one product at one depot or distributor. Replaces the simulated quantity for that pair before space is shown or a plan is made.",
+      "properties": {
+        "node_id": { "type": "string" },
+        "sku_id": { "type": "string" },
+        "cases": { "minimum": 0, "type": "number" }
+      },
+      "required": ["node_id", "sku_id", "cases"],
+      "type": "object"
+    },
+    "EngineSpaceRequest": {
+      "additionalProperties": false,
+      "description": "Internal engine request: warehouse space on a morning with counted stock applied.",
+      "properties": {
+        "as_of": { "format": "date", "type": "string" },
+        "opening_state": { "enum": ["neutral", "imbalanced"], "type": "string", "default": "imbalanced" },
+        "stock_counts": { "default": [], "items": { "$ref": "#/$defs/StockCount" }, "type": "array" }
+      },
+      "required": ["as_of"],
+      "type": "object"
+    },
+    "WhUser": {
+      "additionalProperties": false,
+      "description": "A warehouse-app user. A depot or distributor user sees and changes only its own node; a planner sees every node.",
+      "properties": {
+        "user_id": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "enum": ["planner", "depot", "distributor"], "type": "string" },
+        "node_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["user_id", "name", "role", "node_id"],
+      "type": "object"
+    },
+    "LoginRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "user_id": { "minLength": 1, "type": "string" },
+        "pin": { "minLength": 1, "type": "string" }
+      },
+      "required": ["user_id", "pin"],
+      "type": "object"
+    },
+    "Session": {
+      "additionalProperties": false,
+      "description": "Returned by login. Send the token as 'Authorization: Bearer <token>' on every /v1/wh route.",
+      "properties": {
+        "token": { "type": "string" },
+        "user": { "$ref": "#/$defs/WhUser" }
+      },
+      "required": ["token", "user"],
+      "type": "object"
+    },
+    "MovementRequest": {
+      "additionalProperties": false,
+      "description": "receipt: cases that arrived; count: cases counted on the shelf (replaces the system figure); adjust: signed change, e.g. -12 for damage.",
+      "properties": {
+        "kind": { "enum": ["receipt", "count", "adjust"], "type": "string" },
+        "node_id": { "type": "string" },
+        "sku_id": { "type": "string" },
+        "cases": { "type": "number" },
+        "reason": { "anyOf": [{ "maxLength": 200, "type": "string" }, { "type": "null" }], "default": null },
+        "as_of": { "anyOf": [{ "format": "date", "type": "string" }, { "type": "null" }], "default": null }
+      },
+      "required": ["kind", "node_id", "sku_id", "cases"],
+      "type": "object"
+    },
+    "Movement": {
+      "additionalProperties": false,
+      "properties": {
+        "movement_id": { "type": "integer" },
+        "kind": { "enum": ["receipt", "count", "adjust"], "type": "string" },
+        "node_id": { "type": "string" },
+        "sku_id": { "type": "string" },
+        "sku_name": { "type": "string" },
+        "cases": { "type": "number" },
+        "reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "as_of": { "format": "date", "type": "string" },
+        "user_id": { "type": "string" },
+        "ts": { "type": "string" }
+      },
+      "required": ["movement_id", "kind", "node_id", "sku_id", "sku_name", "cases", "reason", "as_of", "user_id", "ts"],
+      "type": "object"
+    },
+    "WhStockRow": {
+      "additionalProperties": false,
+      "description": "One lot (or one counted product) at the user's node, oldest expiry first.",
+      "properties": {
+        "sku_id": { "type": "string" },
+        "sku_name": { "type": "string" },
+        "temp_class": { "enum": ["ambient", "chilled"], "type": "string" },
+        "lot_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "cases": { "type": "number" },
+        "m3": { "type": "number" },
+        "expiry": { "anyOf": [{ "format": "date", "type": "string" }, { "type": "null" }] },
+        "days_left": { "anyOf": [{ "type": "integer" }, { "type": "null" }] },
+        "state": { "enum": ["on_hand", "in_transit", "counted"], "type": "string" }
+      },
+      "required": ["sku_id", "sku_name", "temp_class", "lot_id", "cases", "m3", "expiry", "days_left", "state"],
+      "type": "object"
+    },
+    "WhStock": {
+      "additionalProperties": false,
+      "properties": {
+        "node_id": { "type": "string" },
+        "as_of": { "format": "date", "type": "string" },
+        "rows": { "items": { "$ref": "#/$defs/WhStockRow" }, "type": "array" }
+      },
+      "required": ["node_id", "as_of", "rows"],
+      "type": "object"
+    }
+  }
+}

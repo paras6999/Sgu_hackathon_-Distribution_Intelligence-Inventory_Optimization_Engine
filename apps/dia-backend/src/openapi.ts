@@ -31,6 +31,16 @@ export const ROUTES: Route[] = [
   { method: "get", path: "/v1/assumptions", summary: "FR-15 assumptions table", response: "AssumptionRow", array: true },
   { method: "get", path: "/v1/ai/status", summary: "Whether an AI model is configured (otherwise rules-based analysis)" },
   { method: "post", path: "/v1/ai/analyse", summary: "Analysis on demand: body {kind: plan|line|results, plan_id | experiment_id, question?}. Figures come from the data; quantities are never set by the model" },
+  { method: "get", path: "/v1/wh/users", summary: "Warehouse app: demo users (planner, one per depot and distributor)", response: "WhUser", array: true },
+  { method: "post", path: "/v1/wh/login", summary: "Warehouse app: log in with user_id and PIN; returns a bearer token", body: "LoginRequest", response: "Session" },
+  { method: "get", path: "/v1/wh/me", summary: "Warehouse app: the logged-in user (bearer token)", response: "WhUser" },
+  { method: "get", path: "/v1/wh/day", summary: "Warehouse app: the scenario and day the app works on (query: as_of)" },
+  { method: "get", path: "/v1/wh/space", summary: "Warehouse app: space at the user's stores and the godowns it serves, counted stock applied", response: "SpaceReport" },
+  { method: "get", path: "/v1/wh/stock", summary: "Warehouse app: stock by lot at one node, oldest expiry first (query: node_id for planners)", response: "WhStock" },
+  { method: "get", path: "/v1/wh/alerts", summary: "Warehouse app: lots at risk of expiry at the user's nodes", response: "AtRisk", array: true },
+  { method: "get", path: "/v1/wh/loading", summary: "Warehouse app: trucks of today's sent plans (depot: to load; distributor: coming in)", response: "DispatchResponse", array: true },
+  { method: "get", path: "/v1/wh/movements", summary: "Warehouse app: today's receipts, counts and adjustments", response: "Movement", array: true },
+  { method: "post", path: "/v1/wh/movements", summary: "Warehouse app: record a receipt, count or adjustment (own node only)", body: "MovementRequest", response: "Movement", status: 201 },
   { method: "post", path: "/v1/assistant", summary: "Sidebar assistant: one sentence runs one fixed tool (status, explain, credit, at-risk, what-if, approve and send, replan)", body: "AssistantRequest", response: "AssistantResponse" },
 ];
 

@@ -81,6 +81,14 @@
           },
           "type": "array"
         },
+        "stock_counts": {
+          "default": [],
+          "description": "Counted stock that replaces the simulated quantity for each (node, product) before planning.",
+          "items": {
+            "$ref": "#/$defs/StockCount"
+          },
+          "type": "array"
+        },
         "plan_id": {
           "type": "string"
         },

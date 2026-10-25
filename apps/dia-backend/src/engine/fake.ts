@@ -30,6 +30,7 @@ export class FakeEngine implements EngineClient {
   /**
    * FAKE DATA (not engine output): space from the scenario and snapshot fixtures. Depot stores have no capacity in the
    * fixture, so each is given room for its stock at 80% full (at least 10 m3); godowns use their fixture storage_m3.
+   * Stock counts are not applied in fake mode.
    */
   async space(scenarioId: string, asOf: string, openingState: OpeningState): Promise<SpaceReport> {
     const sc = scenario as Scenario, snap = snapshot as Snapshot;

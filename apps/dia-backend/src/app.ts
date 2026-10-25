@@ -20,6 +20,8 @@ import { llmFromEnv, statusOf } from "./ai";
 import type { LlmClient } from "./ai/vertex";
 import { DOCS_HTML, openapiDocument } from "./openapi";
 import { validate } from "./validation";
+import { warehouseRoutes } from "./warehouse";
+import { env } from "./env";
 
 /** llm: undefined reads the environment; null forces the rules-only path (tests). */
 export type Deps = { repo: Repo; engine: EngineClient; llm?: LlmClient | null };
@@ -177,6 +179,7 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
       scenario_id: req.scenario_id, as_of: req.as_of, temp_class: req.temp_class,
       opening_state: opening, settings: { weights: req.weights },
       locks: req.locks ?? [], what_if: req.what_if ?? null, plan_id: planId, version,
+      stock_counts: repo.counts(req.scenario_id, req.as_of),
     });
     repo.tx(() => {
       repo.savePlan(plan);
@@ -351,7 +354,8 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
   app.get("/v1/scenarios/:id/space", async (c) => {
     const asOf = c.req.query("as_of");
     if (!asOf) throw new HTTPException(422, { message: "as_of is required" });
-    return c.json(await engine.space(c.req.param("id"), asOf, openingState(c.req.query("opening_state"))));
+    const id = c.req.param("id");
+    return c.json(await engine.space(id, asOf, openingState(c.req.query("opening_state")), repo.counts(id, asOf)));
   });
 
   app.post("/v1/forecasts", async (c) => {
@@ -589,6 +593,8 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
       return c.json(res);
     }
   });
+
+  warehouseRoutes(app, { repo, engine, dispatch: (id, depot) => dispatch(id, depot), demoPin: env.whDemoPin });
 
   return app;
 }
