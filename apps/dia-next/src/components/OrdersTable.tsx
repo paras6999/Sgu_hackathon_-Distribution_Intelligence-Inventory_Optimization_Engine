@@ -1,7 +1,10 @@
+"use client";
+
 import { useState } from "react";
-import type { OrderSummary } from "@dia/types";
+import type { OrderSummary, PlanLine, ResponseAction } from "@dia/types";
 import { CREDIT_FULL_PCT } from "@/lib/config";
 import { formatNumber, formatPercent, formatRupees, formatSigned, orderStatus } from "@/lib/format";
+import { OrderLines, type LineDecision } from "./OrderLines";
 
 type FilterId = "all" | "waiting" | "changed" | "credit";
 
@@ -15,8 +18,13 @@ const FILTERS: { id: FilterId; label: string; test: (o: OrderSummary) => boolean
 type Props = {
   /** Orders already sorted by value, highest first. */
   orders: OrderSummary[];
-  selectedDist: string | null;
-  onSelect: (distId: string) => void;
+  lines: PlanLine[];
+  canAct: boolean;
+  busy: boolean;
+  /** Apply line decisions to one order. */
+  onApplyOrder: (order: OrderSummary, decisions: LineDecision[]) => void;
+  /** Accept or reject every line of each checked order. */
+  onBulk: (distIds: string[], action: ResponseAction) => void;
 };
 
 function deltaClass(value: number): string {
@@ -25,10 +33,25 @@ function deltaClass(value: number): string {
   return "delta-0";
 }
 
-export function OrdersTable({ orders, selectedDist, onSelect }: Props) {
+export function OrdersTable({ orders, lines, canAct, busy, onApplyOrder, onBulk }: Props) {
   const [filter, setFilter] = useState<FilterId>("all");
+  const [openDist, setOpenDist] = useState<string | null>(null);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
   const active = FILTERS.find((f) => f.id === filter) ?? FILTERS[0];
   const visible = orders.filter(active.test);
+
+  const toggleCheck = (distId: string) =>
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(distId)) next.delete(distId);
+      else next.add(distId);
+      return next;
+    });
+
+  const bulk = (action: ResponseAction) => {
+    onBulk([...checked], action);
+    setChecked(new Set());
+  };
 
   return (
     <>
@@ -45,13 +68,29 @@ export function OrdersTable({ orders, selectedDist, onSelect }: Props) {
           </button>
         ))}
         <span className="spacer" />
-        <span className="hint">Sorted by order value. Click an order to see its lines.</span>
+        {checked.size > 0 ? (
+          <span className="bulk">
+            <span className="muted">{checked.size} selected</span>
+            <button type="button" className="btn small" disabled={!canAct || busy} onClick={() => bulk("accept")}>
+              Accept all
+            </button>
+            <button type="button" className="btn small danger" disabled={!canAct || busy} onClick={() => bulk("reject")}>
+              Reject all
+            </button>
+            <button type="button" className="btn small" onClick={() => setChecked(new Set())}>
+              Clear
+            </button>
+          </span>
+        ) : (
+          <span className="hint">Click an order to open its lines. Tick orders to act on several at once.</span>
+        )}
       </div>
 
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
+              <th className="check-col" aria-label="Select" />
               <th>Order</th>
               <th>Status</th>
               <th className="num">Lines</th>
@@ -65,50 +104,66 @@ export function OrdersTable({ orders, selectedDist, onSelect }: Props) {
           <tbody>
             {visible.length === 0 && (
               <tr>
-                <td colSpan={8} className="empty-cell">
-                  No orders match this filter.
-                </td>
+                <td colSpan={9} className="empty-cell">No orders match this filter.</td>
               </tr>
             )}
             {visible.map((o) => {
               const status = orderStatus(o);
-              const selected = o.dist_id === selectedDist;
+              const open = o.dist_id === openDist;
               const full = o.credit_used_pct >= CREDIT_FULL_PCT;
               return (
-                <tr key={o.dist_id} className={selected ? "sel" : undefined}>
-                  <td className="city">
-                    <button
-                      type="button"
-                      className="row-link"
-                      aria-pressed={selected}
-                      onClick={() => onSelect(o.dist_id)}
-                    >
-                      <b>{o.dist_city}</b>
-                      <span>{o.dist_id}</span>
-                    </button>
-                  </td>
-                  <td>
-                    <span className={`status tone-${status.tone}`}>{status.label}</span>
-                  </td>
-                  <td className="num">{formatNumber(o.lines)}</td>
-                  <td className="num">{formatNumber(o.cases)}</td>
-                  <td className="num">{formatRupees(o.value_inr)}</td>
-                  <td>
-                    <div className="credit">
-                      <div className="bar">
-                        <i
-                          className={full ? "full" : undefined}
-                          style={{ width: `${Math.min(o.credit_used_pct, 100)}%` }}
-                        />
+                <OrderRow key={o.dist_id}>
+                  <tr className={open ? "sel" : undefined}>
+                    <td className="check-col">
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${o.dist_city}`}
+                        checked={checked.has(o.dist_id)}
+                        onChange={() => toggleCheck(o.dist_id)}
+                      />
+                    </td>
+                    <td className="city">
+                      <button
+                        type="button"
+                        className="row-link"
+                        aria-expanded={open}
+                        onClick={() => setOpenDist(open ? null : o.dist_id)}
+                      >
+                        <b>{o.dist_city}</b>
+                        <span>{o.dist_id} · {open ? "Close" : "Open"}</span>
+                      </button>
+                    </td>
+                    <td>
+                      <span className={`status tone-${status.tone}`}>{status.label}</span>
+                    </td>
+                    <td className="num">{formatNumber(o.lines)}</td>
+                    <td className="num">{formatNumber(o.cases)}</td>
+                    <td className="num">{formatRupees(o.value_inr)}</td>
+                    <td>
+                      <div className="credit">
+                        <div className="bar">
+                          <i className={full ? "full" : undefined} style={{ width: `${Math.min(o.credit_used_pct, 100)}%` }} />
+                        </div>
+                        <span className="pct">{formatPercent(o.credit_used_pct)}</span>
                       </div>
-                      <span className="pct">{formatPercent(o.credit_used_pct)}</span>
-                    </div>
-                  </td>
-                  <td className={`num ${deltaClass(o.cases_since_draft)}`}>
-                    {formatSigned(o.cases_since_draft)}
-                  </td>
-                  <td className="num">{o.proposal_version}</td>
-                </tr>
+                    </td>
+                    <td className={`num ${deltaClass(o.cases_since_draft)}`}>{formatSigned(o.cases_since_draft)}</td>
+                    <td className="num">{o.proposal_version}</td>
+                  </tr>
+                  {open && (
+                    <tr className="open-row">
+                      <td colSpan={9}>
+                        <OrderLines
+                          order={o}
+                          lines={lines.filter((l) => l.to_id === o.dist_id)}
+                          canAct={canAct}
+                          busy={busy}
+                          onApply={(decisions) => onApplyOrder(o, decisions)}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </OrderRow>
               );
             })}
           </tbody>
@@ -116,4 +171,9 @@ export function OrdersTable({ orders, selectedDist, onSelect }: Props) {
       </div>
     </>
   );
+}
+
+/** Wraps a row and its optional open panel so React keys stay on the order. */
+function OrderRow({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }

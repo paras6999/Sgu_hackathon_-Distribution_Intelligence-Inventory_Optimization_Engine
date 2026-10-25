@@ -843,3 +843,16 @@ tr.sel td {
     transition: none !important;
   }
 }
+
+/* Orders: open order, group actions, status controls (added with the order actions). */
+.check-col { width: 32px; text-align: center; }
+.check-col input { width: 15px; height: 15px; cursor: pointer; }
+.open-row > td { background: #fafaf9; padding: 12px 14px 16px; border-bottom: 1px solid var(--line); }
+.order-open { display: grid; gap: 10px; }
+.order-open-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.order-open-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.bulk { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.btn.danger { color: var(--bad); border-color: #e3a3ab; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.qty { width: 84px; padding: 4px 6px; border: 1px solid #c9c7c5; border-radius: 4px; font: inherit; text-align: right; }
+select { padding: 4px 6px; border: 1px solid #c9c7c5; border-radius: 4px; font: inherit; background: #fff; }

@@ -7,6 +7,8 @@ import type {
   Plan,
   PlanEvent,
   PlanRequest,
+  ResponseRequest,
+  ResponseResult,
 } from "@dia/types";
 
 /** An HTTP error from the backend. `message` is the backend's `detail` text when it sent one. */
@@ -72,6 +74,13 @@ export const getAtRisk = (scenarioId: string, asOf: string) =>
 
 export const getEvents = (planId: string) =>
   request<PlanEvent[]>(`/v1/plans/${enc(planId)}/events`);
+
+/** Records a distributor reply on an order: accept, trim or reject each line. Triggers a locked re-solve. */
+export const respondToOrder = (planId: string, body: ResponseRequest) =>
+  request<ResponseResult>(`/v1/plans/${enc(planId)}/responses`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 
 export const askAssistant = (body: AssistantRequest) =>
   request<AssistantResponse>("/v1/assistant", { method: "POST", body: JSON.stringify(body) });
