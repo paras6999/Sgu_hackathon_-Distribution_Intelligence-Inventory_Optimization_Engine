@@ -650,10 +650,24 @@
         "confirm": {
           "type": "boolean",
           "default": false
+        },
+        "page": {
+          "enum": [
+            "planning",
+            "demand",
+            "results",
+            "frontier",
+            "map",
+            "stock"
+          ],
+          "type": "string",
+          "default": "planning"
+        },
+        "context": {
+          "$ref": "#/$defs/AssistantContext"
         }
       },
       "required": [
-        "plan_id",
         "message"
       ],
       "type": "object"
@@ -703,6 +717,89 @@
         "summary",
         "plan_id",
         "plan_version"
+      ],
+      "type": "object"
+    },
+    "AssistantContext": {
+      "additionalProperties": false,
+      "description": "What the planner is looking at, sent with each message so the assistant can answer about that page.",
+      "properties": {
+        "experiment_id": {
+          "type": "string"
+        },
+        "opening_state": {
+          "$ref": "#/$defs/OpeningState"
+        },
+        "dist_id": {
+          "type": "string"
+        },
+        "sku_id": {
+          "type": "string"
+        },
+        "seed": {
+          "type": "integer"
+        },
+        "as_of": {
+          "format": "date",
+          "type": "string"
+        },
+        "lane_from": {
+          "type": "string"
+        },
+        "lane_to": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "UiAction": {
+      "additionalProperties": false,
+      "description": "A change the page itself applies: switch view, set filters, or select a map lane. Never a quantity.",
+      "properties": {
+        "type": {
+          "enum": [
+            "set_filters",
+            "navigate",
+            "select_lane"
+          ],
+          "type": "string"
+        },
+        "page": {
+          "enum": [
+            "planning",
+            "demand",
+            "results",
+            "frontier",
+            "map",
+            "stock"
+          ],
+          "type": "string"
+        },
+        "opening_state": {
+          "$ref": "#/$defs/OpeningState"
+        },
+        "dist_id": {
+          "type": "string"
+        },
+        "sku_id": {
+          "type": "string"
+        },
+        "seed": {
+          "type": "integer"
+        },
+        "as_of": {
+          "format": "date",
+          "type": "string"
+        },
+        "lane_from": {
+          "type": "string"
+        },
+        "lane_to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
       ],
       "type": "object"
     },
@@ -765,6 +862,16 @@
           "anyOf": [
             {
               "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ui_action": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UiAction"
             },
             {
               "type": "null"

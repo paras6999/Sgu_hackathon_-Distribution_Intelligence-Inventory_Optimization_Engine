@@ -60,9 +60,11 @@
         "plan_id": { "type": "string" },
         "message": { "type": "string", "maxLength": 500 },
         "mode": { "enum": ["automatic", "ask_first"], "type": "string", "default": "automatic" },
-        "confirm": { "type": "boolean", "default": false }
+        "confirm": { "type": "boolean", "default": false },
+        "page": { "enum": ["planning", "demand", "results", "frontier", "map", "stock"], "type": "string", "default": "planning" },
+        "context": { "$ref": "#/$defs/AssistantContext" }
       },
-      "required": ["plan_id", "message"],
+      "required": ["message"],
       "type": "object"
     },
     "AssistantStep": {
@@ -78,6 +80,38 @@
       "required": ["tool", "status", "summary", "plan_id", "plan_version"],
       "type": "object"
     },
+    "AssistantContext": {
+      "additionalProperties": false,
+      "description": "What the planner is looking at, sent with each message so the assistant can answer about that page.",
+      "properties": {
+        "experiment_id": { "type": "string" },
+        "opening_state": { "$ref": "#/$defs/OpeningState" },
+        "dist_id": { "type": "string" },
+        "sku_id": { "type": "string" },
+        "seed": { "type": "integer" },
+        "as_of": { "format": "date", "type": "string" },
+        "lane_from": { "type": "string" },
+        "lane_to": { "type": "string" }
+      },
+      "type": "object"
+    },
+    "UiAction": {
+      "additionalProperties": false,
+      "description": "A change the page itself applies: switch view, set filters, or select a map lane. Never a quantity.",
+      "properties": {
+        "type": { "enum": ["set_filters", "navigate", "select_lane"], "type": "string" },
+        "page": { "enum": ["planning", "demand", "results", "frontier", "map", "stock"], "type": "string" },
+        "opening_state": { "$ref": "#/$defs/OpeningState" },
+        "dist_id": { "type": "string" },
+        "sku_id": { "type": "string" },
+        "seed": { "type": "integer" },
+        "as_of": { "format": "date", "type": "string" },
+        "lane_from": { "type": "string" },
+        "lane_to": { "type": "string" }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
     "AssistantResponse": {
       "additionalProperties": false,
       "description": "Result of one sidebar message. status needs_confirmation means an ask-first action is waiting for the user's confirm.",
@@ -90,6 +124,7 @@
         "plan_version": { "anyOf": [{ "type": "integer" }, { "type": "null" }] },
         "plan_status": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
         "pending_action": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "ui_action": { "anyOf": [{ "$ref": "#/$defs/UiAction" }, { "type": "null" }] },
         "source": { "enum": ["rules", "ai"], "type": "string" }
       },
       "required": ["status", "intent", "reply", "steps", "plan_id", "plan_version", "plan_status", "pending_action", "source"],

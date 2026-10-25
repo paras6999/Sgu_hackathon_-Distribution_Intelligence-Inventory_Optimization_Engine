@@ -463,10 +463,28 @@ export interface OrdersView {
  * via the `definition` "AssistantRequest".
  */
 export interface AssistantRequest {
-  plan_id: string;
+  plan_id?: string;
   message: string;
   mode?: "automatic" | "ask_first";
   confirm?: boolean;
+  page?: "planning" | "demand" | "results" | "frontier" | "map" | "stock";
+  context?: AssistantContext;
+}
+/**
+ * What the planner is looking at, sent with each message so the assistant can answer about that page.
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "AssistantContext".
+ */
+export interface AssistantContext {
+  experiment_id?: string;
+  opening_state?: OpeningState;
+  dist_id?: string;
+  sku_id?: string;
+  seed?: number;
+  as_of?: string;
+  lane_from?: string;
+  lane_to?: string;
 }
 /**
  * One tool the assistant ran (or refused to run), in order.
@@ -480,6 +498,23 @@ export interface AssistantStep {
   summary: string;
   plan_id: string | null;
   plan_version: number | null;
+}
+/**
+ * A change the page itself applies: switch view, set filters, or select a map lane. Never a quantity.
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "UiAction".
+ */
+export interface UiAction {
+  type: "set_filters" | "navigate" | "select_lane";
+  page?: "planning" | "demand" | "results" | "frontier" | "map" | "stock";
+  opening_state?: OpeningState;
+  dist_id?: string;
+  sku_id?: string;
+  seed?: number;
+  as_of?: string;
+  lane_from?: string;
+  lane_to?: string;
 }
 /**
  * Result of one sidebar message. status needs_confirmation means an ask-first action is waiting for the user's confirm.
@@ -496,6 +531,7 @@ export interface AssistantResponse {
   plan_version: number | null;
   plan_status: string | null;
   pending_action: string | null;
+  ui_action?: UiAction | null;
   source: "rules" | "ai";
 }
 /**

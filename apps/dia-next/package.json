@@ -15,12 +15,14 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@playwright/test": "1.52.0"
   },
   "dependencies": {
     "@dia/types": "workspace:*",
     "next": "16.4.3",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "maplibre-gl": "6.15.0"
   }
 }

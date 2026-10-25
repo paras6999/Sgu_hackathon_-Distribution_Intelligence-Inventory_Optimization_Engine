@@ -25,3 +25,5 @@ service-account*.json
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+.shots/

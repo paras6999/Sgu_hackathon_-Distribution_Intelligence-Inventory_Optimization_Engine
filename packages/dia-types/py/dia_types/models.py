@@ -121,14 +121,13 @@ class Mode(str, Enum):
     ASK_FIRST = "ask_first"
 
 
-class AssistantRequest(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    plan_id: str
-    message: constr(max_length=500)
-    mode: Mode = "automatic"
-    confirm: bool = False
+class Page(str, Enum):
+    PLANNING = "planning"
+    DEMAND = "demand"
+    RESULTS = "results"
+    FRONTIER = "frontier"
+    MAP = "map"
+    STOCK = "stock"
 
 
 class Status(str, Enum):
@@ -148,6 +147,12 @@ class AssistantStep(BaseModel):
     plan_version: int | None = None
 
 
+class Type(str, Enum):
+    SET_FILTERS = "set_filters"
+    NAVIGATE = "navigate"
+    SELECT_LANE = "select_lane"
+
+
 class Status1(str, Enum):
     COMPLETED = "completed"
     ANSWERED = "answered"
@@ -158,21 +163,6 @@ class Status1(str, Enum):
 class Source(str, Enum):
     RULES = "rules"
     AI = "ai"
-
-
-class AssistantResponse(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    status: Status1
-    intent: str
-    reply: str
-    steps: list[AssistantStep]
-    plan_id: str | None = None
-    plan_version: int | None = None
-    plan_status: str | None = None
-    pending_action: str | None = None
-    source: Source
 
 
 class TempClass(str, Enum):
@@ -1054,6 +1044,51 @@ class OrdersView(BaseModel):
     totals: Totals
 
 
+class AssistantContext(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    experiment_id: str | None = None
+    opening_state: OpeningState | None = None
+    dist_id: str | None = None
+    sku_id: str | None = None
+    seed: int | None = None
+    as_of: date_aliased | None = None
+    lane_from: str | None = None
+    lane_to: str | None = None
+
+
+class UiAction(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    type: Type
+    page: Page | None = "planning"
+    opening_state: OpeningState | None = None
+    dist_id: str | None = None
+    sku_id: str | None = None
+    seed: int | None = None
+    as_of: date_aliased | None = None
+    lane_from: str | None = None
+    lane_to: str | None = None
+
+
+class AssistantResponse(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    status: Status1
+    intent: str
+    reply: str
+    steps: list[AssistantStep]
+    plan_id: str | None = None
+    plan_version: int | None = None
+    plan_status: str | None = None
+    pending_action: str | None = None
+    ui_action: UiAction | None = None
+    source: Source
+
+
 class EnginePlanRequest(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -1091,3 +1126,15 @@ class EngineResolveRequest(BaseModel):
     proposals: list[Proposal]
     response: ResponseRequest
     opening_state: OpeningState = "imbalanced"
+
+
+class AssistantRequest(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    plan_id: str | None = None
+    message: constr(max_length=500)
+    mode: Mode = "automatic"
+    confirm: bool = False
+    page: Page = "planning"
+    context: AssistantContext | None = None
