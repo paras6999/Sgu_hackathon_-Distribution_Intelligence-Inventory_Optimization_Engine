@@ -9,6 +9,21 @@ import { WhatIfPanel } from "../components/WhatIfPanel";
 export const STATUS_TONE: Record<string, string> = { PROPOSED: "info", ACCEPTED: "ok", TRIMMED: "warn", REJECTED: "bad" };
 const SOLVE_LABEL: Record<string, string> = { optimal: "Optimal", time_limit: "Best within the time budget", lp_round: "Rounded from the LP relaxation", fallback_baseline_b: "Fell back to Baseline B", not_solved: "Baseline (no solver)" };
 
+const DAY_MS = 86_400_000;
+const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+const fmtDay = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" });
+
+/**
+ * Planning days for a temperature class: the test window's first day plus multiples of `planning.cadence_days`
+ * (chilled every 2 days, on plant receipt days). Off those days the depots have already shipped their stock.
+ */
+function planningDays(asOf: string, start: string, cadence: number, end: string) {
+  const t = Date.parse(`${asOf}T00:00:00Z`), s = Date.parse(`${start}T00:00:00Z`);
+  const off = (((t - s) / DAY_MS) % cadence + cadence) % cadence;
+  const prev = isoDay(t - off * DAY_MS), next = isoDay(t + (cadence - off) * DAY_MS);
+  return { onCycle: off === 0, prev: prev < start ? null : prev, next: next > end ? null : next };
+}
+
 export function PlanPage({ plan, setPlan }: { plan: Plan | null; setPlan: (p: Plan) => void }) {
   const scenarios = useLoad(api.scenarios, []);
   const [scenario, setScenario] = useState("");
@@ -20,6 +35,12 @@ export function PlanPage({ plan, setPlan }: { plan: Plan | null; setPlan: (p: Pl
   const [notice, setNotice] = useState("");
 
   const sid = scenario || scenarios.data?.[0] || "";
+  const assumptions = useLoad(api.assumptions, []);
+  const param = (name: string) => assumptions.data?.find((r) => r.parameter === name)?.value;
+  const cadence = (param("planning.cadence_days") as Record<string, number> | undefined)?.[temp];
+  const [winStart = "2025-09-29", winEnd = "2025-12-21"] = (param("simulation.test_window") as string[] | undefined) ?? [];
+  // Only chilled stock runs out between cycles (short life, receipts every cadence days); ambient depots keep stock.
+  const cycle = temp === "chilled" && cadence && cadence > 1 ? planningDays(asOf, winStart, cadence, winEnd) : null;
 
   async function generate() {
     setBusy(true); setError(undefined); setNotice("");
@@ -66,7 +87,17 @@ export function PlanPage({ plan, setPlan }: { plan: Plan | null; setPlan: (p: Pl
         <button className="primary" disabled={busy || !sid} onClick={generate}>{busy ? "Solving…" : "Generate plan"}</button>
       </div>
       <ErrorText error={error ?? scenarios.error} />
-      {notice && <div className="callout" role="status"><p>{notice}</p></div>}
+      {cycle && !cycle.onCycle && (
+        <div className="callout warn" role="status">
+          <h3>{fmtDay(asOf)} is not a {temp} planning day</h3>
+          <p>Chilled stock arrives from the plants every {cadence} days, and each planning day ships what arrived. On other days the depots hold almost nothing, so a plan here ships little and counts the gap as lost sales.</p>
+          <div className="row" style={{ marginTop: 8 }}>
+            {cycle.prev && <button onClick={() => setAsOf(cycle.prev!)}>Use {fmtDay(cycle.prev)}</button>}
+            {cycle.next && <button onClick={() => setAsOf(cycle.next!)}>Use {fmtDay(cycle.next)}</button>}
+          </div>
+        </div>
+      )}
+      {notice &&<div className="callout" role="status"><p>{notice}</p></div>}
 
       {!plan && !busy && (
         <div style={{ marginTop: 16 }}>
