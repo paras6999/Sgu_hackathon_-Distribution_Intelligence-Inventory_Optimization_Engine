@@ -16,7 +16,8 @@ Vitaran is a distribution-planning engine for a consumer-goods brand: each plann
 | Reason codes (11) and validator | Built. Every plan is re-checked by an independent validator before it is returned. `FAIR_SHARE_FLOOR` never fires (switched off by default). |
 | Distributor loop (accept, trim, reject, locked re-solve) | Built. About 2 s. |
 | Simulator, KPIs, experiment runner, baselines A and B | Built. 0 stock-conservation failures in 483,840 rows. |
-| Web app (8 screens), API (23 routes), AI analysis | Built. Redesigned 24–25 Oct. |
+| Web app (9 screens), API (25 routes), AI analysis | Built. Redesigned 24–25 Oct. |
+| What-if plans (demand shock, depot outage, diesel), stock at risk, stock trajectory (PRD FR-19, FR-20, FR-21) | Built 26 Oct by the second team member (Ammey Kuraaday), merged to `main` (PRs #8, #9). What-if shows beside the plan and is never saved or sent. `Stock watch` screen. Their re-run `EX-acbb64e044eb` reproduced the result of record in direction and size (cost to serve −14.6% neutral, −14.0% imbalanced). Two strict `xfail` tests are theirs and documented in `docs/Memory.md`: counterfactual reason-code check at 6 of 10 (needs 90%) and the scarcity check, which needs the truck refill after rounding (PRD 6.5 step 6, not built). Design mockups for a later layout are in `docs/design/mockups/`. |
 | Real weather (Open-Meteo), 2-year history | Built. |
 | Final experiment `EX-de4798536119` | Run (10 seeds × 2 opening states; ablations and frontier on seeds 1–5). **Stored in `data/engine`, which is not in git**: a fresh clone must regenerate data and re-run (about 1 hour). |
 | CI | Defined in `.github/workflows/ci.yml`. **Nobody has looked at the results** (no GitHub access from the build sessions). Check first (Backlog B01). |
@@ -103,7 +104,7 @@ All are in `config.yaml` with an `assumptions` entry, and in `docs/Memory.md` wi
 ## 5. Contracts and how to change them
 
 1. Change a data shape: edit `packages/dia-types/schema/<file>.schema.json` → `bun run gen:types` → update `fixtures/`, the fake engine (`apps/dia-backend/src/engine/fake.ts`) and tests **in the same commit**. CI fails if generated files are out of date (`bun run check:types`).
-2. Add a route: `apps/dia-backend/src/app.ts` + a `ROUTES` entry in `src/openapi.ts` + the `EngineClient` method if it needs the engine + fake + test. `test/journey.test.ts` asserts the route count (now 23).
+2. Add a route: `apps/dia-backend/src/app.ts` + a `ROUTES` entry in `src/openapi.ts` + the `EngineClient` method if it needs the engine + fake + test. `test/journey.test.ts` asserts the route count (now 25).
 3. Table names and columns in `engine/dia-engine/src/dia_engine/store.py` (`TABLES`) are a contract; `write_table` rejects different columns.
 4. `Policy.plan(scenario, snapshot, forecast, temp_class) -> Plan` (`sim/policy.py`) is the interface the simulator uses for the engine and both baselines.
 

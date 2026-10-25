@@ -38,7 +38,7 @@ STEP 2 - TESTS AND BUILD (run, record the pass/fail counts)
   bun run typecheck
   bun run test
   bun run --cwd apps/dia-web build
-  Expected from the handoff: types and backend pass (backend about 29 pass, 6 skipped = opt-in e2e), engine about 144 pass. Report the real counts and any failures with their first error lines.
+  Expected from the handoff: types about 8 pass, backend about 33 pass (6 skipped = opt-in e2e), engine about 157 pass and 2 expected failures (strict xfail, documented in docs/Memory.md). Report the real counts and any failures with their first error lines.
 STEP 3 - DATA AND ENGINE (run; needs network once for weather)
   uv run --package dia-engine dia-engine weather --fetch
   uv run --package dia-engine dia-engine generate --seeds 3          (3 is enough for this run)
@@ -50,7 +50,7 @@ STEP 3 - DATA AND ENGINE (run; needs network once for weather)
   - GET /v1/scenarios/seed01/history and /effects: record counts.
   - POST /v1/ai/analyse for the plan you just made: record source and verified.
 STEP 4 - CLAIMS TO VERIFY (one row each in the report)
-  C1  The public API has 23 routes (apps/dia-backend/src/openapi.ts ROUTES; test/journey.test.ts).
+  C1  The public API has 25 routes (apps/dia-backend/src/openapi.ts ROUTES; test/journey.test.ts). The newest routes (at-risk, trajectory, what_if on POST /v1/plans) were added by a second team member; check them too.
   C2  Config values: costs.stockout_penalty_x_margin 2.4; network.alt_depot_max_km 600; network.chilled_max_km 600; costs.ftl.REEF17 kg 1500. (packages/dia-config/config.yaml)
   C3  Plant receipts land before dispatch in run_policy; the depot write-off applies to every lot (engine/dia-engine/src/dia_engine/sim/simulate.py, optimize/optimize.py).
   C4  The optimiser caps the search at 1.5 s (MIP_BUDGET_S) and the simulator at 1.0 s (SIM_TIME_LIMIT_S); the ambient plan status is time_limit.

@@ -110,9 +110,11 @@ Parquet tables and columns: `store.TABLES` in `engine/dia-engine/src/dia_engine/
 | `GET /v1/scenarios/{id}/history?dist_id=&sku_id=` | Two years of weekly demand, backtest forecasts, festival windows | `DemandHistory` |
 | `GET /v1/scenarios/{id}/effects` | Seasonal, weather and festival effects the forecaster learned | `LearnedEffects` |
 | `GET /v1/scenarios/{id}/backtest` | Forecast accuracy (WAPE, bias, coverage) | `BacktestMetrics` |
+| `GET /v1/scenarios/{id}/at-risk?as_of=&opening_state=` | Distributor and depot lots expected to expire before they sell (FR-20) | `AtRisk[]` |
+| `GET /v1/experiments/{id}/trajectory?sku_id=&dist_id=&seed=&opening_state=` | Day-by-day stock for one SKU and distributor under each policy; 404 if the seed's log was not kept (seeds 1 and 2) (FR-21) | `Trajectory` |
 | `GET /v1/scenarios/{id}/snapshot?as_of=&opening_state=` | Stock state; any day of the test window (later days replay Baseline A) | `Snapshot` |
 | `POST /v1/forecasts` | Weekly forecast + backtest | `ForecastRequest` → `ForecastResponse` |
-| `POST /v1/plans` | New plan, or new version with `base_plan_id` | `PlanRequest` → `Plan` |
+| `POST /v1/plans` | New plan, or new version with `base_plan_id`; optional `what_if` (demand shock by region, depot outage, diesel change) re-solves with the change (FR-19) | `PlanRequest` → `Plan` |
 | `GET /v1/plans/{id}?version=` | Plan (latest by default) | `Plan` |
 | `POST /v1/plans/{id}/publish` | PROPOSED + one proposal per distributor | `PublishRequest` → `PublishResponse` |
 | `GET /v1/plans/{id}/proposals` | Proposal status | `Proposal[]` |
