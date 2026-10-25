@@ -3458,6 +3458,84 @@
       ],
       "type": "object"
     },
+    "WhOrder": {
+      "additionalProperties": false,
+      "description": "A distributor's order from one plan sent today: the proposal message and its lines, as the distributor answers it in the app.",
+      "properties": {
+        "plan_id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer"
+        },
+        "temp_class": {
+          "enum": [
+            "ambient",
+            "chilled"
+          ],
+          "type": "string"
+        },
+        "dist_id": {
+          "type": "string"
+        },
+        "proposal_version": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string"
+        },
+        "replied": {
+          "type": "boolean"
+        },
+        "text": {
+          "type": "string"
+        },
+        "lines": {
+          "items": {
+            "$ref": "#/$defs/PlanLine"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "plan_id",
+        "version",
+        "temp_class",
+        "dist_id",
+        "proposal_version",
+        "status",
+        "replied",
+        "text",
+        "lines"
+      ],
+      "type": "object"
+    },
+    "WhRespondRequest": {
+      "additionalProperties": false,
+      "description": "A distributor's answer from the app. The distributor is the logged-in user; the backend fills it in.",
+      "properties": {
+        "plan_id": {
+          "type": "string"
+        },
+        "proposal_version": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "actions": {
+          "items": {
+            "$ref": "#/$defs/LineAction"
+          },
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "plan_id",
+        "proposal_version",
+        "actions"
+      ],
+      "type": "object"
+    },
     "WhStock": {
       "additionalProperties": false,
       "properties": {

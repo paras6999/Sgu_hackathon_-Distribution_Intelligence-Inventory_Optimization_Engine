@@ -4,6 +4,17 @@ A phone-first web app (PWA) for depot and distributor staff. It answers "how ful
 what is about to expire, what do I load today" and lets staff record what is really on the shelf. Counts flow back
 into the engine: the next space view and the next plan use them.
 
+## Web and app together
+
+One planning cycle runs across both, on one shared backend:
+
+1. **Planner, web (:3000):** Plan → generate → *Send to distributors*.
+2. **Distributor, app (:3002):** the order appears on **Orders** (badge on the tab); accept, trim or reject each line, or accept everything. The answer goes through the same route as the planner's Orders by city screen, so the same version checks and re-plan apply.
+3. **Planner, web:** **Orders by city** shows the reply and the re-planned version; **Warehouses** shows every store's and godown's space (counted stock included) and a live feed of what staff recorded.
+4. **Depot, app:** **Trucks** shows the loads of the latest sent version.
+
+Both sides refresh every 15 seconds. The app follows the planner: it works on the scenario and day of the most recently **sent** plan (a later draft or what-if does not move it).
+
 ## Run it
 
 `bun run dev` starts it with everything else. Open http://localhost:3002 (on a phone on the same Wi-Fi:
@@ -28,10 +39,12 @@ in `.env` (default `1234`). Change it before showing the app outside the team.
 | Space | capacity, used and free m³, % full per store and godown; tap for how many more cases of each product fit | `GET /v1/wh/space` |
 | Stock | lots, oldest expiry first, days left; counted products marked | `GET /v1/wh/stock` |
 | Alerts | lots likely to expire before they sell, with the advice | `GET /v1/wh/alerts` |
-| Trucks | depot: trucks to load today, oldest stock first; distributor: trucks coming in | `GET /v1/wh/loading` |
+| Orders (distributor) | the order from today's sent plan; accept, trim or reject per line | `GET /v1/wh/orders`, `POST /v1/wh/orders/respond` |
+| Trucks (depot, planner) | trucks to load today, oldest stock first | `GET /v1/wh/loading` |
 | Record | count, receipt or adjustment (signed, e.g. −6 for damage); today's entries | `POST`/`GET /v1/wh/movements` |
 
 Login: `GET /v1/wh/users`, `POST /v1/wh/login` (returns a bearer token), `GET /v1/wh/me`, `GET /v1/wh/day`.
+Planner's web screen (no login, read-only): `GET /v1/scenarios/{id}/movements?as_of=` and the space route.
 
 ## How counts reach the plan
 

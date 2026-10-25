@@ -40,6 +40,9 @@ export const ROUTES: Route[] = [
   { method: "get", path: "/v1/wh/alerts", summary: "Warehouse app: lots at risk of expiry at the user's nodes", response: "AtRisk", array: true },
   { method: "get", path: "/v1/wh/loading", summary: "Warehouse app: trucks of today's sent plans (depot: to load; distributor: coming in)", response: "DispatchResponse", array: true },
   { method: "get", path: "/v1/wh/movements", summary: "Warehouse app: today's receipts, counts and adjustments", response: "Movement", array: true },
+  { method: "get", path: "/v1/wh/orders", summary: "Warehouse app: the distributor's orders in today's sent plans (planners: query dist_id)", response: "WhOrder", array: true },
+  { method: "post", path: "/v1/wh/orders/respond", summary: "Warehouse app: a distributor accepts, trims or rejects its order lines (same rules as POST /v1/plans/{id}/responses)", body: "WhRespondRequest", response: "ResponseResult" },
+  { method: "get", path: "/v1/scenarios/{id}/movements", summary: "What warehouse staff recorded on a day: receipts, counts, adjustments (query: as_of)", response: "Movement", array: true },
   { method: "post", path: "/v1/wh/movements", summary: "Warehouse app: record a receipt, count or adjustment (own node only)", body: "MovementRequest", response: "Movement", status: 201 },
   { method: "post", path: "/v1/assistant", summary: "Sidebar assistant: one sentence runs one fixed tool (status, explain, credit, at-risk, what-if, approve and send, replan)", body: "AssistantRequest", response: "AssistantResponse" },
 ];

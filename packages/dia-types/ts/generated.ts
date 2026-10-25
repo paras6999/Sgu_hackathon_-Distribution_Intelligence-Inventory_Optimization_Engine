@@ -1156,6 +1156,37 @@ export interface WhStockRow {
   state: "on_hand" | "in_transit" | "counted";
 }
 /**
+ * A distributor's order from one plan sent today: the proposal message and its lines, as the distributor answers it in the app.
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "WhOrder".
+ */
+export interface WhOrder {
+  plan_id: string;
+  version: number;
+  temp_class: "ambient" | "chilled";
+  dist_id: string;
+  proposal_version: number;
+  status: string;
+  replied: boolean;
+  text: string;
+  lines: PlanLine[];
+}
+/**
+ * A distributor's answer from the app. The distributor is the logged-in user; the backend fills it in.
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "WhRespondRequest".
+ */
+export interface WhRespondRequest {
+  plan_id: string;
+  proposal_version: number;
+  /**
+   * @minItems 1
+   */
+  actions: [LineAction, ...LineAction[]];
+}
+/**
  * This interface was referenced by `Dia`'s JSON-Schema
  * via the `definition` "WhStock".
  */

@@ -1,30 +1,42 @@
 /**
  * Vitaran Warehouse: phone-first app for depot and distributor staff.
- * Space (how full each store and godown is, what still fits), Stock (lots, oldest expiry first), Alerts (stock that
- * may expire), Trucks (to load, or coming in) and Record (receipt, count, adjustment). Every number comes from the
- * engine through /v1/wh; counts recorded here are applied before space is shown and before the next plan is made.
+ * Space (how full each store and godown is, what still fits), Orders (a distributor answers the plan the planner sent
+ * from the web app), Stock (lots, oldest expiry first), Alerts (stock that may expire), Trucks (to load) and Record
+ * (receipt, count, adjustment). Every number comes from the engine through /v1/wh; counts recorded here are applied
+ * before space is shown and before the next plan is made. Screens refresh themselves, so changes made on the planner's
+ * web app appear without reloading.
  */
-import type { AtRisk, DispatchResponse, Movement, MovementRequest, Scenario, SpaceNode, SpaceReport, WhStock, WhUser } from "@dia/types";
+import type {
+  AtRisk, DispatchResponse, LineAction, Movement, MovementRequest, ResponseAction, Scenario, SpaceNode, SpaceReport, WhOrder, WhStock, WhUser,
+} from "@dia/types";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { api, ApiError, savedToken, saveToken } from "./api";
 
-type Tab = "space" | "stock" | "alerts" | "trucks" | "record";
+type Tab = "space" | "orders" | "stock" | "alerts" | "trucks" | "record";
+/** How often screens re-read the backend, so web and app stay in step. */
+const REFRESH_MS = 15_000;
 type Ctx = { token: string; user: WhUser; scenario: Scenario; asOf: string; city: (id: string) => string; onAuthError: (e: unknown) => void };
 
 const fmt = (n: number, d = 0) => n.toLocaleString("en-IN", { maximumFractionDigits: d, minimumFractionDigits: d });
 const fmtDay = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
-function useLoad<T>(fn: () => Promise<T>, deps: unknown[], onError: (e: unknown) => void) {
+/** Loads data, and re-loads it every REFRESH_MS while the screen is open (keeping the old data on screen meanwhile). */
+function useLoad<T>(fn: () => Promise<T>, deps: unknown[], onError: (e: unknown) => void, refresh = true) {
   const [state, setState] = useState<{ data?: T; error?: string; loading: boolean }>({ loading: true });
   const [tick, setTick] = useState(0);
   useEffect(() => {
     let live = true;
     setState((s) => ({ ...s, loading: true }));
-    fn().then((data) => live && setState({ data, loading: false }), (e) => { if (live) { setState({ error: errText(e), loading: false }); onError(e); } });
+    fn().then((data) => live && setState({ data, loading: false }), (e) => { if (live) { setState((s) => ({ ...s, error: errText(e), loading: false })); onError(e); } });
     return () => { live = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, tick]);
+  useEffect(() => {
+    if (!refresh) return;
+    const id = setInterval(() => { if (document.visibilityState === "visible") setTick((t) => t + 1); }, REFRESH_MS);
+    return () => clearInterval(id);
+  }, [refresh]);
   return { ...state, reload: () => setTick((t) => t + 1) };
 }
 
@@ -35,6 +47,7 @@ const I = {
   stock: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z" /><path d="M3 8v8l9 5 9-5V8M12 13v8" /></svg>,
   alerts: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2 2M9 2h6" /></svg>,
   trucks: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 6h13v10H1zM14 10h4l3 3v3h-7z" /><circle cx="5.5" cy="18.5" r="2" /><circle cx="17.5" cy="18.5" r="2" /></svg>,
+  orders: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2" /><path d="M5.5 5h13L22 12v6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-6z" /></svg>,
   record: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z" /><path d="M16 5h2a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h2M9 13l2 2 4-4" /></svg>,
 };
 
@@ -46,24 +59,38 @@ export function App() {
   const [world, setWorld] = useState<{ scenario: Scenario; asOf: string } | null>(null);
   const [tab, setTab] = useState<Tab>("space");
   const [alertCount, setAlertCount] = useState(0);
+  const [waiting, setWaiting] = useState(0);
+  const [tick, setTick] = useState(0);
 
   const logout = useCallback(() => { saveToken(null); setToken(null); setUser(null); setWorld(null); }, []);
   const onAuthError = useCallback((e: unknown) => { if (e instanceof ApiError && e.status === 401) logout(); }, [logout]);
 
+  // Follow the planner: the app's day is the day of the latest plan made on the web app, re-checked regularly.
   useEffect(() => {
     if (!token) return;
     let live = true;
     (async () => {
       try {
         const [me, day] = await Promise.all([api.me(token), api.day(token)]);
-        const scenario = await api.scenario(day.scenario_id);
-        if (live) { setUser(me); setWorld({ scenario, asOf: day.as_of }); }
-        const alerts = await api.alerts(token);
-        if (live) setAlertCount(alerts.length);
+        if (!live) return;
+        setUser(me);
+        if (world?.scenario.scenario_id === day.scenario_id) {
+          if (world.asOf !== day.as_of) setWorld({ ...world, asOf: day.as_of });
+        } else {
+          const scenario = await api.scenario(day.scenario_id);
+          if (live) setWorld({ scenario, asOf: day.as_of });
+        }
+        const [alerts, orders] = await Promise.all([api.alerts(token), me.role === "distributor" ? api.orders(token) : Promise.resolve([])]);
+        if (live) { setAlertCount(alerts.length); setWaiting(orders.filter((o) => !o.replied).length); }
       } catch (e) { if (live) onAuthError(e); }
     })();
     return () => { live = false; };
-  }, [token, onAuthError]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, onAuthError, tick]);
+  useEffect(() => {
+    const id = setInterval(() => { if (document.visibilityState === "visible") setTick((t) => t + 1); }, REFRESH_MS);
+    return () => clearInterval(id);
+  }, []);
 
   if (!token) return <Login onIn={(t) => { saveToken(t); setToken(t); }} />;
   if (!user || !world) return <div className="login"><p className="empty">Loading…</p></div>;
@@ -79,8 +106,9 @@ export function App() {
         <div className="who"><b>{user.name}</b><span>{roleLabel} · {fmtDay(world.asOf)}</span></div>
         <button onClick={logout}>Log out</button>
       </header>
-      <main className="content">
+      <main className="content" key={world.asOf}>
         {tab === "space" && <SpaceScreen ctx={ctx} />}
+        {tab === "orders" && <OrdersScreen ctx={ctx} onAnswered={() => setTick((t) => t + 1)} />}
         {tab === "stock" && <StockScreen ctx={ctx} />}
         {tab === "alerts" && <AlertsScreen ctx={ctx} />}
         {tab === "trucks" && <TrucksScreen ctx={ctx} />}
@@ -88,14 +116,112 @@ export function App() {
       </main>
       <div className="tabs">
         <nav aria-label="Sections">
-          {([["space", "Space"], ["stock", "Stock"], ["alerts", "Alerts"], ["trucks", "Trucks"], ["record", "Record"]] as Array<[Tab, string]>).map(([id, label]) => (
+          {tabsFor(user).map(([id, label]) => (
             <button key={id} className={tab === id ? "on" : ""} aria-current={tab === id ? "page" : undefined} onClick={() => setTab(id)}>
-              {I[id]}{label}{id === "alerts" && alertCount > 0 && <span className="count">{alertCount}</span>}
+              {I[id]}{label}
+              {id === "alerts" && alertCount > 0 && <span className="count">{alertCount}</span>}
+              {id === "orders" && waiting > 0 && <span className="count">{waiting}</span>}
             </button>
           ))}
         </nav>
       </div>
     </div>
+  );
+}
+
+/** A distributor answers orders (its incoming trucks are the order's lines); depots and planners load trucks. */
+function tabsFor(user: WhUser): Array<[Tab, string]> {
+  return user.role === "distributor"
+    ? [["space", "Space"], ["orders", "Orders"], ["stock", "Stock"], ["alerts", "Alerts"], ["record", "Record"]]
+    : [["space", "Space"], ["stock", "Stock"], ["alerts", "Alerts"], ["trucks", "Trucks"], ["record", "Record"]];
+}
+
+// ------------------------------------------------------------------------------------------- orders
+
+type Choice = { action: ResponseAction; qty: number };
+
+function OrderCard({ o, ctx, onDone }: { o: WhOrder; ctx: Ctx; onDone: (text: string, ok: boolean) => void }) {
+  const [choices, setChoices] = useState<Record<string, Choice>>({});
+  const [busy, setBusy] = useState(false);
+  const choiceOf = (id: string, cases: number): Choice => choices[id] ?? { action: "accept", qty: cases };
+  const set = (id: string, c: Choice) => setChoices((x) => ({ ...x, [id]: c }));
+
+  async function send(all?: ResponseAction) {
+    setBusy(true);
+    const actions: LineAction[] = o.lines.map((l) => {
+      const c = all ? { action: all, qty: l.cases } : choiceOf(l.line_id, l.cases);
+      return { line_id: l.line_id, action: c.action, qty: c.action === "trim" ? c.qty : null };
+    });
+    try {
+      const [first, ...rest] = actions;
+      if (!first) return;
+      const r = await api.respond(ctx.token, { plan_id: o.plan_id, proposal_version: o.proposal_version, actions: [first, ...rest] });
+      const cost = Math.round(r.delta_cost_inr);
+      onDone(`Sent. The planner sees your answer now; the plan is version ${r.plan_version}${cost ? ` (cost ${cost > 0 ? "+" : "−"}₹${fmt(Math.abs(cost))})` : ""}.`, true);
+      setChoices({});
+    } catch (e) {
+      onDone(e instanceof ApiError && e.status === 409 ? "The planner changed this order meanwhile. It has been reloaded: check it and answer again." : errText(e), false);
+    } finally { setBusy(false); }
+  }
+
+  const total = o.lines.reduce((s, l) => s + l.cases, 0);
+  return (
+    <div className="card">
+      <div className="row">
+        <div className="grow"><b>{o.temp_class === "chilled" ? "Chilled order" : "Ambient order"}</b>
+          <div className="muted" style={{ fontSize: 13 }}>{o.plan_id} · v{o.proposal_version} · {fmt(total)} cases · {o.lines.length} lines</div></div>
+        <span className={`pill ${o.replied ? "ok" : "warn"}`}>{o.replied ? "Answered" : "Waiting for you"}</span>
+      </div>
+      <p style={{ fontSize: 14, margin: "10px 0", background: "var(--primary-soft)", padding: "10px 12px", borderRadius: 6 }}>{o.text}</p>
+      {o.lines.map((l) => {
+        const c = choiceOf(l.line_id, l.cases);
+        return (
+          <div key={l.line_id} style={{ borderTop: "1px solid var(--border)", padding: "10px 0" }}>
+            <div className="row num"><span className="grow"><b>{l.sku_name}</b></span><b>{fmt(l.cases)}</b></div>
+            <div className="muted" style={{ fontSize: 13 }}>From {ctx.city(l.from_id)} · arrives {l.eta} · {l.rsl_on_arrival_days} days of life</div>
+            {l.reasons?.[0] && <div style={{ fontSize: 13, marginTop: 2 }}>{l.reasons[0].detail}</div>}
+            {!o.replied && (
+              <div className="row" style={{ marginTop: 8, gap: 8 }}>
+                <div className="seg grow" role="group" aria-label={`Answer for ${l.sku_name}`}>
+                  {(["accept", "trim", "reject"] as ResponseAction[]).map((a) => (
+                    <button type="button" key={a} className={c.action === a ? "on" : ""} aria-pressed={c.action === a} onClick={() => set(l.line_id, { ...c, action: a })}>
+                      {a === "accept" ? "Accept" : a === "trim" ? "Trim" : "Reject"}
+                    </button>
+                  ))}
+                </div>
+                {c.action === "trim" && (
+                  <input type="number" inputMode="numeric" min={0} max={l.cases} value={c.qty} style={{ width: 90 }} aria-label={`Cases of ${l.sku_name} to keep`}
+                    onChange={(e) => set(l.line_id, { ...c, qty: Math.max(0, Math.min(l.cases, Number(e.target.value))) })} />
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      {!o.replied && (
+        <div className="form" style={{ marginTop: 10 }}>
+          <button className="btn primary" disabled={busy} onClick={() => send()}>{busy ? "Sending…" : "Send my answer"}</button>
+          <button className="btn" disabled={busy} onClick={() => send("accept")}>Accept everything</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OrdersScreen({ ctx, onAnswered }: { ctx: Ctx; onAnswered: () => void }) {
+  const s = useLoad<WhOrder[]>(() => api.orders(ctx.token), [ctx.token], ctx.onAuthError);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const orders = s.data ?? [];
+  return (
+    <>
+      <div className="title"><h2>Orders</h2><span className="muted" style={{ fontSize: 13 }}>from the planner</span></div>
+      {msg && <p className={`notice ${msg.ok ? "ok" : "bad"}`} role="status">{msg.text}</p>}
+      {s.error && <p className="notice bad">{s.error}</p>}
+      {s.loading && !s.data ? <p className="empty">Loading…</p> : orders.length === 0
+        ? <p className="empty">No order for {fmtDay(ctx.asOf)} yet. It appears here as soon as the planner sends today’s plan.</p>
+        : orders.map((o) => <OrderCard key={`${o.plan_id}-${o.version}-${o.proposal_version}`} o={o} ctx={ctx}
+            onDone={(text, ok) => { setMsg({ ok, text }); s.reload(); onAnswered(); }} />)}
+    </>
   );
 }
 

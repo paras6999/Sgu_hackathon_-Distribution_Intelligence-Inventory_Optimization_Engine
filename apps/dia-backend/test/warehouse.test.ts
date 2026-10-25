@@ -2,7 +2,7 @@
  * Warehouse app routes on the fake engine: login, scoping by role, stock movements, and counts reaching the engine.
  */
 import { beforeEach, describe, expect, test } from "bun:test";
-import type { EnginePlanRequest, Movement, Session, SpaceReport, WhStock, WhUser } from "@dia/types";
+import type { EnginePlanRequest, Movement, Session, SpaceReport, WhOrder, WhStock, WhUser } from "@dia/types";
 import { createApp } from "../src/app";
 import { Repo } from "../src/db/repo";
 import { FakeEngine } from "../src/engine/fake";
@@ -99,6 +99,55 @@ describe("movements and counts", () => {
   test("a negative receipt or count is rejected", async () => {
     const t = await login("d01-pune");
     expect((await call("POST", "/v1/wh/movements", { kind: "receipt", node_id: "D01-Pune", sku_id: "SN-01", cases: -1 }, t)).status).toBe(422);
+  });
+});
+
+describe("web and app together", () => {
+  test("the planner sends, the distributor answers in the app, and the planner's view shows the reply", async () => {
+    const plan = await json(call("POST", "/v1/plans", { scenario_id: "seed01", as_of: "2025-10-13", temp_class: "ambient" }));
+    const t = await login("d01-pune");
+    expect(await json(call("GET", "/v1/wh/orders?as_of=2025-10-13", undefined, t))).toEqual([]);      // nothing until it is sent
+    await call("POST", `/v1/plans/${plan.plan_id}/publish`, { version: plan.version });
+    const orders = (await json(call("GET", "/v1/wh/orders?as_of=2025-10-13", undefined, t))) as WhOrder[];
+    expect(orders.length).toBe(1);
+    const o = orders[0]!;
+    expect(o).toMatchObject({ plan_id: plan.plan_id, dist_id: "D01-Pune", proposal_version: 1, replied: false });
+    expect(o.lines.every((l) => l.to_id === "D01-Pune")).toBe(true);
+    const r = await call("POST", "/v1/wh/orders/respond", { plan_id: o.plan_id, proposal_version: o.proposal_version, actions: o.lines.map((l) => ({ line_id: l.line_id, action: "accept" })) }, t);
+    expect(r.status).toBe(200);
+    const props = await json(call("GET", `/v1/plans/${plan.plan_id}/proposals`));
+    expect(props.find((p: { dist_id: string }) => p.dist_id === "D01-Pune").responded_at).not.toBeNull();
+    const again = (await json(call("GET", "/v1/wh/orders?as_of=2025-10-13", undefined, t))) as WhOrder[];
+    expect(again[0]!.replied).toBe(true);
+    // an answer on a proposal version that is not current is refused, exactly as on the planner's screen
+    const stale = await call("POST", "/v1/wh/orders/respond", { plan_id: o.plan_id, proposal_version: o.proposal_version + 1, actions: [{ line_id: o.lines[0]!.line_id, action: "reject" }] }, t);
+    expect(stale.status).toBe(409);
+  });
+
+  test("the app follows the latest sent plan, not a later draft or what-if", async () => {
+    const t = await login("d01-pune");
+    const sent = await json(call("POST", "/v1/plans", { scenario_id: "seed01", as_of: "2025-10-13", temp_class: "ambient" }));
+    await call("POST", `/v1/plans/${sent.plan_id}/publish`, { version: sent.version });
+    await call("POST", "/v1/plans", { scenario_id: "seed01", as_of: "2025-10-20", temp_class: "ambient" });      // a later draft
+    expect(await json(call("GET", "/v1/wh/day", undefined, t))).toEqual({ scenario_id: "seed01", as_of: "2025-10-13" });
+    expect(((await json(call("GET", "/v1/wh/orders", undefined, t))) as WhOrder[]).map((o) => o.plan_id)).toEqual([sent.plan_id]);
+  });
+
+  test("only a distributor answers, and only its own order", async () => {
+    const plan = await json(call("POST", "/v1/plans", { scenario_id: "seed01", as_of: "2025-10-13", temp_class: "ambient" }));
+    await call("POST", `/v1/plans/${plan.plan_id}/publish`, { version: plan.version });
+    const body = { plan_id: plan.plan_id, proposal_version: 1, actions: [{ line_id: plan.lines[0].line_id, action: "accept" }] };
+    expect((await call("POST", "/v1/wh/orders/respond", body, await login("w1-bhiwandi"))).status).toBe(403);
+    expect((await call("GET", "/v1/wh/orders?as_of=2025-10-13&dist_id=D09-Bengaluru", undefined, await login("d01-pune"))).status).toBe(200);
+    const theirs = await json(call("GET", "/v1/wh/orders?as_of=2025-10-13", undefined, await login("d01-pune"))) as WhOrder[];
+    expect(theirs.every((o) => o.dist_id === "D01-Pune")).toBe(true);
+  });
+
+  test("the planner's web feed lists what warehouse staff recorded", async () => {
+    await call("POST", "/v1/wh/movements", { kind: "receipt", node_id: "D01-Pune", sku_id: "SN-01", cases: 120, as_of: "2025-10-13" }, await login("d01-pune"));
+    const feed = (await json(call("GET", "/v1/scenarios/seed01/movements?as_of=2025-10-13"))) as Movement[];
+    expect(feed).toEqual([expect.objectContaining({ kind: "receipt", node_id: "D01-Pune", cases: 120 })]);
+    expect((await call("GET", "/v1/scenarios/seed01/movements")).status).toBe(422);
   });
 });
 

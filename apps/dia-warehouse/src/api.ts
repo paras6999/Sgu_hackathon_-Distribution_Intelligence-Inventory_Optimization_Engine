@@ -1,6 +1,6 @@
 /** Typed client for the warehouse routes (/v1/wh/*). Every type comes from @dia/types. */
 import type {
-  AtRisk, DispatchResponse, Movement, MovementRequest, Scenario, Session, SpaceReport, WhStock, WhUser,
+  AtRisk, DispatchResponse, Movement, MovementRequest, ResponseResult, Scenario, Session, SpaceReport, WhOrder, WhRespondRequest, WhStock, WhUser,
 } from "@dia/types";
 
 const TOKEN_KEY = "vitaran.wh.token";
@@ -42,4 +42,6 @@ export const api = {
   loading: (t: string) => call<DispatchResponse[]>("GET", "/v1/wh/loading", t),
   movements: (t: string) => call<Movement[]>("GET", "/v1/wh/movements", t),
   record: (t: string, req: MovementRequest) => call<Movement>("POST", "/v1/wh/movements", t, req),
+  orders: (t: string) => call<WhOrder[]>("GET", "/v1/wh/orders", t),
+  respond: (t: string, req: WhRespondRequest) => call<ResponseResult>("POST", "/v1/wh/orders/respond", t, req),
 };

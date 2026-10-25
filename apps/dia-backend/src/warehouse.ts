@@ -10,7 +10,8 @@ import { randomBytes } from "node:crypto";
 import type { Context, Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type {
-  AtRisk, DispatchResponse, LoginRequest, Movement, MovementRequest, Scenario, Session, SpaceReport, WhStock, WhStockRow, WhUser,
+  AtRisk, DispatchResponse, LoginRequest, Message, Movement, MovementRequest, Scenario, Session, SpaceReport, WhOrder, WhRespondRequest,
+  WhStock, WhStockRow, WhUser,
 } from "@dia/types";
 import type { Repo } from "./db/repo";
 import type { EngineClient } from "./engine/client";
@@ -34,11 +35,11 @@ export function usersFor(sc: Scenario): WhUser[] {
 }
 
 export function warehouseRoutes(app: Hono, { repo, engine, dispatch, demoPin }: Deps): void {
-  let scenarioId: string | null = null;
+  // Read on every request (no caching): the app follows whatever the planner sent last, scenario and day together.
   const scenario = async (): Promise<Scenario> => {
-    scenarioId ??= repo.latestPlanDay()?.scenario_id ?? (await engine.scenarios())[0] ?? null;
-    if (!scenarioId) throw new HTTPException(503, { message: "no scenario data: generate it first" });
-    return engine.scenario(scenarioId);
+    const id = repo.latestPlanDay()?.scenario_id ?? [...(await engine.scenarios())].sort()[0];
+    if (!id) throw new HTTPException(503, { message: "no scenario data: generate it first" });
+    return engine.scenario(id);
   };
   const dayOf = (c: Context): string => c.req.query("as_of") ?? repo.latestPlanDay()?.as_of ?? DEFAULT_DAY;
   const userOf = (c: Context): WhUser => {
@@ -159,5 +160,49 @@ export function warehouseRoutes(app: Hono, { repo, engine, dispatch, demoPin }: 
     const user = userOf(c);
     const sc = await scenario();
     return c.json(repo.listMovements(sc.scenario_id, dayOf(c), user.role === "planner" ? null : [...visible(user, sc)]));
+  });
+
+  /**
+   * A distributor's orders in today's sent plans. The app answers them through the same response route as the
+   * planner's Orders by city screen (same version checks and re-plan), with the distributor fixed to the user.
+   */
+  app.get("/v1/wh/orders", async (c) => {
+    const user = userOf(c);
+    const sc = await scenario();
+    const dist = user.role === "distributor" ? user.node_id! : c.req.query("dist_id");
+    if (!dist) throw new HTTPException(422, { message: "dist_id is required" });
+    if (!visible(user, sc).has(dist)) throw new HTTPException(403, { message: "not your distributor" });
+    const out: WhOrder[] = [];
+    for (const p of repo.sentPlansForDay(sc.scenario_id, dayOf(c))) {
+      const prop = repo.getProposals(p.plan_id).find((x) => x.dist_id === dist);
+      if (!prop) continue;
+      const r = await app.request(`/v1/plans/${encodeURIComponent(p.plan_id)}/inbox/${encodeURIComponent(dist)}`);
+      if (!r.ok) continue;
+      const msg = (await r.json()) as Message;
+      const ids = new Set(msg.line_ids);
+      out.push({
+        plan_id: p.plan_id, version: p.version, temp_class: p.temp_class, dist_id: dist, proposal_version: prop.proposal_version,
+        status: prop.status, replied: prop.responded_at != null, text: msg.text, lines: p.lines.filter((l) => ids.has(l.line_id)),
+      });
+    }
+    return c.json(out);
+  });
+
+  app.post("/v1/wh/orders/respond", async (c) => {
+    const user = userOf(c);
+    if (user.role !== "distributor") throw new HTTPException(403, { message: "only a distributor answers its own order" });
+    const req = validate<WhRespondRequest>("WhRespondRequest", await c.req.json());
+    const r = await app.request(`/v1/plans/${encodeURIComponent(req.plan_id)}/responses`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ dist_id: user.node_id, proposal_version: req.proposal_version, actions: req.actions }),
+    });
+    return new Response(r.body, { status: r.status, headers: r.headers });
+  });
+
+  /** Read-only feed for the planner's web screen: what warehouse staff recorded on a day (no login, like the other planner routes). */
+  app.get("/v1/scenarios/:id/movements", (c) => {
+    const asOf = c.req.query("as_of");
+    if (!asOf) throw new HTTPException(422, { message: "as_of is required" });
+    return c.json(repo.listMovements(c.req.param("id"), asOf, null));
   });
 }

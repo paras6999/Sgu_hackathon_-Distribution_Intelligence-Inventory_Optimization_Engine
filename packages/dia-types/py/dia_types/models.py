@@ -1087,6 +1087,30 @@ class WhStockRow(BaseModel):
     state: State
 
 
+class WhOrder(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    plan_id: str
+    version: int
+    temp_class: TempClass
+    dist_id: str
+    proposal_version: int
+    status: str
+    replied: bool
+    text: str
+    lines: list[PlanLine]
+
+
+class WhRespondRequest(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    plan_id: str
+    proposal_version: conint(ge=1)
+    actions: list[LineAction] = Field(..., min_length=1)
+
+
 class WhStock(BaseModel):
     model_config = ConfigDict(
         extra="forbid",

@@ -1,6 +1,6 @@
 /** J2 Orders by city: one order per distributor; open a city to read its proposal and accept / trim / reject per line. */
 import type { LineAction, OrderSummary, Plan, ResponseAction } from "@dia/types";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, inr } from "../api";
 import { EmptyState, ErrorText, Kpi, PageHeader, useLoad } from "../components/ui";
 const EVENT_TONE: Record<string, string> = { accept: "ok", trim: "warn", reject: "bad", grow: "info", publish: "info" };
@@ -16,6 +16,21 @@ export function InboxPage({ plan, setPlan }: { plan: Plan | null; setPlan: (p: P
   const [error, setError] = useState<unknown>();
   const [notice, setNotice] = useState("");
   const header = <PageHeader title="Orders by city" sub={SUB} />;
+
+  // Distributors also answer from the warehouse app: re-read the orders, and the plan once its version moves on.
+  useEffect(() => {
+    if (!planId) return;
+    const id = setInterval(async () => {
+      if (document.visibilityState !== "visible") return;
+      orders.reload(); events.reload();
+      try {
+        const latest = await api.plan(planId);
+        if (latest.version !== plan?.version) setPlan(latest);
+      } catch { /* keep the current view */ }
+    }, 15_000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planId, plan?.version]);
 
   if (!plan) return <section>{header}<EmptyState title="No plan yet">Generate a plan on the Plan tab first.</EmptyState></section>;
 

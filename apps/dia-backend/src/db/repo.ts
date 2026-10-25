@@ -164,10 +164,14 @@ export class Repo {
     return [...byClass.values()];
   }
 
-  /** Most recent day any plan was made for, or null when there are no plans. */
+  /**
+   * The day the warehouse app works on: the scenario and day of the most recently sent plan, else of the most recent
+   * plan of any kind, else null. Drafts are made casually (what-ifs, page loads), so a sent plan wins.
+   */
   latestPlanDay(): { scenario_id: string; as_of: string } | null {
-    return (this.db.query("SELECT scenario_id, as_of FROM plans ORDER BY created_at DESC LIMIT 1").get() as
-      | { scenario_id: string; as_of: string } | null) ?? null;
+    const pick = (where: string) => this.db.query(`SELECT scenario_id, as_of FROM plans ${where} ORDER BY created_at DESC LIMIT 1`).get() as
+      | { scenario_id: string; as_of: string } | null;
+    return pick("WHERE status IN ('PROPOSED', 'FINAL')") ?? pick("") ?? null;
   }
 
   // ------------------------------------------------------------------ warehouse app

@@ -10,9 +10,10 @@ import { DispatchPage } from "./pages/DispatchPage";
 import { InboxPage } from "./pages/InboxPage";
 import { PlanPage } from "./pages/PlanPage";
 import { StockPage } from "./pages/StockPage";
+import { WarehousesPage } from "./pages/WarehousesPage";
 
 const GROUPS: Array<{ title: string; items: Array<{ tab: string; icon: ReactNode }> }> = [
-  { title: "Planning", items: [{ tab: "Plan", icon: Icon.plan }, { tab: "Map", icon: Icon.map }, { tab: "Dispatch", icon: Icon.truck }, { tab: "Orders by city", icon: Icon.inbox }, { tab: "Stock watch", icon: Icon.stock }] },
+  { title: "Planning", items: [{ tab: "Plan", icon: Icon.plan }, { tab: "Map", icon: Icon.map }, { tab: "Dispatch", icon: Icon.truck }, { tab: "Orders by city", icon: Icon.inbox }, { tab: "Stock watch", icon: Icon.stock }, { tab: "Warehouses", icon: Icon.warehouse }] },
   { title: "Evaluation", items: [{ tab: "Demand analysis", icon: Icon.history }, { tab: "Results", icon: Icon.results }, { tab: "Frontier & Ablation", icon: Icon.frontier }] },
   { title: "Reference", items: [{ tab: "Assumptions", icon: Icon.book }] },
 ];
@@ -57,6 +58,7 @@ export function App() {
           {tab === "Dispatch" && <DispatchPage plan={plan} />}
           {tab === "Orders by city" && <InboxPage plan={plan} setPlan={setPlan} />}
           {tab === "Stock watch" && <StockPage plan={plan} />}
+          {tab === "Warehouses" && <WarehousesPage plan={plan} />}
           {tab === "Demand analysis" && <DemandPage />}
           {tab === "Results" && <ResultsPage />}
           {tab === "Frontier & Ablation" && <FrontierPage />}
