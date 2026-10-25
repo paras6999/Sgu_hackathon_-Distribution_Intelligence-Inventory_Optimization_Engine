@@ -2,7 +2,7 @@
  * Facts for the AI layer (PRD FR-25, Rules.md). Everything an analysis may mention is computed here from the plan
  * or the cached experiment. The language model only sees these facts and may not introduce figures of its own.
  */
-import type { ExperimentResults, KpiSummary, OpeningState, Plan, Scenario } from "@dia/types";
+import type { BacktestMetrics, ExperimentResults, KpiSummary, LearnedEffects, OpeningState, Plan, Scenario } from "@dia/types";
 
 export type Facts = Record<string, unknown>;
 
@@ -104,5 +104,39 @@ export function resultsFacts(res: ExperimentResults, state: OpeningState): Facts
       "Ablations and frontier points ran on the first 5 seeds, the headline on 10.",
       "The stockout penalty was tuned on seeds that are also in the evaluation.",
     ],
+  };
+}
+
+/** Forecast accuracy and what the forecaster learned about festivals, weather and season. Percentages are in percent. */
+export function demandFacts(bt: BacktestMetrics, fx: LearnedEffects): Facts {
+  const uplift = (multiplier: number) => round((multiplier - 1) * 100, 1);
+  const festivals = fx.festivals.flatMap((f) => Object.keys(f.learned).map((category) => ({
+    festival: f.name, category,
+    learned_uplift_pct: uplift(f.learned[category] ?? 1), configured_uplift_pct: uplift(f.configured[category] ?? 1),
+  })));
+  const gap = festivals.length
+    ? festivals.reduce((s, x) => s + Math.abs(x.learned_uplift_pct - x.configured_uplift_pct), 0) / festivals.length
+    : 0;
+  const MAY = 4;   // seasonality arrays start in January
+  return {
+    kind: "demand",
+    forecast_error_pct: round(bt.wape * 100, 1),
+    last_years_pattern_error_pct: round(bt.wape_seasonal_naive * 100, 1),
+    error_lower_than_last_years_pattern_pct: bt.wape_seasonal_naive > 0 ? round((1 - bt.wape / bt.wape_seasonal_naive) * 100, 1) : 0,
+    bias_pct: round(bt.bias * 100, 1),
+    inside_80_pct_range_pct: round(bt.coverage_p10_p90 * 100, 1),
+    festival_week_error_pct: round(bt.wape_festival_weeks * 100, 1),
+    festivals,
+    mean_festival_gap_points: round(gap, 1),
+    weather: fx.weather.map((w) => ({
+      category: w.category,
+      heat_per_degc_learned_pct: round(w.heat_pct_per_degc_learned, 1), heat_per_degc_configured_pct: round(w.heat_pct_per_degc_configured, 1),
+      rain_cut_learned_pct: round(w.rain_cut_pct_learned, 1), rain_cut_configured_pct: round(w.rain_cut_pct_configured, 1),
+    })),
+    seasonality_may: Object.keys(fx.seasonality).map((category) => ({
+      category,
+      may_index_learned: round(fx.seasonality[category]?.[MAY] ?? 1, 2),
+      may_index_configured: round(fx.seasonality_configured[category]?.[MAY] ?? 1, 2),
+    })),
   };
 }

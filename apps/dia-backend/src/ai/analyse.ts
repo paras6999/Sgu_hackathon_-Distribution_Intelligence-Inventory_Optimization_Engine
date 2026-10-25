@@ -76,8 +76,29 @@ function lineRules(f: Facts): string {
   return `${f.sku}: ${f.cases} cases from ${f.from} to ${f.to} by ${f.mode === "FTL" ? "a full truck" : "part-load"}, arriving with ${f.life_on_arrival_days} days of life left, freight ${inr(num(f.freight_alloc_inr))}.\n\n${r.length ? r.map((x) => `${x.code}: ${x.detail}`).join("\n") : "No reason recorded."}`;
 }
 
+function demandRules(f: Facts): string {
+  const fest = f.festivals as Array<{ festival: string; category: string; learned_uplift_pct: number; configured_uplift_pct: number }>;
+  const weather = f.weather as Array<{ category: string; heat_per_degc_learned_pct: number; heat_per_degc_configured_pct: number }>;
+  const season = f.seasonality_may as Array<{ category: string; may_index_learned: number; may_index_configured: number }>;
+  const out: string[] = [];
+  out.push(`Forecast error on the test weeks is ${f.forecast_error_pct}%. Last year's pattern alone gives ${f.last_years_pattern_error_pct}%, so the forecast error is ${f.error_lower_than_last_years_pattern_pct}% lower. In festival weeks the error is ${f.festival_week_error_pct}%. Bias is ${f.bias_pct}%.`);
+  out.push(`The 80% range covered ${f.inside_80_pct_range_pct}% of actual weeks.`);
+  if (fest.length) {
+    out.push(`Festivals: ${fest.map((x) => `${x.festival} for ${x.category} learned ${x.learned_uplift_pct}% against ${x.configured_uplift_pct}% configured`).join("; ")}. The average gap is ${f.mean_festival_gap_points} points, so festival uplift is recovered closely.`);
+  }
+  const w = weather[0], s = season[0];
+  if (w) out.push(`Heat: ${w.category} learned ${w.heat_per_degc_learned_pct}% per degree against ${w.heat_per_degc_configured_pct}% configured.`);
+  if (s) out.push(`Seasonality in May: ${s.category} learned ${s.may_index_learned} against ${s.may_index_configured} configured.`);
+  out.push("Monthly seasonality and the heat effect are recovered only weakly, because the model follows the season through its weekly level. The simulator and the model share structure, so these error figures flatter the model.");
+  return out.join("\n\n");
+}
+
 export function rulesText(f: Facts): string {
-  return f.kind === "plan" ? planRules(f) : f.kind === "results" ? resultsRules(f) : f.kind === "line" ? lineRules(f) : "Nothing to analyse.";
+  return f.kind === "plan" ? planRules(f)
+    : f.kind === "results" ? resultsRules(f)
+    : f.kind === "line" ? lineRules(f)
+    : f.kind === "demand" ? demandRules(f)
+    : "Nothing to analyse.";
 }
 
 // ------------------------------------------------------------------------------------------------ verification
@@ -118,6 +139,7 @@ function task(facts: Facts, question?: string): string {
   if (question) return `Answer this question using only FACTS: ${question}`;
   if (facts.kind === "plan") return "Give a deep analysis for the planner: what the plan does and why, the biggest cost drivers, risks and what to check, and one question to ask before approving.";
   if (facts.kind === "results") return "Give a deep analysis: the verdict against the better baseline, where the engine is worse and why, what the ablations and frontier imply, and the caveats.";
+  if (facts.kind === "demand") return "Explain how accurate the demand forecast is and what it learned about festivals, weather and season, in plain English for a planner. Say how far the numbers can be trusted.";
   return "Explain this plan line to a planner: why it exists and what the reasons mean in rupees.";
 }
 

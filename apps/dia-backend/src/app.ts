@@ -6,16 +6,17 @@ import { createHash } from "node:crypto";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type {
-  AssistantRequest, AssistantResponse, AssistantStep, DispatchResponse, DispatchTruck, ExperimentAccepted, ExperimentRequest,
+  AssistantContext, AssistantRequest, AssistantResponse, AssistantStep, DispatchResponse, DispatchTruck, ExperimentAccepted, ExperimentRequest,
   ForecastRequest, ForecastResponse, LineDiff, Message, OpeningState, OrderSummary, OrdersView, Plan, PlanRequest, Proposal,
-  ProposalStatus, PublishRequest, PublishResponse, ResponseRequest, ResponseResult, Scenario,
+  ProposalStatus, PublishRequest, PublishResponse, ResponseRequest, ResponseResult, Scenario, UiAction,
 } from "@dia/types";
 import type { Repo } from "./db/repo";
-import { parseIntent, type DistRef, type Intent } from "./assistant/intent";
+import { parseIntent, type DistRef, type Intent, type Page, type Tool } from "./assistant/intent";
 import { routeWithModel } from "./assistant/model";
+import { describeView, matchNavigate, matchView, PAGE_LABEL, type ViewRefs } from "./assistant/viewTools";
 import { EngineError, type EngineClient } from "./engine/client";
-import { analyse } from "./ai/analyse";
-import { lineFacts, planFacts, resultsFacts } from "./ai/facts";
+import { analyse, type Analysis } from "./ai/analyse";
+import { demandFacts, lineFacts, planFacts, resultsFacts } from "./ai/facts";
 import { llmFromEnv, statusOf } from "./ai";
 import type { LlmClient } from "./ai/vertex";
 import { DOCS_HTML, openapiDocument } from "./openapi";
@@ -87,7 +88,16 @@ const planRequestFor = (plan: Plan, extra: Partial<PlanRequest> = {}): PlanReque
 type ToolOutcome = {
   status: AssistantResponse["status"]; reply: string; steps: AssistantStep[];
   plan_version?: number; plan_status?: string; pending_action?: string;
+  ui_action?: UiAction | null; source?: "rules" | "ai";
 };
+
+const HELP_REPLY = "I can check order status, explain an order, check credit, check stock at risk, run a what-if (diesel, a depot offline, or demand), approve and send, or replan.";
+/** Tools that need an open plan. Without one they answer "Open Planning first." */
+const PLAN_TOOLS: ReadonlySet<Tool> = new Set<Tool>(["explain_order", "orders_status", "credit_report", "publish_plan", "replan", "whatif"]);
+/** Tools the page applies or that analyse a page. They are answered by runView. */
+const VIEW_TOOLS: ReadonlySet<Tool> = new Set<Tool>(["navigate", "set_view", "select_lane", "explain_results", "explain_demand"]);
+/** Analysis text for the sidebar. A note about the model or rules path goes after it. */
+const analysisReply = (a: Analysis): string => (a.note ? `${a.text}\n\n${a.note}` : a.text);
 
 export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
   const app = new Hono();
@@ -198,7 +208,27 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
    * Runs one assistant tool on the current plan. Consequential tools (publish, replan) return needs_confirmation
    * without acting when askFirst is set.
    */
-  const runTool = async (intent: Intent, plan: Plan, dists: DistRef[], askFirst: boolean): Promise<ToolOutcome> => {
+  const runTool = async (intent: Intent, plan: Plan | null, dists: DistRef[], askFirst: boolean, page: Page, context: AssistantContext): Promise<ToolOutcome> => {
+    if (intent.tool === "check_at_risk") {
+      // On the stock page the date the planner picked wins; otherwise the plan's date. No plan: the first scenario.
+      const asOf = page === "stock" && context.as_of ? context.as_of : plan?.as_of ?? context.as_of;
+      const scenarioId = plan?.scenario_id ?? (await engine.scenarios())[0];
+      if (!asOf || !scenarioId) return { status: "answered", reply: "Open Planning first.", steps: [] };
+      const rows = await engine.atRisk(scenarioId, asOf, "imbalanced");
+      const top = rows.slice(0, 2).map((r) => `${r.dist_city} ${r.sku_name}: ${inr(r.expected_expired_cases)} cases, ships within days`);
+      const reply = rows.length === 0
+        ? `No lots are expected to expire before they sell as of ${asOf}.`
+        : `${rows.length} lots at risk of expiry. ${top.join("; ")}.`;
+      return {
+        status: "answered", reply,
+        steps: [{ tool: "check_at_risk", status: "done", summary: `${rows.length} lots at risk`, plan_id: plan?.plan_id ?? null, plan_version: plan?.version ?? null }],
+      };
+    }
+    if (!plan) return PLAN_TOOLS.has(intent.tool) ? { status: "answered", reply: "Open Planning first.", steps: [] } : { status: "answered", reply: HELP_REPLY, steps: [] };
+    return runPlanTool(intent, plan, dists, askFirst);
+  };
+
+  const runPlanTool = async (intent: Intent, plan: Plan, dists: DistRef[], askFirst: boolean): Promise<ToolOutcome> => {
     const step = (tool: string, status: AssistantStep["status"], summary: string, at = { plan_id: plan.plan_id, plan_version: plan.version }): AssistantStep =>
       ({ tool, status, summary, plan_id: at.plan_id, plan_version: at.plan_version });
     const sellers = new Set(plan.lines.map((l) => l.to_id)).size;
@@ -231,14 +261,6 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
           ? "No distributor is at 99.5% or more of its credit."
           : `${full.length} ${full.length === 1 ? "distributor" : "distributors"} at 99.5% or more of credit: ${full.map((o) => o.dist_city).join(", ")}.`;
         return { status: "answered", reply, steps: [step("credit_report", "done", `${full.length} at 99.5% or more`)] };
-      }
-      case "check_at_risk": {
-        const rows = await engine.atRisk(plan.scenario_id, plan.as_of, "imbalanced");
-        const top = rows.slice(0, 2).map((r) => `${r.dist_city} ${r.sku_name}: ${inr(r.expected_expired_cases)} cases, ships within days`);
-        const reply = rows.length === 0
-          ? `No lots are expected to expire before they sell as of ${plan.as_of}.`
-          : `${rows.length} lots at risk of expiry. ${top.join("; ")}.`;
-        return { status: "answered", reply, steps: [step("check_at_risk", "done", `${rows.length} lots at risk`)] };
       }
       case "whatif": {
         const change = intent.what_if ?? {};
@@ -282,10 +304,54 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
         };
       }
       default:
-        return {
-          status: "answered", steps: [],
-          reply: "I can check order status, explain an order, check credit, check stock at risk, run a what-if (diesel, a depot offline, or demand), approve and send, or replan.",
-        };
+        return { status: "answered", steps: [], reply: HELP_REPLY };
+    }
+  };
+
+  /** Page tools: navigation, filters, lane selection and page analysis. Null when the tool does not apply on this page. */
+  const runView = async (intent: Intent, page: Page, context: AssistantContext, message: string, refs: ViewRefs, plan: Plan | null): Promise<ToolOutcome | null> => {
+    const answer = (tool: string, reply: string, extra: Partial<ToolOutcome> = {}): ToolOutcome => ({
+      status: "answered", reply, steps: [{ tool, status: "done", summary: reply, plan_id: plan?.plan_id ?? null, plan_version: plan?.version ?? null }],
+      ...extra,
+    });
+    const cityOf = (id: string) => refs.places.find((p) => p.node_id === id)?.city ?? id;
+    const view = intent.view ?? {};
+    switch (intent.tool) {
+      case "navigate": {
+        const target = intent.page;
+        if (!target) return null;
+        if (target === page) return answer("navigate", `You are already on ${PAGE_LABEL[page]}.`);
+        return answer("navigate", `Opening ${PAGE_LABEL[target]}.`, { ui_action: { type: "navigate", page: target } });
+      }
+      case "set_view": {
+        if (page === "planning" || Object.keys(view).length === 0) return null;
+        return answer("set_view", `Showing ${describeView(view, refs).join(", ")}.`, { ui_action: { type: "set_filters", ...view } });
+      }
+      case "select_lane": {
+        if (page !== "map" || Object.keys(view).length === 0) return null;
+        const from = view.lane_from ? cityOf(view.lane_from) : null;
+        const to = view.lane_to ? cityOf(view.lane_to) : null;
+        const reply = from && to ? `Showing lanes from ${from} to ${to}.` : from ? `Showing lanes from ${from}.` : `Showing lanes to ${to}.`;
+        return answer("select_lane", reply, { ui_action: { type: "select_lane", ...view } });
+      }
+      case "explain_results": {
+        if (page !== "results" && page !== "frontier") return null;
+        const info = context.experiment_id ? repo.getExperiment(context.experiment_id) : null;
+        const res = info?.status === "done" ? await engine.experimentResults(info.experiment_id) : null;
+        if (!res) return answer("explain_results", "The results are not ready yet.");
+        const a = await analyse(llm, resultsFacts(res, openingState(context.opening_state)), message);
+        return answer("explain_results", analysisReply(a), { source: a.source });
+      }
+      case "explain_demand": {
+        if (page !== "demand") return null;
+        const scenarioId = plan?.scenario_id ?? (await engine.scenarios())[0];
+        if (!scenarioId) return answer("explain_demand", "No scenario is loaded yet.");
+        const [bt, fx] = await Promise.all([engine.backtest(scenarioId), engine.effects(scenarioId)]);
+        const a = await analyse(llm, demandFacts(bt, fx), message);
+        return answer("explain_demand", analysisReply(a), { source: a.source });
+      }
+      default:
+        return null;
     }
   };
 
@@ -516,26 +582,38 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
   // ------------------------------------------------------------------ sidebar assistant
   app.post("/v1/assistant", async (c) => {
     const req = validate<AssistantRequest>("AssistantRequest", await c.req.json());
-    const plan = planOr404(req.plan_id);
+    const plan = req.plan_id ? planOr404(req.plan_id) : null;
+    const page: Page = req.page ?? "planning";
+    const context: AssistantContext = req.context ?? {};
     let intent: Intent = { tool: "unknown" };
     try {
-      const scenario = await engine.scenario(plan.scenario_id);
-      const dists = scenario.nodes.filter((n) => n.type === "distributor").map((n) => ({ dist_id: n.node_id, city: n.city }));
-      intent = parseIntent(req.message, dists);
+      const scenarioId = plan?.scenario_id ?? (await engine.scenarios())[0];
+      const scenario = scenarioId ? await engine.scenario(scenarioId) : null;
+      const dists = (scenario?.nodes ?? []).filter((n) => n.type === "distributor").map((n) => ({ dist_id: n.node_id, city: n.city }));
+      const refs: ViewRefs = {
+        places: (scenario?.nodes ?? []).map((n) => ({ node_id: n.node_id, type: n.type, city: n.city })),
+        skus: (scenario?.skus ?? []).map((s) => ({ sku_id: s.sku_id, name: s.name })),
+      };
+      // Page tools first on pages other than planning. On planning the existing rules run first and navigation is the fallback.
+      intent = (page !== "planning" ? matchView(req.message, page, refs) : null) ?? parseIntent(req.message, dists);
+      if (intent.tool === "unknown") intent = matchNavigate(req.message, page) ?? intent;
       let source: "rules" | "ai" = "rules";
       // The rules matched nothing: let the model pick a tool from the fixed list (checked in model.ts).
       if (intent.tool === "unknown" && llm) {
-        const routed = await routeWithModel(llm, req.message, dists);
+        const routed = await routeWithModel(llm, req.message, dists, refs.skus, page);
         if (routed) {
           intent = routed;
           source = "ai";
         }
       }
-      const out = await runTool(intent, plan, dists, req.mode === "ask_first" && !req.confirm);
+      const askFirst = req.mode === "ask_first" && !req.confirm;
+      const out = (VIEW_TOOLS.has(intent.tool) ? await runView(intent, page, context, req.message, refs, plan) : null)
+        ?? await runTool(intent, plan, dists, askFirst, page, context);
       const res: AssistantResponse = {
         status: out.status, intent: intent.tool, reply: clip(out.reply), steps: out.steps,
-        plan_id: plan.plan_id, plan_version: out.plan_version ?? plan.version, plan_status: out.plan_status ?? plan.status ?? "DRAFT",
-        pending_action: out.pending_action ?? null, source,
+        plan_id: plan?.plan_id ?? null, plan_version: out.plan_version ?? plan?.version ?? null,
+        plan_status: out.plan_status ?? (plan ? plan.status ?? "DRAFT" : null),
+        pending_action: out.pending_action ?? null, ui_action: out.ui_action ?? null, source: out.source ?? source,
       };
       return c.json(res);
     } catch (err) {
@@ -543,10 +621,11 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
       const reason = err instanceof Error ? err.message : String(err);
       const steps: AssistantStep[] = intent.tool === "unknown"
         ? []
-        : [{ tool: intent.tool, status: "failed", summary: clip(reason, 200), plan_id: plan.plan_id, plan_version: plan.version }];
+        : [{ tool: intent.tool, status: "failed", summary: clip(reason, 200), plan_id: plan?.plan_id ?? null, plan_version: plan?.version ?? null }];
       const res: AssistantResponse = {
         status: "failed", intent: intent.tool, reply: clip(`Could not complete that: ${reason}`), steps,
-        plan_id: plan.plan_id, plan_version: plan.version, plan_status: plan.status ?? "DRAFT", pending_action: null, source: "rules",
+        plan_id: plan?.plan_id ?? null, plan_version: plan?.version ?? null, plan_status: plan ? plan.status ?? "DRAFT" : null,
+        pending_action: null, ui_action: null, source: "rules",
       };
       return c.json(res);
     }

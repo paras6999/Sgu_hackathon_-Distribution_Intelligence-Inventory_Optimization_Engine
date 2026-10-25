@@ -3,7 +3,13 @@
  * The tool list is fixed. Numbers in a what-if come only from the sentence, never from a model.
  * Checks run in a fixed order and the first match wins (see parseIntent).
  */
-import type { WhatIf } from "@dia/types";
+import type { UiAction, WhatIf } from "@dia/types";
+
+/** Pages of the web app. */
+export type Page = NonNullable<UiAction["page"]>;
+export const PAGES: readonly Page[] = ["planning", "demand", "results", "frontier", "map", "stock"];
+/** Filter or selection changes a page applies. Never a quantity. */
+export type ViewChange = Partial<Omit<UiAction, "type" | "page">>;
 
 export type Tool =
   | "explain_order"
@@ -13,9 +19,14 @@ export type Tool =
   | "whatif"
   | "publish_plan"
   | "replan"
+  | "navigate"
+  | "set_view"
+  | "select_lane"
+  | "explain_results"
+  | "explain_demand"
   | "unknown";
 
-export type Intent = { tool: Tool; dist_id?: string; what_if?: WhatIf };
+export type Intent = { tool: Tool; dist_id?: string; what_if?: WhatIf; page?: Page; view?: ViewChange };
 /** A distributor the sentence can name: its node id and its city. */
 export type DistRef = { dist_id: string; city: string };
 
