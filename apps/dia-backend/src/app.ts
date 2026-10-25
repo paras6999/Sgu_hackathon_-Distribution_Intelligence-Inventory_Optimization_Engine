@@ -93,6 +93,10 @@ const planRequestFor = (plan: Plan, extra: Partial<PlanRequest> = {}): PlanReque
 type ToolOutcome = {
   status: AssistantResponse["status"]; reply: string; steps: AssistantStep[];
   plan_version?: number; plan_status?: string; pending_action?: string;
+  /** "ai" when the reply text was written by the model (answer_question); the tool choice is reported separately. */
+  source?: "rules" | "ai";
+  /** Longest reply to show; analysis answers are longer than one-line tool replies. */
+  max_chars?: number;
 };
 
 export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
@@ -204,7 +208,7 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
    * Runs one assistant tool on the current plan. Consequential tools (publish, replan) return needs_confirmation
    * without acting when askFirst is set.
    */
-  const runTool = async (intent: Intent, plan: Plan, dists: DistRef[], askFirst: boolean): Promise<ToolOutcome> => {
+  const runTool = async (intent: Intent, plan: Plan, dists: DistRef[], askFirst: boolean, scenario: Scenario, message: string): Promise<ToolOutcome> => {
     const step = (tool: string, status: AssistantStep["status"], summary: string, at = { plan_id: plan.plan_id, plan_version: plan.version }): AssistantStep =>
       ({ tool, status, summary, plan_id: at.plan_id, plan_version: at.plan_version });
     const sellers = new Set(plan.lines.map((l) => l.to_id)).size;
@@ -228,8 +232,18 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
         }
         const since = Math.round(o.cases_since_draft);
         const change = since > 0 ? `up ${inr(since)} cases from the draft` : since < 0 ? `down ${inr(-since)} cases from the draft` : "no change from the draft";
-        const reply = `${o.dist_city}: ${o.lines} lines, ${inr(o.cases)} cases, Rs ${lakh(o.value_inr)} lakh of Rs ${lakh(o.credit_available_inr)} lakh credit (${o.credit_used_pct}% used), ${change}.`;
-        return { status: "answered", reply, steps: [step("explain_order", "done", `Read ${o.dist_city} order`)] };
+        let reply = `${o.dist_city}: ${o.lines} lines, ${inr(o.cases)} cases, Rs ${lakh(o.value_inr)} lakh of Rs ${lakh(o.credit_available_inr)} lakh credit (${o.credit_used_pct}% used), ${change}.`;
+        if (intent.sku_id) {
+          // A product was named: its lines to this distributor, with the reason the optimiser printed on each.
+          const name = scenario.skus.find((s) => s.sku_id === intent.sku_id)?.name ?? intent.sku_id;
+          const lines = plan.lines.filter((l) => l.to_id === id && l.sku_id === intent.sku_id);
+          const city = (nid: string) => scenario.nodes.find((n) => n.node_id === nid)?.city ?? nid;
+          reply = lines.length === 0
+            ? `${o.dist_city} gets no ${name} in this plan. ${reply}`
+            : `${o.dist_city} gets ${inr(lines.reduce((s, l) => s + l.cases, 0))} cases of ${name}: ` +
+              lines.map((l) => `${inr(l.cases)} from ${city(l.from_id)}${l.reasons?.[0] ? ` (${l.reasons.map((r) => r.detail).join(" ")})` : ""}`).join("; ") + `. ${reply}`;
+        }
+        return { status: "answered", reply, steps: [step("explain_order", "done", `Read ${o.dist_city} order${intent.sku_id ? " and its product lines" : ""}`)], max_chars: 700 };
       }
       case "credit_report": {
         const full = (await buildOrders(plan)).orders.filter((o) => o.credit_used_pct >= 99.5);
@@ -240,7 +254,9 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
       }
       case "check_at_risk": {
         const rows = await engine.atRisk(plan.scenario_id, plan.as_of, "imbalanced");
-        const top = rows.slice(0, 2).map((r) => `${r.dist_city} ${r.sku_name}: ${inr(r.expected_expired_cases)} cases, ships within days`);
+        // Report the stock and the advice per lot; expected expired cases is 0 for a depot lot that can still ship in time.
+        const top = rows.slice(0, 3).map((r) =>
+          `${r.dist_city}${r.holder_type === "depot" ? " depot" : ""} ${r.sku_name}: ${inr(r.stock_cases)} cases, ${r.days_left} days left, ${r.suggested_action.toLowerCase()}`);
         const reply = rows.length === 0
           ? `No lots are expected to expire before they sell as of ${plan.as_of}.`
           : `${rows.length} lots at risk of expiry. ${top.join("; ")}.`;
@@ -287,10 +303,19 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
           plan_version: next.version, plan_status: next.status ?? "DRAFT",
         };
       }
+      case "answer_question": {
+        // Questions no action tool covers: the same verified analysis as the Plan page (facts only, numbers checked).
+        const a = await analyse(llm, planFacts(plan, scenario), message);
+        const reply = a.note && a.source === "ai" ? `${a.text}\n\n(${a.note})` : a.text;
+        return {
+          status: "answered", reply, source: a.source, max_chars: 1500,
+          steps: [step("answer_question", "done", a.source === "ai" ? `Answered from plan facts${a.verified ? ", every figure checked" : ", some figures unverified"}` : "Rules summary (no AI model)")],
+        };
+      }
       default:
         return {
           status: "answered", steps: [],
-          reply: "I can check order status, explain an order, check credit, check stock at risk, run a what-if (diesel, a depot offline, or demand), approve and send, or replan.",
+          reply: "I can check order status, explain an order, check credit, check stock at risk, run a what-if (diesel, a depot offline, or demand), approve and send, replan, or answer a question about this plan.",
         };
     }
   };
@@ -534,7 +559,7 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
     try {
       const scenario = await engine.scenario(plan.scenario_id);
       const dists = scenario.nodes.filter((n) => n.type === "distributor").map((n) => ({ dist_id: n.node_id, city: n.city }));
-      intent = parseIntent(req.message, dists);
+      intent = parseIntent(req.message, dists, scenario.skus.map((s) => ({ sku_id: s.sku_id, name: s.name })));
       let source: "rules" | "ai" = "rules";
       // The rules matched nothing: let the model pick a tool from the fixed list (checked in model.ts).
       if (intent.tool === "unknown" && llm) {
@@ -544,11 +569,11 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
           source = "ai";
         }
       }
-      const out = await runTool(intent, plan, dists, req.mode === "ask_first" && !req.confirm);
+      const out = await runTool(intent, plan, dists, req.mode === "ask_first" && !req.confirm, scenario, req.message);
       const res: AssistantResponse = {
-        status: out.status, intent: intent.tool, reply: clip(out.reply), steps: out.steps,
+        status: out.status, intent: intent.tool, reply: clip(out.reply, out.max_chars), steps: out.steps,
         plan_id: plan.plan_id, plan_version: out.plan_version ?? plan.version, plan_status: out.plan_status ?? plan.status ?? "DRAFT",
-        pending_action: out.pending_action ?? null, source,
+        pending_action: out.pending_action ?? null, source: out.source === "ai" ? "ai" : source,
       };
       return c.json(res);
     } catch (err) {

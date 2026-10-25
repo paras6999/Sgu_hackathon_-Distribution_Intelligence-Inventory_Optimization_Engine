@@ -88,7 +88,8 @@ def _depot_rows(snapshot: Snapshot, as_of: date, pairs, nodes, skus) -> list[AtR
         if days_to_floor <= 0:
             action = "Below the shelf-life floor: no distributor will take it. Sell at a discount or write off"
         else:
-            action = (f"Ship within {days_to_floor:.0f} days to the {len(served)} distributors this depot serves "
+            days = f"{days_to_floor:.0f} day{'' if f'{days_to_floor:.0f}' == '1' else 's'}"
+            action = (f"Ship within {days} to the {len(served)} distributors this depot serves "
                       f"(they sell {daily:.1f}/day together)")
         rows.append(AtRisk(
             holder_type="depot", dist_id=lot.depot_id, dist_city=depot.city, sku_id=lot.sku_id, sku_name=sku.name,

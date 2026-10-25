@@ -4,7 +4,7 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import type { AssistantResponse, Plan } from "@dia/types";
 import { createApp } from "../src/app";
-import { parseIntent, parseWhatIf, type DistRef, type Intent } from "../src/assistant/intent";
+import { findSku, parseIntent, parseWhatIf, type DistRef, type Intent } from "../src/assistant/intent";
 import { Repo } from "../src/db/repo";
 import { FakeEngine } from "../src/engine/fake";
 
@@ -35,6 +35,22 @@ describe("intent parsing (pure)", () => {
 
   test("depot outage maps the depot word to its node id", () => {
     expect(parseIntent("Bhiwandi depot goes offline", DISTS)).toEqual({ tool: "whatif", what_if: { depot_outage_id: "W1-Bhiwandi" } });
+  });
+
+  test("a question no action tool covers goes to answer_question", () => {
+    expect(parseIntent("What is the total freight cost?", DISTS)).toEqual({ tool: "answer_question" });
+    expect(parseIntent("which lanes use part-truck loads", DISTS)).toEqual({ tool: "answer_question" });
+    // action and lookup tools still win over the generic question
+    expect(parseIntent("What if diesel goes up 10%?", DISTS).tool).toBe("whatif");
+    expect(parseIntent("What is the status of this plan?", DISTS).tool).toBe("orders_status");
+  });
+
+  test("a named product is picked up from the words of its catalogue name", () => {
+    const skus = [{ sku_id: "ST-01", name: "Whole Wheat Atta 5 kg" }, { sku_id: "SN-01", name: "Masala Chips 52 g" }, { sku_id: "SN-02", name: "Aloo Bhujia 200 g" }];
+    expect(findSku("why is pune getting so much atta", skus)).toBe("ST-01");
+    expect(findSku("masala chips for pune", skus)).toBe("SN-01");
+    expect(findSku("how is pune doing", skus)).toBeUndefined();
+    expect(parseIntent("Why is Pune getting so much atta?", DISTS, skus)).toEqual({ tool: "explain_order", dist_id: "D01-Pune", sku_id: "ST-01" });
   });
 
   test("demand change takes sign and region from the words", () => {
@@ -105,5 +121,39 @@ describe("POST /v1/assistant (fake engine)", () => {
     const explain = await ask(plan.plan_id, "Why is the Pune order so big?");
     expect(explain).toMatchObject({ status: "answered", intent: "explain_order" });
     expect(explain.reply).toMatch(/^Pune: 2 lines, 520 cases, Rs \d+\.\d{2} lakh of Rs \d+\.\d{2} lakh credit \(\d+(\.\d)?% used\), no change from the draft\.$/);
+  });
+
+  test("explain with a product lists that product's lines and their reasons", async () => {
+    const plan = await newPlan();
+    await call("POST", `/v1/plans/${plan.plan_id}/publish`, { version: 1 });
+    const r = await ask(plan.plan_id, "Why is Pune getting masala chips?");
+    expect(r).toMatchObject({ status: "answered", intent: "explain_order" });
+    expect(r.reply).toStartWith("Pune gets 120 cases of Masala Chips 50 g: 120 from");
+    expect(r.reply).toContain("Diwali x1.38");
+  });
+
+  test("a general question is answered from the plan's facts (rules summary without a model)", async () => {
+    const plan = await newPlan();
+    const r = await ask(plan.plan_id, "What is the total freight cost?");
+    expect(r).toMatchObject({ status: "answered", intent: "answer_question", source: "rules" });
+    expect(r.steps).toEqual([expect.objectContaining({ tool: "answer_question", status: "done" })]);
+    expect(r.reply).toContain("Summary:");
+  });
+
+  test("a general question uses the model's verified analysis when one is configured", async () => {
+    const llm = { name: "mock", model: "mock-1", async generate() { return "Freight is the smaller part of cost to serve here."; } };
+    app = createApp({ repo: new Repo(":memory:"), engine: new FakeEngine(), llm });
+    const plan = await newPlan();
+    const r = await ask(plan.plan_id, "What is the total freight cost?");
+    expect(r).toMatchObject({ status: "answered", intent: "answer_question", source: "ai", reply: "Freight is the smaller part of cost to serve here." });
+    expect(r.steps[0]!.summary).toBe("Answered from plan facts, every figure checked");
+  });
+
+  test("stock at risk reports the stock and the advice, not expected expired cases", async () => {
+    const plan = await newPlan();
+    const r = await ask(plan.plan_id, "Any stock expiring soon?");
+    expect(r).toMatchObject({ status: "answered", intent: "check_at_risk" });
+    expect(r.reply).toMatch(/lots at risk of expiry\. .+: \d[\d,]* cases, -?\d+ days left, /);
+    expect(r.reply).not.toContain("ships within days");
   });
 });

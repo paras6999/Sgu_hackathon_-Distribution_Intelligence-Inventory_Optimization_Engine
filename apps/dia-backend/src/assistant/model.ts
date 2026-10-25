@@ -15,6 +15,7 @@ const TOOLS: Tool[] = [
   "whatif",
   "publish_plan",
   "replan",
+  "answer_question",
 ];
 const DEPOT_IDS = ["W1-Bhiwandi", "N1-Gurugram", "S1-Hosur", "E1-Dankuni"];
 const REGIONS = ["N", "S", "E", "W"];
@@ -27,7 +28,8 @@ export const ROUTE_SYSTEM = [
   "orders_status (totals of the plan), credit_report (which distributors are at their credit limit),",
   "check_at_risk (stock that may expire), whatif (a what-if scenario: diesel_pct for a fuel price change in percent,",
   "demand_shock_pct and shock_region N, S, E or W for a demand change, depot_outage_id for a depot that cannot ship),",
-  "publish_plan (only when the planner asks to approve, send or publish), replan (only to build a new version), or unknown.",
+  "publish_plan (only when the planner asks to approve, send or publish), replan (only to build a new version),",
+  "answer_question (any other question about this plan: its costs, freight, trucks, products, reasons or distributors), or unknown.",
   "Use null for anything the sentence does not say. Never give quantities, prices, stock or cost numbers.",
 ].join(" ");
 
