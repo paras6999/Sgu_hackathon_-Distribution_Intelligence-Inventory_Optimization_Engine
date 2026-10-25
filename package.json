@@ -2,7 +2,12 @@
   "name": "dia",
   "private": true,
   "packageManager": "bun@1.4.4",
-  "workspaces": ["apps/dia-backend", "apps/dia-web", "packages/dia-types"],
+  "workspaces": [
+    "apps/dia-backend",
+    "apps/dia-web",
+    "apps/dia-next",
+    "packages/dia-types"
+  ],
   "scripts": {
     "setup": "bun install && uv sync --all-packages",
     "dev": "turbo run dev --parallel",

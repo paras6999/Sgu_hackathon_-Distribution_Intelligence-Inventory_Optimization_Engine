@@ -16,6 +16,7 @@ export const ROUTES: Route[] = [
   { method: "post", path: "/v1/plans", summary: "New plan, or new version with base_plan_id", body: "PlanRequest", response: "Plan" },
   { method: "get", path: "/v1/plans/{id}", summary: "Plan (latest version unless ?version=)", response: "Plan" },
   { method: "post", path: "/v1/plans/{id}/publish", summary: "Mark PROPOSED and send proposals", body: "PublishRequest", response: "PublishResponse" },
+  { method: "get", path: "/v1/plans/{id}/orders", summary: "One order per distributor proposal, with totals (query: version)", response: "OrdersView" },
   { method: "get", path: "/v1/plans/{id}/proposals", summary: "Proposal status per distributor", response: "Proposal", array: true },
   { method: "get", path: "/v1/plans/{id}/inbox/{dist_id}", summary: "One distributor's message", response: "Message" },
   { method: "post", path: "/v1/plans/{id}/responses", summary: "Accept / trim / reject (409 if proposal version is stale)", body: "ResponseRequest", response: "ResponseResult" },
@@ -29,6 +30,7 @@ export const ROUTES: Route[] = [
   { method: "get", path: "/v1/assumptions", summary: "FR-15 assumptions table", response: "AssumptionRow", array: true },
   { method: "get", path: "/v1/ai/status", summary: "Whether an AI model is configured (otherwise rules-based analysis)" },
   { method: "post", path: "/v1/ai/analyse", summary: "Analysis on demand: body {kind: plan|line|results, plan_id | experiment_id, question?}. Figures come from the data; quantities are never set by the model" },
+  { method: "post", path: "/v1/assistant", summary: "Sidebar assistant: one sentence runs one fixed tool (status, explain, credit, at-risk, what-if, approve and send, replan)", body: "AssistantRequest", response: "AssistantResponse" },
 ];
 
 const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
