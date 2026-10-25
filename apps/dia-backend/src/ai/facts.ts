@@ -6,6 +6,8 @@ import type { ExperimentResults, KpiSummary, OpeningState, Plan, Scenario } from
 
 export type Facts = Record<string, unknown>;
 
+/** Largest lines per distributor passed to the model; enough to answer "why is city X getting product Y". */
+const TOP_LINES_PER_DIST = 12;
 const round = (v: number, d = 1) => Math.round(v * 10 ** d) / 10 ** d;
 const cityOf = (scenario: Scenario | null, id: string) => scenario?.nodes.find((n) => n.node_id === id)?.city ?? id;
 
@@ -32,17 +34,34 @@ export function planFacts(plan: Plan, scenario: Scenario | null = null): Facts {
     lane.cases += l.cases; lane.freight_inr += l.freight_alloc_inr;
     lanes.set(key, lane);
   }
+  const totalCases = plan.lines.reduce((s, l) => s + l.cases, 0);
+  const pct = (part: number, whole: number) => (whole ? round((100 * part) / whole, 1) : 0);
+  // Per-distributor view so questions about one city or product can be answered from the plan's own lines.
+  const byDist = new Map<string, typeof plan.lines>();
+  for (const l of plan.lines) byDist.set(l.to_id, [...(byDist.get(l.to_id) ?? []), l]);
+  const by_distributor = [...byDist.entries()].map(([id, ls]) => ({
+    distributor: cityOf(scenario, id), lines: ls.length, cases: ls.reduce((s, l) => s + l.cases, 0),
+    share_of_cases_pct: pct(ls.reduce((s, l) => s + l.cases, 0), totalCases),
+    freight_inr: round(ls.reduce((s, l) => s + l.freight_alloc_inr, 0), 0),
+    top_lines: ls.slice().sort((a, b) => b.cases - a.cases).slice(0, TOP_LINES_PER_DIST).map((l) => ({
+      sku: l.sku_name, from: cityOf(scenario, l.from_id), cases: l.cases, share_of_distributor_cases_pct: pct(l.cases, ls.reduce((s, x) => s + x.cases, 0)),
+      life_on_arrival_days: l.rsl_on_arrival_days,
+      reasons: (l.reasons ?? []).map((r) => ({ code: r.code, detail: r.detail, impact_inr: round(r.impact_inr ?? 0, 0) })),
+    })),
+  })).sort((a, b) => b.cases - a.cases);
   const ftl = plan.trucks.filter((t) => t.mode === "FTL");
   const k = { freight_inr: 0, lost_margin_inr: 0, holding_inr: 0, expiry_inr: 0, carbon_kg: 0, total_inr: 0, ...plan.expected_kpis };
   const short = (plan.shortfalls ?? []).slice().sort((a, b) => b.short_cases - a.short_cases);
   return {
     kind: "plan", plan_id: plan.plan_id, version: plan.version, as_of: plan.as_of, temp_class: plan.temp_class,
     policy: plan.policy, lines: plan.lines.length, trucks: plan.trucks.length,
-    cases: plan.lines.reduce((s, l) => s + l.cases, 0),
+    cases: totalCases,
     expected_cost_inr: { freight: round(k.freight_inr, 0), lost_margin: round(k.lost_margin_inr, 0), holding: round(k.holding_inr, 0), expiry: round(k.expiry_inr, 0), total: round(k.total_inr, 0) },
+    share_of_cost_pct: { freight: pct(k.freight_inr, k.total_inr), lost_margin: pct(k.lost_margin_inr, k.total_inr), holding: pct(k.holding_inr, k.total_inr), expiry: pct(k.expiry_inr, k.total_inr) },
     carbon_kg: round(k.carbon_kg, 0),
-    main_reasons: [...byCode.entries()].map(([code, v]) => ({ code, ...v, impact_inr: round(v.impact_inr, 0) })).sort((a, b) => b.cases - a.cases).slice(0, 6),
-    top_lanes: [...lanes.values()].sort((a, b) => b.cases - a.cases).slice(0, 5).map((l) => ({ ...l, freight_inr: round(l.freight_inr, 0) })),
+    main_reasons: [...byCode.entries()].map(([code, v]) => ({ code, ...v, share_of_cases_pct: pct(v.cases, totalCases), impact_inr: round(v.impact_inr, 0) })).sort((a, b) => b.cases - a.cases).slice(0, 6),
+    top_lanes: [...lanes.values()].sort((a, b) => b.cases - a.cases).slice(0, 5).map((l) => ({ ...l, share_of_cases_pct: pct(l.cases, totalCases), freight_inr: round(l.freight_inr, 0) })),
+    by_distributor,
     truck_fill: {
       ftl_trucks: ftl.length, ptl_consignments: plan.trucks.length - ftl.length,
       avg_weight_pct: ftl.length ? round(ftl.reduce((s, t) => s + t.kg_pct, 0) / ftl.length, 0) : 0,
@@ -103,6 +122,7 @@ export function resultsFacts(res: ExperimentResults, state: OpeningState): Facts
       "Demand, stock lots, orders and delays are simulated; weather, locations and festival dates are real.",
       "Ablations and frontier points ran on the first 5 seeds, the headline on 10.",
       "The stockout penalty was tuned on seeds that are also in the evaluation.",
+      "No experiment has yet isolated why the engine's fill rate is lower. Suspected causes, still to be tested: distributor credit limits that cap orders, and the optimiser counting shipped stock against demand before the truck arrives.",
     ],
   };
 }

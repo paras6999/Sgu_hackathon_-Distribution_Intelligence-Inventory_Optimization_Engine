@@ -28,6 +28,31 @@ async function planAndExperiment(app: ReturnType<typeof createApp>) {
   return { plan, experimentId: ex.experiment_id as string };
 }
 
+describe("plan facts", () => {
+  test("break the plan down by distributor with lines, reasons and shares, so city and product questions can be answered", async () => {
+    const app = mk(null);
+    const { plan } = await planAndExperiment(app);
+    const f = planFacts(plan) as any;
+    const dists = new Set(plan.lines.map((l) => l.to_id));
+    expect(f.by_distributor.length).toBe(dists.size);
+    expect(f.by_distributor.reduce((s: number, d: any) => s + d.cases, 0)).toBe(f.cases);
+    const top = f.by_distributor[0];
+    expect(top.top_lines.length).toBeGreaterThan(0);
+    expect(top.top_lines[0]).toHaveProperty("sku");
+    expect(top.top_lines[0]).toHaveProperty("reasons");
+    expect(top.share_of_cases_pct).toBeCloseTo((100 * top.cases) / f.cases, 1);
+  });
+
+  test("a share the facts give is verified; a share the model computed itself is not", async () => {
+    const app = mk(null);
+    const { plan } = await planAndExperiment(app);
+    const f = planFacts(plan) as any;
+    const d = f.by_distributor[0];
+    expect(unverifiedNumbers(`${d.distributor} gets ${d.share_of_cases_pct}% of all cases.`, f)).toEqual([]);
+    expect(unverifiedNumbers("That is 37.77% of all cases.", f)).toEqual([37.77]);
+  });
+});
+
 describe("rules analysis (no model, works offline)", () => {
   test("plan analysis summarises the plan from its own numbers", async () => {
     const app = mk(null);
