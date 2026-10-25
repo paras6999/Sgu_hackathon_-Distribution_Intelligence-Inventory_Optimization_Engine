@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vitaran · 01b · Console split view with network diagram</title>
+<style>
+  :root { --bg:#f3f3f3; --text:#181818; --muted:#5c5b59; --line:#dddbda; --brand:#0176d3; --brand-ink:#014486; --ok:#2e844a; --warn:#b85c00; --soft:#eef4fb; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Segoe UI", Arial, sans-serif; font-size:13px; color:var(--text); background:var(--bg); height:100vh; display:flex; flex-direction:column; }
+  .global { height:44px; flex:none; background:#014486; color:#fff; display:flex; align-items:center; gap:18px; padding:0 14px; }
+  .global .logo { font-weight:700; }
+  .console-tabs { flex:none; background:#fff; border-bottom:1px solid var(--line); display:flex; gap:2px; padding:0 8px; }
+  .console-tabs span { padding:9px 14px; border-bottom:3px solid transparent; color:var(--text); }
+  .console-tabs span.on { border-bottom-color:var(--brand); color:var(--brand-ink); font-weight:600; }
+  .console-tabs .cnt { color:var(--muted); font-size:12px; margin-left:4px; }
+  .split { flex:1; min-height:0; display:grid; grid-template-columns:330px 1fr 340px; }
+  .pane { min-height:0; overflow:auto; background:#fff; border-right:1px solid var(--line); }
+  .pane:last-child { border-right:none; }
+  .pane-head { position:sticky; top:0; background:#fff; border-bottom:1px solid var(--line); padding:10px 12px; z-index:1; }
+  .pane-head h2 { margin:0; font-size:14px; font-weight:600; }
+  .pane-head .sub { color:var(--muted); font-size:12px; margin-top:2px; }
+  .filters { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .chip { font-size:12px; padding:3px 8px; border-radius:12px; background:#ecebea; }
+  .chip.on { background:var(--soft); color:var(--brand-ink); border:1px solid #b3d4f5; }
+  .row { padding:9px 12px; border-bottom:1px solid #efefef; cursor:pointer; }
+  .row.sel { background:var(--soft); box-shadow: inset 3px 0 0 var(--brand); }
+  .row b { font-weight:600; display:block; }
+  .row .meta { color:var(--muted); font-size:12px; margin-top:2px; }
+  .row .tag { float:right; font-size:11px; padding:1px 6px; border-radius:3px; background:#fdf1e0; color:var(--warn); }
+  .detail { background:#f3f3f3; padding:0; }
+  .detail-head { background:#fff; padding:14px 18px; border-bottom:1px solid var(--line); display:flex; gap:10px; align-items:center; }
+  .detail-head h1 { margin:0; font-size:18px; font-weight:600; }
+  .detail-head .sub { color:var(--muted); font-size:12px; }
+  .detail-head .btns { margin-left:auto; display:flex; gap:8px; }
+  .btn { border:1px solid #c9c7c5; background:#fff; color:var(--brand-ink); padding:6px 12px; border-radius:4px; font-weight:600; }
+  .btn.primary { background:var(--brand); border-color:var(--brand); color:#fff; }
+  .section { margin:12px; background:#fff; border:1px solid var(--line); border-radius:4px; }
+  .section h3 { margin:0; font-size:13px; padding:9px 12px; border-bottom:1px solid var(--line); }
+  .kv { display:grid; grid-template-columns:repeat(4,1fr); }
+  .kv div { padding:10px 12px; border-right:1px solid #efefef; border-bottom:1px solid #efefef; }
+  .kv div:nth-child(4n) { border-right:none; }
+  .kv .l { color:var(--muted); font-size:12px; }
+  .kv .v { font-size:16px; font-weight:600; margin-top:2px; }
+  .diagram { padding:8px 12px 12px; }
+  .diagram svg { width:100%; height:auto; display:block; }
+  .legend { color:var(--muted); font-size:12px; padding:0 12px 10px; }
+  .list-row { display:flex; gap:10px; align-items:center; padding:8px 12px; border-bottom:1px solid #efefef; }
+  .list-row:last-child { border-bottom:none; }
+  .list-row .sp { flex:1; }
+  .state { font-size:11px; padding:2px 7px; border-radius:3px; background:#e6f4ea; color:var(--ok); }
+  .state.wait { background:#fdf1e0; color:var(--warn); }
+  .state.neutral { background:#ecebea; color:var(--muted); }
+  .rightpane .block { padding:12px; border-bottom:1px solid #efefef; }
+  .rightpane .block h4 { margin:0 0 6px; font-size:13px; }
+  .rightpane .block p { margin:0; color:var(--muted); font-size:12px; }
+</style>
+</head>
+<body>
+  <header class="global"><span class="logo">Vitaran</span><span>Planning cycle · Week of 29 Sep 2025</span></header>
+  <nav class="console-tabs">
+    <span class="on">Shipments <span class="cnt">290</span></span>
+    <span>Distributors <span class="cnt">16</span></span>
+    <span>Stock at risk <span class="cnt">40</span></span>
+    <span>What if</span>
+    <span>Results</span>
+  </nav>
+
+  <div class="split">
+    <aside class="pane">
+      <div class="pane-head">
+        <h2>Shipments</h2>
+        <div class="sub">Sorted by urgency. 290 lines, 16,071 cases</div>
+        <div class="filters"><span class="chip on">All</span><span class="chip">Needs you 2</span><span class="chip">Full trucks</span><span class="chip">Part loads</span></div>
+      </div>
+      <div class="row sel"><span class="tag">Today</span><b>Sweet Lassi 200 ml</b><div class="meta">Dankuni to 4 nearby distributors · 99 cases</div></div>
+      <div class="row"><span class="tag">Today</span><b>Chandigarh credit limit</b><div class="meta">3 lines capped</div></div>
+      <div class="row"><b>Cola PET 600 ml</b><div class="meta">Dankuni to Kolkata · 166 cases · full truck</div></div>
+      <div class="row"><b>Masala Chips 52 g</b><div class="meta">Dankuni to Kolkata · 324 cases · full, 100%</div></div>
+      <div class="row"><b>Packaged Water 1 L</b><div class="meta">Depot to Pune · 90 cases · trimmed from 179</div></div>
+      <div class="row"><b>Sweet Lassi 200 ml</b><div class="meta">Hosur · 114 cases · expires 7 Oct</div></div>
+      <div class="row"><b>Sweet Lassi 200 ml</b><div class="meta">Gurugram · 131 cases · expires 6 Oct</div></div>
+    </aside>
+
+    <section class="pane detail">
+      <div class="detail-head">
+        <div>
+          <h1>Sweet Lassi 200 ml at Dankuni</h1>
+          <div class="sub">Stock at risk · 99 cases · expires 6 Oct · 7 days of life left</div>
+        </div>
+        <div class="btns"><button class="btn">Change</button><button class="btn primary">Accept suggestion</button></div>
+      </div>
+
+      <div class="section">
+        <h3>Key figures</h3>
+        <div class="kv">
+          <div><div class="l">Cases</div><div class="v">99</div></div>
+          <div><div class="l">Expires</div><div class="v">6 Oct</div></div>
+          <div><div class="l">Sells per day (4 distributors)</div><div class="v">58.6</div></div>
+          <div><div class="l">Sold out in</div><div class="v">about 2 days</div></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Where the network is</h3>
+        <div class="diagram">
+          <svg viewBox="0 0 560 250" role="img" aria-label="Schematic network: four depots and the distributors they serve">
+            <rect x="0" y="0" width="560" height="250" fill="#fafaf9"/>
+            <line x1="90" y1="60" x2="250" y2="125" stroke="#0176d3" stroke-width="5"/>
+            <line x1="90" y1="60" x2="380" y2="60" stroke="#c9c7c5" stroke-width="2"/>
+            <line x1="250" y1="125" x2="120" y2="200" stroke="#0176d3" stroke-width="3"/>
+            <line x1="250" y1="125" x2="400" y2="95" stroke="#c9c7c5" stroke-width="2"/>
+            <circle cx="90" cy="60" r="18" fill="#0176d3"/>
+            <circle cx="250" cy="125" r="18" fill="#2e844a"/>
+            <circle cx="380" cy="60" r="10" fill="#fff" stroke="#5c5b59" stroke-width="2"/>
+            <circle cx="120" cy="200" r="10" fill="#fff" stroke="#5c5b59" stroke-width="2"/>
+            <circle cx="400" cy="95" r="10" fill="#fff" stroke="#5c5b59" stroke-width="2"/>
+            <text x="90" y="98" font-size="12" text-anchor="middle" fill="#181818">Dankuni depot</text>
+            <text x="250" y="160" font-size="12" text-anchor="middle" fill="#181818">Kolkata</text>
+            <text x="380" y="46" font-size="11" text-anchor="middle" fill="#5c5b59">Patna</text>
+            <text x="120" y="226" font-size="11" text-anchor="middle" fill="#5c5b59">Guwahati</text>
+            <text x="400" y="118" font-size="11" text-anchor="middle" fill="#5c5b59">Bhubaneswar</text>
+          </svg>
+        </div>
+        <div class="legend">Schematic, not to scale. The four distributors Dankuni serves are Kolkata, Patna, Bhubaneswar and Guwahati. Line weights are illustrative.</div>
+      </div>
+
+      <div class="section">
+        <h3>Shipments for this product</h3>
+        <div class="list-row"><span>Dankuni to Kolkata</span><span class="sp"></span><span>split is illustrative</span><span class="state">Suggested</span></div>
+        <div class="list-row"><span>Dankuni to Patna, Bhubaneswar, Guwahati</span><span class="sp"></span><span>remaining cases</span><span class="state wait">Waiting</span></div>
+      </div>
+    </section>
+
+    <aside class="pane rightpane">
+      <div class="block"><h4>Automation for this plan</h4><p>Forecast and plan: automatic. Send to distributors: asks you first. Replies: automatic within each limit.</p></div>
+      <div class="block"><h4>Distributors (16)</h4><p>1 replied, 3 offered extra cases, 12 waiting.</p></div>
+      <div class="block"><h4>Dispatch</h4><p>W1 Bhiwandi: 8 trucks. E1 Dankuni: trucks booked after approval.</p></div>
+      <div class="block"><h4>Notes</h4><p>Festival week: Durga Puja and Diwali uplift in the planning window.</p></div>
+    </aside>
+  </div>
+</body>
+</html>
+
+

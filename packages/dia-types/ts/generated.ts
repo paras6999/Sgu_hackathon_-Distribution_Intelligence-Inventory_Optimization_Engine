@@ -138,6 +138,7 @@ export interface WhatIf {
  * via the `definition` "AtRisk".
  */
 export interface AtRisk {
+  holder_type: "depot" | "distributor";
   dist_id: string;
   dist_city: string;
   sku_id: string;

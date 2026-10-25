@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vitaran · 01e · Record with assistant panel</title>
+<style>
+  :root { --bg:#f3f3f3; --text:#181818; --muted:#5c5b59; --line:#dddbda; --brand:#0176d3; --brand-ink:#014486; --ok:#2e844a; --warn:#b85c00; --soft:#eef4fb; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Segoe UI", Arial, sans-serif; font-size:13px; color:var(--text); background:var(--bg); padding-bottom:40px; }
+  .global { height:48px; background:#014486; color:#fff; display:flex; align-items:center; gap:18px; padding:0 14px; }
+  .global .logo { font-weight:700; }
+  .global .sp { flex:1; }
+  .layout { display:grid; grid-template-columns:1fr 360px; gap:12px; margin:12px 14px; }
+  .record { background:#fff; border:1px solid var(--line); border-radius:4px; }
+  .record-top { padding:14px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:12px; }
+  .record-top .kind { color:var(--muted); font-size:12px; }
+  .record-top h1 { margin:2px 0 0; font-size:20px; font-weight:600; }
+  .record-top .sp { flex:1; }
+  .seg { display:inline-flex; border:1px solid #c9c7c5; border-radius:4px; overflow:hidden; }
+  .seg span { padding:6px 12px; background:#fff; color:var(--muted); border-right:1px solid #c9c7c5; }
+  .seg span:last-child { border-right:none; }
+  .seg span.on { background:var(--brand); color:#fff; font-weight:600; }
+  .btn { border:1px solid #c9c7c5; background:#fff; color:var(--brand-ink); padding:7px 12px; border-radius:4px; font-weight:600; }
+  .btn.primary { background:var(--brand); border-color:var(--brand); color:#fff; }
+  .steps { display:grid; grid-template-columns:repeat(5,1fr); border-bottom:1px solid var(--line); }
+  .steps div { padding:10px 12px; border-right:1px solid #efefef; }
+  .steps div:last-child { border-right:none; }
+  .steps .n { font-weight:600; }
+  .steps .m { color:var(--muted); font-size:12px; margin-top:2px; }
+  .steps .auto { color:var(--ok); font-size:12px; margin-top:4px; }
+  .steps .ask { color:var(--warn); font-size:12px; margin-top:4px; }
+  .steps .by { color:var(--muted); font-size:12px; margin-top:4px; }
+  .cards { padding:12px 16px; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .card { border:1px solid var(--line); border-radius:4px; padding:12px; }
+  .card .k { color:var(--muted); font-size:12px; }
+  .card .v { font-size:20px; font-weight:600; margin-top:2px; }
+  .card .s { color:var(--muted); font-size:12px; margin-top:2px; }
+  .list { padding:0 16px 14px; }
+  .list h2 { font-size:14px; margin:12px 0 6px; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:7px 8px; border-bottom:1px solid #efefef; }
+  th { color:var(--muted); background:#fafaf9; font-size:12px; font-weight:600; }
+  td.num { text-align:right; }
+  .assist { background:#fff; border:1px solid var(--line); border-radius:4px; display:flex; flex-direction:column; min-height:520px; }
+  .assist h2 { margin:0; padding:12px 14px; font-size:14px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px; }
+  .assist h2 .dot { width:10px; height:10px; border-radius:50%; background:var(--brand); }
+  .assist h2 small { margin-left:auto; color:var(--muted); font-weight:400; font-size:12px; }
+  .log { padding:10px 14px; flex:1; overflow:auto; }
+  .msg { border-radius:6px; padding:9px 11px; margin-bottom:8px; font-size:13px; line-height:1.4; }
+  .msg.sys { background:#f3f3f3; }
+  .msg.you { background:var(--soft); margin-left:30px; }
+  .msg .who { font-size:11px; color:var(--muted); margin-bottom:3px; }
+  .msg ul { margin:6px 0 0 16px; padding:0; }
+  .ask { padding:10px 14px; border-top:1px solid var(--line); display:flex; gap:8px; }
+  .ask input { flex:1; border:1px solid #c9c7c5; border-radius:4px; padding:8px 10px; font:inherit; color:var(--muted); }
+  .ask button { border:0; background:var(--brand); color:#fff; border-radius:4px; padding:0 14px; font-weight:600; }
+  .suggest { display:flex; gap:6px; flex-wrap:wrap; padding:0 14px 12px; }
+  .suggest span { font-size:12px; padding:4px 8px; border:1px solid #c9c7c5; border-radius:12px; color:var(--brand-ink); background:#fff; }
+  .foot { position:fixed; left:0; right:0; bottom:0; height:36px; background:#fff; border-top:1px solid var(--line); display:flex; align-items:center; gap:22px; padding:0 14px; color:var(--muted); }
+  .foot b { color:var(--text); }
+</style>
+</head>
+<body>
+  <header class="global"><span class="logo">Vitaran</span><span class="sp"></span><span>Assistant</span></header>
+
+  <div class="layout">
+    <section class="record">
+      <div class="record-top">
+        <div>
+          <div class="kind">Planning cycle · Ambient</div>
+          <h1>Week of 29 Sep 2025</h1>
+        </div>
+        <span class="sp"></span>
+        <div class="seg"><span class="on">Automatic</span><span>Ask me first</span><span>By hand</span></div>
+        <button class="btn primary">Approve and send</button>
+      </div>
+
+      <div class="steps">
+        <div><div class="n">Forecast</div><div class="m">16 distributors, 24 products</div><div class="auto">Automatic · done 06:02</div></div>
+        <div><div class="n">Plan</div><div class="m">290 lines, 26 trucks</div><div class="auto">Automatic · done 06:04</div></div>
+        <div><div class="n">Check and approve</div><div class="m">2 items need you</div><div class="ask">Ask me first · now</div></div>
+        <div><div class="n">Send</div><div class="m">To 16 distributors</div><div class="ask">Waits for approval</div></div>
+        <div><div class="n">Dispatch</div><div class="m">Pick lists and truck sheets</div><div class="by">By hand · after replies</div></div>
+      </div>
+
+      <div class="cards">
+        <div class="card"><div class="k">Cases to ship</div><div class="v">16,071</div><div class="s">in 290 lines</div></div>
+        <div class="card"><div class="k">Expected cost to serve</div><div class="v">&#8377;71.1 lakh</div><div class="s">freight &#8377;7.6 lakh</div></div>
+        <div class="card"><div class="k">Stock at risk</div><div class="v">40 lots</div><div class="s">depot stock close to its shelf-life floor</div></div>
+      </div>
+
+      <div class="list">
+        <h2>Two items need you</h2>
+        <table>
+          <thead><tr><th>Item</th><th>Where</th><th class="num">Cases</th><th>Suggested</th></tr></thead>
+          <tbody>
+            <tr><td>Sweet Lassi 200 ml, expires 6 Oct</td><td>Dankuni</td><td class="num">99</td><td>Ship within 1 day</td></tr>
+            <tr><td>Credit limit reached</td><td>Chandigarh</td><td class="num">3 lines</td><td>Raise the limit or hold</td></tr>
+          </tbody>
+        </table>
+        <h2>Recent changes</h2>
+        <table>
+          <thead><tr><th>When</th><th>Who</th><th>What</th></tr></thead>
+          <tbody>
+            <tr><td>Mon 07:40</td><td>Pune (distributor)</td><td>Trimmed Packaged Water 1 L from 179 to 90 cases</td></tr>
+            <tr><td>Mon 07:41</td><td>System</td><td>Offered the freed cases to Surat, Chennai, Hyderabad</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <aside class="assist">
+      <h2><span class="dot"></span>Assistant <small>answers from the plan's data</small></h2>
+      <div class="log">
+        <div class="msg sys"><div class="who">Assistant</div>Ask me why any shipment is in the plan, or what a change would do. I only quote numbers from this plan and its experiment.</div>
+        <div class="msg you"><div class="who">You</div>Why is Dankuni sending 166 Cola cases to Kolkata?</div>
+        <div class="msg sys"><div class="who">Assistant</div>Because Dankuni is the cheapest source for Kolkata: &#8377;33 a case, against &#8377;202 from Gurugram. The line also fills part of a full truck.
+          <ul><li>Reason: cheapest source</li><li>Freight share: about &#8377;5,400 for this line</li></ul></div>
+        <div class="msg you"><div class="who">You</div>What if diesel goes up 10%?</div>
+        <div class="msg sys"><div class="who">Assistant</div>Freight rises from &#8377;7.6 lakh to about &#8377;8.0 lakh (+5%). Expected cost to serve rises by about &#8377;0.4 lakh. Shipments do not change.</div>
+      </div>
+      <div class="suggest"><span>Why is this shipment here?</span><span>What if diesel rises?</span><span>What if a depot closes?</span></div>
+      <div class="ask"><input value="Ask a question about this plan" readonly><button>Ask</button></div>
+    </aside>
+  </div>
+
+  <footer class="foot"><span><b>Notes</b> (2)</span><span>History</span><span>Activity</span><span>Automation log</span><span style="flex:1"></span><span>Saved Mon 07:41</span></footer>
+</body>
+</html>
+

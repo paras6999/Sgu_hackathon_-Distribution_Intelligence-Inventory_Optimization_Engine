@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vitaran · 01c · Approval chain and automation rules</title>
+<style>
+  :root { --bg:#f3f3f3; --text:#181818; --muted:#5c5b59; --line:#dddbda; --brand:#0176d3; --brand-ink:#014486; --ok:#2e844a; --warn:#b85c00; --bad:#ba0517; --soft:#eef4fb; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Segoe UI", Arial, sans-serif; font-size:13px; color:var(--text); background:var(--bg); }
+  .global { height:48px; background:#014486; color:#fff; display:flex; align-items:center; padding:0 14px; gap:18px; }
+  .global .logo { font-weight:700; }
+  .global .sp { flex:1; }
+  .page { padding:12px 14px 30px; display:grid; grid-template-columns:1fr 340px; gap:12px; }
+  .record { background:#fff; border:1px solid var(--line); border-radius:4px; }
+  .record-top { padding:14px 16px; border-bottom:1px solid var(--line); display:flex; gap:12px; align-items:center; }
+  .record-top .kind { color:var(--muted); font-size:12px; }
+  .record-top h1 { margin:2px 0 0; font-size:20px; font-weight:600; }
+  .status { margin-left:auto; padding:4px 10px; border-radius:12px; background:#fdf1e0; color:var(--warn); font-weight:600; font-size:12px; }
+  .record-body { padding:14px 16px; }
+  .fields { display:grid; grid-template-columns:repeat(3,1fr); gap:0; border:1px solid var(--line); border-radius:4px; }
+  .fields div { padding:10px 12px; border-right:1px solid #efefef; border-bottom:1px solid #efefef; }
+  .fields div:nth-child(3n) { border-right:none; }
+  .fields .l { color:var(--muted); font-size:12px; }
+  .fields .v { font-weight:600; margin-top:2px; }
+  .card { border:1px solid var(--line); border-radius:4px; margin-top:12px; }
+  .card h2 { margin:0; font-size:14px; padding:10px 12px; border-bottom:1px solid var(--line); display:flex; align-items:center; }
+  .card h2 small { color:var(--muted); font-weight:400; margin-left:8px; }
+  .stages { display:grid; grid-template-columns:repeat(4,1fr); }
+  .stage { padding:12px; border-right:1px solid #efefef; }
+  .stage:last-child { border-right:none; }
+  .stage .who { font-weight:600; }
+  .stage .when { color:var(--muted); font-size:12px; margin-top:2px; }
+  .stage .dec { margin-top:8px; font-size:12px; padding:3px 8px; border-radius:3px; display:inline-block; }
+  .dec.ok { background:#e6f4ea; color:var(--ok); }
+  .dec.now { background:#fdf1e0; color:var(--warn); }
+  .dec.wait { background:#ecebea; color:var(--muted); }
+  .stage .why { color:var(--muted); font-size:12px; margin-top:8px; }
+  .checks { padding:0; margin:0; }
+  .check { display:flex; gap:10px; padding:10px 12px; border-bottom:1px solid #efefef; align-items:flex-start; }
+  .check:last-child { border-bottom:none; }
+  .check .tick { width:18px; height:18px; border-radius:3px; background:var(--ok); color:#fff; text-align:center; line-height:18px; font-size:12px; flex:none; }
+  .check .tick.no { background:#fff; border:1px solid #c9c7c5; color:transparent; }
+  .check .t { flex:1; }
+  .check .t span { color:var(--muted); font-size:12px; display:block; }
+  .side .card { margin-top:0; margin-bottom:12px; }
+  .rule { padding:10px 12px; border-bottom:1px solid #efefef; }
+  .rule:last-child { border-bottom:none; }
+  .rule b { display:block; font-weight:600; }
+  .rule span { color:var(--muted); font-size:12px; }
+  .rule .pill { float:right; font-size:11px; padding:2px 6px; border-radius:3px; background:#e6f4ea; color:var(--ok); }
+  .rule .pill.ask { background:#fdf1e0; color:var(--warn); }
+  .footer-actions { display:flex; gap:8px; justify-content:flex-end; padding:12px 16px; border-top:1px solid var(--line); }
+  .btn { border:1px solid #c9c7c5; background:#fff; color:var(--brand-ink); padding:7px 14px; border-radius:4px; font-weight:600; }
+  .btn.primary { background:var(--brand); border-color:var(--brand); color:#fff; }
+  .btn.danger { color:var(--bad); }
+</style>
+</head>
+<body>
+  <header class="global"><span class="logo">Vitaran</span><span class="sp"></span><span>Approvals</span></header>
+
+  <main class="page">
+    <section>
+      <div class="record">
+        <div class="record-top">
+          <div>
+            <div class="kind">Planning cycle · Ambient</div>
+            <h1>Week of 29 Sep 2025</h1>
+          </div>
+          <span class="status">Waiting for Head of Supply Chain</span>
+        </div>
+        <div class="record-body">
+          <div class="fields">
+            <div><div class="l">Cases to ship</div><div class="v">16,071</div></div>
+            <div><div class="l">Expected cost to serve</div><div class="v">&#8377;71.1 lakh</div></div>
+            <div><div class="l">Changes since the draft</div><div class="v">Pune trim, 1 change</div></div>
+            <div><div class="l">Full trucks</div><div class="v">26</div></div>
+            <div><div class="l">Stock at risk</div><div class="v">40 lots</div></div>
+            <div><div class="l">Distributors replied</div><div class="v">1 of 16</div></div>
+          </div>
+
+          <div class="card">
+            <h2>Approval chain <small>who signs off, in order</small></h2>
+            <div class="stages">
+              <div class="stage"><div class="who">Planner (Priya)</div><div class="when">Mon 06:10, built and checked</div><span class="dec ok">Submitted</span><div class="why">Checked 2 flagged items</div></div>
+              <div class="stage"><div class="who">Supply lead</div><div class="when">Waiting now</div><span class="dec now">Your decision</span><div class="why">Approves the plan for all distributors</div></div>
+              <div class="stage"><div class="who">Finance (credit)</div><div class="when">Only if a limit is raised</div><span class="dec wait">Not needed yet</span><div class="why">Chandigarh credit is full</div></div>
+              <div class="stage"><div class="who">Dispatch (Ramesh)</div><div class="when">After approval</div><span class="dec wait">Not started</span><div class="why">Pick lists in expiry order</div></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Before you approve <small>system checks</small></h2>
+            <div class="checks">
+              <div class="check"><span class="tick">&#10003;</span><div class="t">Every shipment has a reason<span>290 of 290 lines explained</span></div></div>
+              <div class="check"><span class="tick">&#10003;</span><div class="t">No truck is over capacity<span>26 trucks checked by weight and volume</span></div></div>
+              <div class="check"><span class="tick">&#10003;</span><div class="t">Every shipment has enough shelf life on arrival<span>Lots past the 60% floor are not shipped</span></div></div>
+              <div class="check"><span class="tick no"></span><div class="t">Two items need a decision<span>Sweet Lassi at Dankuni (expires 6 Oct), Chandigarh credit</span></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-actions">
+          <button class="btn danger">Send back to planner</button>
+          <button class="btn">Ask for a change</button>
+          <button class="btn primary">Approve and send to 16 distributors</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="card">
+        <h2>Automation rules <small>proposed for the supply lead</small></h2>
+        <div class="rule"><span class="pill">Auto</span><b>Plan builds itself</b><span>Every Monday 06:00</span></div>
+        <div class="rule"><span class="pill">Auto</span><b>Approve without a meeting when the draft changes only by distributor trims</b><span>Proposed rule. This plan changed only by the Pune trim</span></div>
+        <div class="rule"><span class="pill ask">Ask</span><b>Always ask before sending a plan above &#8377;50 lakh expected cost</b><span>Proposed rule. This plan is &#8377;71.1 lakh, so it needs approval</span></div>
+        <div class="rule"><span class="pill ask">Ask</span><b>Always ask for at-risk stock</b><span>40 lots flagged</span></div>
+        <div class="rule"><span class="pill">Auto</span><b>Accept distributor trims within limits</b><span>Freed cases offered to others</span></div>
+      </section>
+      <section class="card">
+        <h2>Approval history <small>sample</small></h2>
+        <div class="rule"><b>Last week: approved, 0 changes</b><span>Approved by Supply lead, Mon 14:20</span></div>
+        <div class="rule"><b>Two weeks ago: approved after 3 changes</b><span>Changes were credit limits</span></div>
+      </section>
+    </aside>
+  </main>
+</body>
+</html>
+
