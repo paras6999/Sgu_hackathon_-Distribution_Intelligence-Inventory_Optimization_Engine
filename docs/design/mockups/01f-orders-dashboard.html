@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vitaran · 01f · Orders dashboard</title>
+<style>
+  :root { --bg:#f3f3f3; --text:#181818; --muted:#5c5b59; --line:#dddbda; --brand:#0176d3; --brand-ink:#014486; --ok:#2e844a; --warn:#b85c00; --bad:#ba0517; --soft:#eef4fb; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Segoe UI", Arial, sans-serif; font-size:13px; color:var(--text); background:var(--bg); padding-bottom:44px; }
+  .global { height:48px; background:#014486; color:#fff; display:flex; align-items:center; gap:18px; padding:0 14px; }
+  .global .logo { font-weight:700; }
+  .global .sp { flex:1; }
+  .global .search { width:360px; background:rgba(255,255,255,.14); border-radius:4px; padding:7px 10px; color:#dfe9f5; }
+  .layout { display:grid; grid-template-columns:1fr 340px; gap:12px; margin:12px 14px; }
+  .panel { background:#fff; border:1px solid var(--line); border-radius:4px; }
+  .head { padding:14px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:12px; }
+  .head .kind { color:var(--muted); font-size:12px; }
+  .head h1 { margin:2px 0 0; font-size:20px; font-weight:600; }
+  .head .version { margin-left:10px; font-size:12px; padding:2px 8px; border-radius:10px; background:var(--soft); color:var(--brand-ink); }
+  .head .sp { flex:1; }
+  .seg { display:inline-flex; border:1px solid #c9c7c5; border-radius:4px; overflow:hidden; }
+  .seg span { padding:6px 12px; background:#fff; color:var(--muted); border-right:1px solid #c9c7c5; }
+  .seg span:last-child { border-right:none; }
+  .seg span.on { background:var(--brand); color:#fff; font-weight:600; }
+  .btn { border:1px solid #c9c7c5; background:#fff; color:var(--brand-ink); padding:7px 12px; border-radius:4px; font-weight:600; }
+  .btn.primary { background:var(--brand); border-color:var(--brand); color:#fff; }
+  .strip { display:grid; grid-template-columns:repeat(6,1fr); border-bottom:1px solid var(--line); }
+  .strip div { padding:11px 14px; border-right:1px solid #efefef; }
+  .strip div:last-child { border-right:none; }
+  .strip .l { color:var(--muted); font-size:12px; }
+  .strip .v { font-size:18px; font-weight:600; margin-top:2px; }
+  .strip .n { color:var(--muted); font-size:12px; }
+  .strip .warn .v { color:var(--warn); }
+  .tabs { display:flex; gap:22px; padding:0 16px; border-bottom:1px solid var(--line); }
+  .tabs span { padding:10px 0; color:var(--muted); border-bottom:3px solid transparent; }
+  .tabs span.on { color:var(--brand-ink); border-bottom-color:var(--brand); font-weight:600; }
+  .tools { display:flex; gap:8px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .chip { font-size:12px; padding:4px 10px; border-radius:12px; background:#ecebea; color:var(--text); }
+  .chip.on { background:var(--soft); color:var(--brand-ink); border:1px solid #b3d4f5; }
+  .tools .sp { flex:1; }
+  .tools .hint { color:var(--muted); font-size:12px; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid #efefef; vertical-align:middle; }
+  th { color:var(--muted); background:#fafaf9; font-size:12px; font-weight:600; white-space:nowrap; }
+  td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  td.city b { font-weight:600; display:block; }
+  td.city span { color:var(--muted); font-size:12px; }
+  tr.sel td { background:var(--soft); }
+  .status { font-size:12px; padding:2px 8px; border-radius:3px; white-space:nowrap; }
+  .st-trim { background:#e6f4ea; color:var(--ok); }
+  .st-prop { background:#ecebea; color:var(--muted); }
+  .st-upd { background:#fdf1e0; color:var(--warn); }
+  .bar { position:relative; height:8px; background:#ecebea; border-radius:4px; min-width:90px; }
+  .bar i { position:absolute; left:0; top:0; bottom:0; border-radius:4px; background:var(--brand); }
+  .bar i.full { background:var(--warn); }
+  .delta-up { color:var(--ok); font-weight:600; }
+  .delta-down { color:var(--bad); font-weight:600; }
+  .delta-0 { color:var(--muted); }
+  .below { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px 16px 16px; }
+  .box { border:1px solid var(--line); border-radius:4px; padding:12px 14px; }
+  .box h2 { margin:0 0 6px; font-size:14px; }
+  .box p { margin:0 0 6px; color:var(--muted); }
+  .box p b { color:var(--text); font-weight:600; }
+  .order-lines td { font-size:12px; }
+  .assist { background:#fff; border:1px solid var(--line); border-radius:4px; display:flex; flex-direction:column; min-height:640px; }
+  .assist h2 { margin:0; padding:12px 14px; font-size:14px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px; }
+  .assist h2 .dot { width:10px; height:10px; border-radius:50%; background:var(--brand); }
+  .assist h2 small { margin-left:auto; color:var(--muted); font-weight:400; font-size:12px; }
+  .log { padding:10px 14px; flex:1; overflow:auto; }
+  .msg { border-radius:6px; padding:9px 11px; margin-bottom:8px; font-size:13px; line-height:1.4; }
+  .msg.sys { background:#f3f3f3; }
+  .msg.you { background:var(--soft); margin-left:30px; }
+  .msg .who { font-size:11px; color:var(--muted); margin-bottom:3px; }
+  .msg ul { margin:6px 0 0 16px; padding:0; }
+  .suggest { display:flex; gap:6px; flex-wrap:wrap; padding:0 14px 12px; }
+  .suggest span { font-size:12px; padding:4px 8px; border:1px solid #c9c7c5; border-radius:12px; color:var(--brand-ink); background:#fff; }
+  .ask { padding:10px 14px; border-top:1px solid var(--line); display:flex; gap:8px; }
+  .ask input { flex:1; border:1px solid #c9c7c5; border-radius:4px; padding:8px 10px; font:inherit; color:var(--muted); }
+  .ask button { border:0; background:var(--brand); color:#fff; border-radius:4px; padding:0 14px; font-weight:600; }
+  .foot { position:fixed; left:0; right:0; bottom:0; height:36px; background:#fff; border-top:1px solid var(--line); display:flex; align-items:center; gap:22px; padding:0 14px; color:var(--muted); }
+  .foot b { color:var(--text); }
+</style>
+</head>
+<body>
+  <header class="global">
+    <span class="logo">Vitaran</span>
+    <span class="search">Search orders, distributors, products</span>
+    <span class="sp"></span>
+    <span>Assistant</span>
+  </header>
+
+  <div class="layout">
+    <section class="panel">
+      <div class="head">
+        <div>
+          <div class="kind">Planning cycle · Ambient</div>
+          <h1>Week of 29 Sep 2025 <span class="version">Version 2, after Pune's trim</span></h1>
+        </div>
+        <span class="sp"></span>
+        <div class="seg"><span class="on">Automatic</span><span>Ask me first</span><span>By hand</span></div>
+        <button class="btn">Compare with draft</button>
+        <button class="btn primary">Approve and send 16 orders</button>
+      </div>
+
+      <div class="strip">
+        <div><div class="l">Orders</div><div class="v">16</div><div class="n">one per distributor</div></div>
+        <div><div class="l">Replied</div><div class="v">1 of 16</div><div class="n">15 waiting</div></div>
+        <div><div class="l">Shipment lines</div><div class="v">293</div><div class="n">draft had 290</div></div>
+        <div><div class="l">Cases</div><div class="v">16,000</div><div class="n">draft had 16,071</div></div>
+        <div><div class="l">Order value</div><div class="v">&#8377;1.62 cr</div><div class="n">credit &#8377;1.63 cr</div></div>
+        <div class="warn"><div class="l">Credit used</div><div class="v">99.8%</div><div class="n">15 of 16 orders at 99.6% or more</div></div>
+      </div>
+
+      <div class="tabs">
+        <span class="on">Orders (16)</span><span>Trucks (27)</span><span>Depots (4)</span><span>Stock at risk (40)</span><span>Changes (4)</span>
+      </div>
+
+      <div class="tools">
+        <span class="chip on">All 16</span><span class="chip">Waiting for reply 15</span><span class="chip">Changed 4</span><span class="chip">Credit full 15</span>
+        <span class="sp"></span>
+        <span class="hint">Sorted by order value. Click an order to see its lines.</span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Order</th><th>Status</th><th class="num">Lines</th><th class="num">Cases</th><th class="num">Value</th><th>Credit used</th><th class="num">Since draft</th><th class="num">Version</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="city"><b>Hyderabad</b><span>D12 · 23 lines</span></td><td><span class="status st-upd">Updated</span></td><td class="num">23</td><td class="num">1,471</td><td class="num">&#8377;19.70 lakh</td><td><div class="bar"><i style="width:99.9%"></i></div></td><td class="num delta-up">+15</td><td class="num">2</td></tr>
+          <tr><td class="city"><b>Delhi</b><span>D05 · 22 lines</span></td><td><span class="status st-prop">Waiting</span></td><td class="num">22</td><td class="num">1,610</td><td class="num">&#8377;15.70 lakh</td><td><div class="bar"><i class="full" style="width:100.0%"></i></div></td><td class="num delta-0">0</td><td class="num">1</td></tr>
+          <tr><td class="city"><b>Chennai</b><span>D11 · 20 lines</span></td><td><span class="status st-upd">Updated</span></td><td class="num">20</td><td class="num">1,158</td><td class="num">&#8377;13.62 lakh</td><td><div class="bar"><i style="width:99.9%"></i></div></td><td class="num delta-up">+1</td><td class="num">2</td></tr>
+          <tr><td class="city"><b>Bengaluru</b><span>D09 · 20 lines</span></td><td><span class="status st-prop">Waiting</span></td><td class="num">20</td><td class="num">1,154</td><td class="num">&#8377;13.51 lakh</td><td><div class="bar"><i style="width:99.9%"></i></div></td><td class="num delta-0">0</td><td class="num">1</td></tr>
+          <tr><td class="city"><b>Kolkata</b><span>D13 · 18 lines</span></td><td><span class="status st-prop">Waiting</span></td><td class="num">18</td><td class="num">1,446</td><td class="num">&#8377;12.94 lakh</td><td><div class="bar"><i style="width:99.9%"></i></div></td><td class="num delta-0">0</td><td class="num">1</td></tr>
+          <tr><td class="city"><b>Ahmedabad</b><span>D02 · 19 lines</span></td><td><span class="status st-prop">Waiting</span></td><td class="num">19</td><td class="num">1,315</td><td class="num">&#8377;10.86 lakh</td><td><div class="bar"><i style="width:99.9%"></i></div></td><td class="num delta-0">0</td><td class="num">1</td></tr>
+          <tr><td class="city"><b>Nagpur</b><span>D04 · 19 lines</span></td><td><span class="status st-prop">Waiting</span></td><td class="num">19</td><td class="num">997</td><td class="num">&#8377;10.28 lakh</td><td><div class="bar"><i style="width:99.9%"></i></div></td><td class="num delta-0">0</td><td class="num">1</td></tr>
+          <tr class="sel"><td class="city"><b>Pune</b><span>D01 · 15 lines</span></td><td><span class="status st-trim">Trimmed, replied</span></td><td class="num">15</td><td class="num">1,130</td><td class="num">&#8377;10.27 lakh</td><td><div class="bar"><i style="width:98.4%"></i></div></td><td class="num delta-down">-89</td><td class="num">1</td></tr>
+          <tr><td class="city"><b>Surat</b><span>D03 · 17 lines</span></td><td><span class="status st-upd">Updated</span></td><td class="num">17</td><td class="num">1,110</td><td class="num">&#8377;9.81 lakh</td><td><div class="bar"><i class="full" style="width:100.0%"></i></div></td><td class="num delta-up">+2</td><td class="num">2</td></tr>
+          <tr><td class="city"><b>Guwahati</b><span>D16 · 20 lines</span></td><td><span class="status st-prop">Waiting</span></td><td class="num">20</td><td class="num">857</td><td class="num">&#8377;9.00 lakh</td><td><div class="bar"><i style="width:99.9%"></i></div></td><td class="num delta-0">0</td><td class="num">1</td></tr>
+          <tr><td class="city"><b>Coimbatore</b><span>D10 · 15 lines</span></td><td><span class="status st-prop">Waiting</span></td><td class="num">15</td><td class="num">588</td><td class="num">&#8377;7.09 lakh</td><td><div class="bar"><i style="width:99.9%"></i></div></td><td class="num delta-0">0</td><td class="num">1</td></tr>
+          <tr><td class="city"><b>Lucknow</b><span>D07 · 17 lines</span></td><td><span class="status st-prop">Waiting</span></td><td class="num">17</td><td class="num">741</td><td class="num">&#8377;7.04 lakh</td><td><div class="bar"><i class="full" style="width:100.0%"></i></div></td><td class="num delta-0">0</td><td class="num">1</td></tr>
+          <tr><td class="city"><b>Jaipur</b><span>D06 · 17 lines</span></td><td><span class="status st-prop">Waiting</span></td><td class="num">17</td><td class="num">659</td><td class="num">&#8377;6.42 lakh</td><td><div class="bar"><i style="width:99.8%"></i></div></td><td class="num delta-0">0</td><td class="num">1</td></tr>
+          <tr><td class="city"><b>Bhubaneswar</b><span>D15 · 17 lines</span></td><td><span class="status st-prop">Waiting</span></td><td class="num">17</td><td class="num">625</td><td class="num">&#8377;5.63 lakh</td><td><div class="bar"><i style="width:99.9%"></i></div></td><td class="num delta-0">0</td><td class="num">1</td></tr>
+          <tr><td class="city"><b>Chandigarh</b><span>D08 · 17 lines</span></td><td><span class="status st-prop">Waiting</span></td><td class="num">17</td><td class="num">561</td><td class="num">&#8377;5.41 lakh</td><td><div class="bar"><i style="width:99.7%"></i></div></td><td class="num delta-0">0</td><td class="num">1</td></tr>
+          <tr><td class="city"><b>Patna</b><span>D14 · 17 lines</span></td><td><span class="status st-prop">Waiting</span></td><td class="num">17</td><td class="num">578</td><td class="num">&#8377;5.12 lakh</td><td><div class="bar"><i style="width:99.6%"></i></div></td><td class="num delta-0">0</td><td class="num">1</td></tr>
+        </tbody>
+      </table>
+
+      <div class="below">
+        <div class="box">
+          <h2>Selected order: Pune</h2>
+          <p><b>Trimmed by the distributor.</b> Packaged Water 1 L went from 179 cases to 90. Pune's order is now 1,130 cases, down 89 from the draft.</p>
+          <p>Pune replied this morning. Its other lines are unchanged in cases.</p>
+        </div>
+        <div class="box">
+          <h2>What the 89 freed cases did</h2>
+          <p><b>18 cases were reassigned:</b> Hyderabad +15, Surat +2, Chennai +1.</p>
+          <p><b>71 cases stay at the depots.</b> The plan ships 16,000 cases, not 16,071. The rest of the week's plan is unchanged.</p>
+        </div>
+      </div>
+    </section>
+
+    <aside class="assist">
+      <h2><span class="dot"></span>Assistant <small>answers from this plan</small></h2>
+      <div class="log">
+        <div class="msg sys"><div class="who">Assistant</div>I can explain any order, change, or credit limit in this plan. I only quote figures from the plan and its experiment.</div>
+        <div class="msg you"><div class="who">You</div>Why did Hyderabad's order go up by 15 cases?</div>
+        <div class="msg sys"><div class="who">Assistant</div>Pune trimmed one line from 179 to 90 cases, which freed 89. The system offered the freed cases to Surat, Chennai and Hyderabad. Hyderabad took the most: 1,456 cases became 1,471, and its lines went from 19 to 23.</div>
+        <div class="msg you"><div class="who">You</div>Are the credit limits full everywhere?</div>
+        <div class="msg sys"><div class="who">Assistant</div>Nearly. 15 of 16 orders use 99.6% or more of their credit. Credit appears to be the limit that binds most orders, more than freight. Raising a limit would let more cases ship.
+          <ul><li>Lowest use: Pune at 98.4%, after its trim</li><li>Highest value: Hyderabad, &#8377;19.70 lakh</li></ul></div>
+        <div class="msg you"><div class="who">You</div>What if diesel goes up 10%?</div>
+        <div class="msg sys"><div class="who">Assistant</div>Freight rises from &#8377;7.6 lakh to about &#8377;8.0 lakh (+5%). Expected cost to serve rises by about &#8377;0.4 lakh. Order quantities do not change.</div>
+      </div>
+      <div class="suggest"><span>Why did Hyderabad change?</span><span>Which orders are credit-full?</span><span>What if a depot closes?</span></div>
+      <div class="ask"><input value="Ask about any order" readonly><button>Ask</button></div>
+    </aside>
+  </div>
+
+  <footer class="foot"><span><b>Orders</b> 16</span><span>History</span><span>Activity</span><span>Automation log</span><span style="flex:1"></span><span>Version 2 saved Mon 07:41</span></footer>
+</body>
+</html>
+
