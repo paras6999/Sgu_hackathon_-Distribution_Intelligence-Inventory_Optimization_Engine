@@ -6,11 +6,13 @@ import { createHash } from "node:crypto";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type {
-  DispatchResponse, DispatchTruck, ExperimentAccepted, ExperimentRequest, ForecastRequest, ForecastResponse, LineDiff,
-  Message, OpeningState, Plan, PlanRequest, Proposal, ProposalStatus, PublishRequest, PublishResponse,
-  ResponseRequest, ResponseResult, Scenario,
+  AssistantRequest, AssistantResponse, AssistantStep, DispatchResponse, DispatchTruck, ExperimentAccepted, ExperimentRequest,
+  ForecastRequest, ForecastResponse, LineDiff, Message, OpeningState, OrderSummary, OrdersView, Plan, PlanRequest, Proposal,
+  ProposalStatus, PublishRequest, PublishResponse, ResponseRequest, ResponseResult, Scenario,
 } from "@dia/types";
 import type { Repo } from "./db/repo";
+import { parseIntent, type DistRef, type Intent } from "./assistant/intent";
+import { routeWithModel } from "./assistant/model";
 import { EngineError, type EngineClient } from "./engine/client";
 import { analyse } from "./ai/analyse";
 import { lineFacts, planFacts, resultsFacts } from "./ai/facts";
@@ -69,6 +71,24 @@ function message(plan: Plan, dist: string, pv: number, scenario: Scenario, credi
   };
 }
 
+const inr = (n: number) => Math.round(n).toLocaleString("en-IN");
+const lakh = (v: number) => (v / 100000).toFixed(2);
+const crore = (v: number) => (v / 10000000).toFixed(2);
+/** Share of credit used, in percent with one decimal. Zero when there is no credit. */
+const creditUsedPct = (value: number, credit: number) => (credit > 0 ? Math.round((value / credit) * 1000) / 10 : 0);
+/** Keeps assistant replies under the 400-character limit. */
+const clip = (s: string, max = 390) => (s.length > max ? `${s.slice(0, max - 3)}...` : s);
+const serve = (v: number | undefined) => (v === undefined ? "cost not reported" : `cost to serve Rs ${lakh(v)} lakh`);
+/** Plan request that keeps the scenario, date, temperature class and weights of an existing plan. */
+const planRequestFor = (plan: Plan, extra: Partial<PlanRequest> = {}): PlanRequest => ({
+  scenario_id: plan.scenario_id, as_of: plan.as_of, temp_class: plan.temp_class,
+  ...(plan.settings?.weights ? { weights: plan.settings.weights } : {}), ...extra,
+});
+type ToolOutcome = {
+  status: AssistantResponse["status"]; reply: string; steps: AssistantStep[];
+  plan_version?: number; plan_status?: string; pending_action?: string;
+};
+
 export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
   const app = new Hono();
   const fromEnv = llmDep === undefined ? llmFromEnv() : null;
@@ -91,6 +111,183 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
     return p;
   };
   const openingState = (q: string | undefined): OpeningState => (q === "neutral" ? "neutral" : "imbalanced");
+
+  /** One row per distributor proposal, with totals. Value and credit come from the same calculation as the inbox. */
+  const buildOrders = async (plan: Plan): Promise<OrdersView> => {
+    const [scenario, snap] = await Promise.all([engine.scenario(plan.scenario_id), engine.snapshot(plan.scenario_id, plan.as_of, "imbalanced")]);
+    const draftVersion = repo.firstVersion(plan.plan_id) ?? plan.version;
+    const draft = repo.loadPlan(plan.plan_id, draftVersion) ?? plan;
+    const casesOf = (p: Plan, dist: string) => p.lines.filter((l) => l.to_id === dist).reduce((s, l) => s + l.cases, 0);
+    // A draft has no proposals yet: show its orders from the plan lines, marked not sent (version 0).
+    const sent = repo.getProposals(plan.plan_id);
+    const sources = sent.length > 0
+      ? sent.map((p) => ({ dist_id: p.dist_id, status: p.status, proposal_version: p.proposal_version }))
+      : [...new Set(plan.lines.map((l) => l.to_id))].map((dist) => ({ dist_id: dist, status: "PROPOSED" as const, proposal_version: 0 }));
+    const orders: OrderSummary[] = sources.map((prop) => {
+      const credit = snap.credit_available_inr[prop.dist_id] ?? 0;
+      const value = message(plan, prop.dist_id, prop.proposal_version, scenario, credit).total_value_inr;
+      const cases = casesOf(plan, prop.dist_id);
+      return {
+        dist_id: prop.dist_id,
+        dist_city: scenario.nodes.find((n) => n.node_id === prop.dist_id)?.city ?? prop.dist_id,
+        status: prop.status,
+        proposal_version: prop.proposal_version,
+        lines: plan.lines.filter((l) => l.to_id === prop.dist_id).length,
+        cases,
+        value_inr: value,
+        credit_available_inr: credit,
+        credit_used_pct: creditUsedPct(value, credit),
+        cases_since_draft: cases - casesOf(draft, prop.dist_id),
+        replied: prop.status !== "PROPOSED",
+      };
+    }).sort((a, b) => b.value_inr - a.value_inr);
+    const sum = (f: (o: OrderSummary) => number) => orders.reduce((s, o) => s + f(o), 0);
+    const value = sum((o) => o.value_inr);
+    const credit = sum((o) => o.credit_available_inr);
+    return {
+      plan_id: plan.plan_id, version: plan.version, draft_version: draftVersion, plan_status: plan.status ?? "DRAFT", orders,
+      totals: {
+        orders: orders.length, replied: orders.filter((o) => o.replied).length, lines: sum((o) => o.lines),
+        cases: sum((o) => o.cases), value_inr: value, credit_available_inr: credit, credit_used_pct: creditUsedPct(value, credit),
+        draft_lines: draft.lines.length, draft_cases: draft.lines.reduce((s, l) => s + l.cases, 0),
+      },
+    };
+  };
+
+  /** Generates a plan (new plan id, or the next version when base_plan_id is set) and saves it. */
+  const createPlan = async (req: PlanRequest, opening: OpeningState): Promise<Plan> => {
+    let planId = newPlanId();
+    let version = 1;
+    if (req.base_plan_id) {
+      const base = planOr404(req.base_plan_id);
+      planId = base.plan_id;
+      version = base.version + 1;
+    }
+    const plan = await engine.plan({
+      scenario_id: req.scenario_id, as_of: req.as_of, temp_class: req.temp_class,
+      opening_state: opening, settings: { weights: req.weights },
+      locks: req.locks ?? [], what_if: req.what_if ?? null, plan_id: planId, version,
+    });
+    repo.tx(() => {
+      repo.savePlan(plan);
+      if (req.base_plan_id) repo.logEvent({ plan_id: planId, plan_version: version, dist_id: null, actor: "planner", action: "replan", ts: now() });
+    });
+    return plan;
+  };
+
+  /** Marks the plan version PROPOSED and creates or bumps one proposal per distributor (PRD FR-08). */
+  const publishPlan = async (planId: string, version?: number): Promise<PublishResponse> => {
+    const plan = planOr404(planId, version);
+    const [scenario, snap] = await Promise.all([engine.scenario(plan.scenario_id), engine.snapshot(plan.scenario_id, plan.as_of, "imbalanced")]);
+    const messages: Message[] = [];
+    repo.tx(() => {
+      plan.status = "PROPOSED";
+      repo.savePlan(plan);
+      const previous = new Map(repo.getProposals(planId).map((p) => [p.dist_id, p]));
+      for (const dist of [...new Set(plan.lines.map((l) => l.to_id))].sort()) {
+        const pv = (previous.get(dist)?.proposal_version ?? 0) + 1;
+        repo.upsertProposal({ plan_id: planId, dist_id: dist, proposal_version: pv, status: "PROPOSED", sent_at: now(), responded_at: null });
+        messages.push(message(plan, dist, pv, scenario, snap.credit_available_inr[dist] ?? 0));
+      }
+      repo.logEvent({ plan_id: planId, plan_version: plan.version, dist_id: null, actor: "planner", action: "publish", ts: now() });
+    });
+    return { plan_id: planId, version: plan.version, messages };
+  };
+
+  /**
+   * Runs one assistant tool on the current plan. Consequential tools (publish, replan) return needs_confirmation
+   * without acting when askFirst is set.
+   */
+  const runTool = async (intent: Intent, plan: Plan, dists: DistRef[], askFirst: boolean): Promise<ToolOutcome> => {
+    const step = (tool: string, status: AssistantStep["status"], summary: string, at = { plan_id: plan.plan_id, plan_version: plan.version }): AssistantStep =>
+      ({ tool, status, summary, plan_id: at.plan_id, plan_version: at.plan_version });
+    const sellers = new Set(plan.lines.map((l) => l.to_id)).size;
+    switch (intent.tool) {
+      case "orders_status": {
+        const t = (await buildOrders(plan)).totals;
+        const reply = t.orders === 0
+          ? "No orders yet. Approve and send the plan to create them."
+          : `${t.orders} orders, ${t.replied} replied, ${inr(t.lines)} lines, ${inr(t.cases)} cases, Rs ${crore(t.value_inr)} crore.`;
+        return { status: "answered", reply, steps: [step("orders_status", "done", "Read order totals")] };
+      }
+      case "explain_order": {
+        const id = intent.dist_id ?? "";
+        const o = (await buildOrders(plan)).orders.find((x) => x.dist_id === id);
+        if (!o) {
+          const city = dists.find((d) => d.dist_id === id)?.city ?? id;
+          return {
+            status: "answered", reply: `${city} has no order in this plan yet. Approve and send the plan to create one.`,
+            steps: [step("explain_order", "done", `No order for ${city}`)],
+          };
+        }
+        const since = Math.round(o.cases_since_draft);
+        const change = since > 0 ? `up ${inr(since)} cases from the draft` : since < 0 ? `down ${inr(-since)} cases from the draft` : "no change from the draft";
+        const reply = `${o.dist_city}: ${o.lines} lines, ${inr(o.cases)} cases, Rs ${lakh(o.value_inr)} lakh of Rs ${lakh(o.credit_available_inr)} lakh credit (${o.credit_used_pct}% used), ${change}.`;
+        return { status: "answered", reply, steps: [step("explain_order", "done", `Read ${o.dist_city} order`)] };
+      }
+      case "credit_report": {
+        const full = (await buildOrders(plan)).orders.filter((o) => o.credit_used_pct >= 99.5);
+        const reply = full.length === 0
+          ? "No distributor is at 99.5% or more of its credit."
+          : `${full.length} ${full.length === 1 ? "distributor" : "distributors"} at 99.5% or more of credit: ${full.map((o) => o.dist_city).join(", ")}.`;
+        return { status: "answered", reply, steps: [step("credit_report", "done", `${full.length} at 99.5% or more`)] };
+      }
+      case "check_at_risk": {
+        const rows = await engine.atRisk(plan.scenario_id, plan.as_of, "imbalanced");
+        const top = rows.slice(0, 2).map((r) => `${r.dist_city} ${r.sku_name}: ${inr(r.expected_expired_cases)} cases, ships within days`);
+        const reply = rows.length === 0
+          ? `No lots are expected to expire before they sell as of ${plan.as_of}.`
+          : `${rows.length} lots at risk of expiry. ${top.join("; ")}.`;
+        return { status: "answered", reply, steps: [step("check_at_risk", "done", `${rows.length} lots at risk`)] };
+      }
+      case "whatif": {
+        const change = intent.what_if ?? {};
+        if (Object.keys(change).length === 0) {
+          return { status: "answered", reply: "Name a change to test: diesel price, a depot going offline, or demand up or down in a region.", steps: [] };
+        }
+        const next = await createPlan(validate<PlanRequest>("PlanRequest", planRequestFor(plan, { what_if: change })), "imbalanced");
+        const cases = (p: Plan) => p.lines.reduce((s, l) => s + l.cases, 0);
+        const before = plan.expected_kpis?.total_inr;
+        const after = next.expected_kpis?.total_inr;
+        const pct = before && after !== undefined ? Math.round(((after - before) / before) * 1000) / 10 : undefined;
+        const reply = `Current plan: ${inr(cases(plan))} cases, ${serve(before)}. What-if plan: ${inr(cases(next))} cases, ${serve(after)}${pct === undefined ? "" : ` (${pct > 0 ? "+" : ""}${pct}% cost)`}.`;
+        return {
+          status: "completed", reply,
+          steps: [step("whatif", "done", `Ran what-if plan ${next.plan_id}`, { plan_id: next.plan_id, plan_version: next.version })],
+        };
+      }
+      case "publish_plan": {
+        if (plan.status === "PROPOSED") {
+          return { status: "completed", reply: "This plan was already sent to distributors.", steps: [step("publish_plan", "skipped", "Already sent")] };
+        }
+        if (askFirst) {
+          return { status: "needs_confirmation", reply: `Ready to approve and send ${sellers} orders. Confirm to continue.`, steps: [], pending_action: "publish_plan" };
+        }
+        const res = await publishPlan(plan.plan_id, plan.version);
+        const sent = res.messages.length;
+        return {
+          status: "completed", reply: `Sent ${sent} orders to distributors.`, steps: [step("publish_plan", "done", `Sent ${sent} orders`)],
+          plan_status: planOr404(plan.plan_id, res.version).status ?? "PROPOSED",
+        };
+      }
+      case "replan": {
+        if (askFirst) {
+          return { status: "needs_confirmation", reply: `Ready to create version ${plan.version + 1} of this plan. Confirm to continue.`, steps: [], pending_action: "replan" };
+        }
+        const next = await createPlan(validate<PlanRequest>("PlanRequest", planRequestFor(plan, { base_plan_id: plan.plan_id })), "imbalanced");
+        return {
+          status: "completed", reply: `Created version ${next.version} of this plan. Review it, then approve and send.`,
+          steps: [step("replan", "done", `Created version ${next.version}`, { plan_id: plan.plan_id, plan_version: next.version })],
+          plan_version: next.version, plan_status: next.status ?? "DRAFT",
+        };
+      }
+      default:
+        return {
+          status: "answered", steps: [],
+          reply: "I can check order status, explain an order, check credit, check stock at risk, run a what-if (diesel, a depot offline, or demand), approve and send, or replan.",
+        };
+    }
+  };
 
   // ------------------------------------------------------------------ meta
   app.get("/v1/health", async (c) => {
@@ -129,23 +326,7 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
 
   app.post("/v1/plans", async (c) => {
     const req = validate<PlanRequest>("PlanRequest", await c.req.json());
-    let planId = newPlanId();
-    let version = 1;
-    if (req.base_plan_id) {
-      const base = planOr404(req.base_plan_id);
-      planId = base.plan_id;
-      version = base.version + 1;
-    }
-    const plan = await engine.plan({
-      scenario_id: req.scenario_id, as_of: req.as_of, temp_class: req.temp_class,
-      opening_state: openingState(c.req.query("opening_state")), settings: { weights: req.weights },
-      locks: req.locks ?? [], what_if: req.what_if ?? null, plan_id: planId, version,
-    });
-    repo.tx(() => {
-      repo.savePlan(plan);
-      if (req.base_plan_id) repo.logEvent({ plan_id: planId, plan_version: version, dist_id: null, actor: "planner", action: "replan", ts: now() });
-    });
-    return c.json(plan);
+    return c.json(await createPlan(req, openingState(c.req.query("opening_state"))));
   });
 
   app.get("/v1/plans/:id", (c) => {
@@ -153,25 +334,14 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
     return c.json(planOr404(c.req.param("id"), v ? Number(v) : undefined));
   });
 
+  app.get("/v1/plans/:id/orders", async (c) => {
+    const v = c.req.query("version");
+    return c.json(await buildOrders(planOr404(c.req.param("id"), v ? Number(v) : undefined)));
+  });
+
   app.post("/v1/plans/:id/publish", async (c) => {
-    const planId = c.req.param("id");
     const req = validate<PublishRequest>("PublishRequest", await c.req.json());
-    const plan = planOr404(planId, req.version);
-    const [scenario, snap] = await Promise.all([engine.scenario(plan.scenario_id), engine.snapshot(plan.scenario_id, plan.as_of, "imbalanced")]);
-    const messages: Message[] = [];
-    repo.tx(() => {
-      plan.status = "PROPOSED";
-      repo.savePlan(plan);
-      const previous = new Map(repo.getProposals(planId).map((p) => [p.dist_id, p]));
-      for (const dist of [...new Set(plan.lines.map((l) => l.to_id))].sort()) {
-        const pv = (previous.get(dist)?.proposal_version ?? 0) + 1;
-        repo.upsertProposal({ plan_id: planId, dist_id: dist, proposal_version: pv, status: "PROPOSED", sent_at: now(), responded_at: null });
-        messages.push(message(plan, dist, pv, scenario, snap.credit_available_inr[dist] ?? 0));
-      }
-      repo.logEvent({ plan_id: planId, plan_version: plan.version, dist_id: null, actor: "planner", action: "publish", ts: now() });
-    });
-    const res: PublishResponse = { plan_id: planId, version: plan.version, messages };
-    return c.json(res);
+    return c.json(await publishPlan(c.req.param("id"), req.version));
   });
 
   // ------------------------------------------------------------------ J2 distributor loop
@@ -341,6 +511,45 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
       throw new HTTPException(422, { message: "kind must be plan, line or results" });
     }
     return c.json(await analyse(llm, facts, question));
+  });
+
+  // ------------------------------------------------------------------ sidebar assistant
+  app.post("/v1/assistant", async (c) => {
+    const req = validate<AssistantRequest>("AssistantRequest", await c.req.json());
+    const plan = planOr404(req.plan_id);
+    let intent: Intent = { tool: "unknown" };
+    try {
+      const scenario = await engine.scenario(plan.scenario_id);
+      const dists = scenario.nodes.filter((n) => n.type === "distributor").map((n) => ({ dist_id: n.node_id, city: n.city }));
+      intent = parseIntent(req.message, dists);
+      let source: "rules" | "ai" = "rules";
+      // The rules matched nothing: let the model pick a tool from the fixed list (checked in model.ts).
+      if (intent.tool === "unknown" && llm) {
+        const routed = await routeWithModel(llm, req.message, dists);
+        if (routed) {
+          intent = routed;
+          source = "ai";
+        }
+      }
+      const out = await runTool(intent, plan, dists, req.mode === "ask_first" && !req.confirm);
+      const res: AssistantResponse = {
+        status: out.status, intent: intent.tool, reply: clip(out.reply), steps: out.steps,
+        plan_id: plan.plan_id, plan_version: out.plan_version ?? plan.version, plan_status: out.plan_status ?? plan.status ?? "DRAFT",
+        pending_action: out.pending_action ?? null, source,
+      };
+      return c.json(res);
+    } catch (err) {
+      console.error(err);
+      const reason = err instanceof Error ? err.message : String(err);
+      const steps: AssistantStep[] = intent.tool === "unknown"
+        ? []
+        : [{ tool: intent.tool, status: "failed", summary: clip(reason, 200), plan_id: plan.plan_id, plan_version: plan.version }];
+      const res: AssistantResponse = {
+        status: "failed", intent: intent.tool, reply: clip(`Could not complete that: ${reason}`), steps,
+        plan_id: plan.plan_id, plan_version: plan.version, plan_status: plan.status ?? "DRAFT", pending_action: null, source: "rules",
+      };
+      return c.json(res);
+    }
   });
 
   return app;

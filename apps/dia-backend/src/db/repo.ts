@@ -55,6 +55,12 @@ export class Repo {
     return row ? (JSON.parse(row.payload) as Plan) : null;
   }
 
+  /** Lowest saved version of a plan (its draft), or null when the plan is unknown. */
+  firstVersion(planId: string): number | null {
+    const row = this.db.query("SELECT MIN(version) AS v FROM plans WHERE plan_id = ?").get(planId) as { v: number | null } | null;
+    return row?.v ?? null;
+  }
+
   // ------------------------------------------------------------------ proposals
   upsertProposal(p: Proposal): void {
     this.db.query(

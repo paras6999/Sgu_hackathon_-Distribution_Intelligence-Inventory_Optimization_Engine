@@ -498,6 +498,300 @@
       ],
       "type": "object"
     },
+    "OrderSummary": {
+      "additionalProperties": false,
+      "description": "One distributor's order inside a plan: the proposal the distributor receives (PRD FR-08).",
+      "properties": {
+        "dist_id": {
+          "type": "string"
+        },
+        "dist_city": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/ProposalStatus"
+        },
+        "proposal_version": {
+          "type": "integer"
+        },
+        "lines": {
+          "type": "integer"
+        },
+        "cases": {
+          "type": "number"
+        },
+        "value_inr": {
+          "type": "number"
+        },
+        "credit_available_inr": {
+          "type": "number"
+        },
+        "credit_used_pct": {
+          "type": "number"
+        },
+        "cases_since_draft": {
+          "type": "number"
+        },
+        "replied": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "dist_id",
+        "dist_city",
+        "status",
+        "proposal_version",
+        "lines",
+        "cases",
+        "value_inr",
+        "credit_available_inr",
+        "credit_used_pct",
+        "cases_since_draft",
+        "replied"
+      ],
+      "type": "object"
+    },
+    "OrdersView": {
+      "additionalProperties": false,
+      "description": "All orders of one plan version, with totals. draft_version is the first version of the plan, used for 'since draft'.",
+      "properties": {
+        "plan_id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer"
+        },
+        "draft_version": {
+          "type": "integer"
+        },
+        "plan_status": {
+          "type": "string"
+        },
+        "orders": {
+          "items": {
+            "$ref": "#/$defs/OrderSummary"
+          },
+          "type": "array"
+        },
+        "totals": {
+          "additionalProperties": false,
+          "properties": {
+            "orders": {
+              "type": "integer"
+            },
+            "replied": {
+              "type": "integer"
+            },
+            "lines": {
+              "type": "integer"
+            },
+            "cases": {
+              "type": "number"
+            },
+            "value_inr": {
+              "type": "number"
+            },
+            "credit_available_inr": {
+              "type": "number"
+            },
+            "credit_used_pct": {
+              "type": "number"
+            },
+            "draft_lines": {
+              "type": "integer"
+            },
+            "draft_cases": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "orders",
+            "replied",
+            "lines",
+            "cases",
+            "value_inr",
+            "credit_available_inr",
+            "credit_used_pct",
+            "draft_lines",
+            "draft_cases"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "plan_id",
+        "version",
+        "draft_version",
+        "plan_status",
+        "orders",
+        "totals"
+      ],
+      "type": "object"
+    },
+    "AssistantRequest": {
+      "additionalProperties": false,
+      "description": "A sentence typed in the sidebar. Quantities are never taken from the model: the assistant only picks a tool from a fixed list.",
+      "properties": {
+        "plan_id": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "mode": {
+          "enum": [
+            "automatic",
+            "ask_first"
+          ],
+          "type": "string",
+          "default": "automatic"
+        },
+        "confirm": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "plan_id",
+        "message"
+      ],
+      "type": "object"
+    },
+    "AssistantStep": {
+      "additionalProperties": false,
+      "description": "One tool the assistant ran (or refused to run), in order.",
+      "properties": {
+        "tool": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "done",
+            "failed",
+            "skipped"
+          ],
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "plan_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "plan_version": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "tool",
+        "status",
+        "summary",
+        "plan_id",
+        "plan_version"
+      ],
+      "type": "object"
+    },
+    "AssistantResponse": {
+      "additionalProperties": false,
+      "description": "Result of one sidebar message. status needs_confirmation means an ask-first action is waiting for the user's confirm.",
+      "properties": {
+        "status": {
+          "enum": [
+            "completed",
+            "answered",
+            "needs_confirmation",
+            "failed"
+          ],
+          "type": "string"
+        },
+        "intent": {
+          "type": "string"
+        },
+        "reply": {
+          "type": "string"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/AssistantStep"
+          },
+          "type": "array"
+        },
+        "plan_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "plan_version": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "plan_status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pending_action": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source": {
+          "enum": [
+            "rules",
+            "ai"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "intent",
+        "reply",
+        "steps",
+        "plan_id",
+        "plan_version",
+        "plan_status",
+        "pending_action",
+        "source"
+      ],
+      "type": "object"
+    },
     "TempClass": {
       "enum": [
         "ambient",

@@ -6,7 +6,15 @@ from datetime import date as date_aliased
 from enum import Enum
 from typing import Any
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, RootModel, confloat
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    RootModel,
+    confloat,
+    constr,
+)
 
 
 class Dia(RootModel[Any]):
@@ -91,6 +99,80 @@ class AssumptionRow(BaseModel):
     unit: str | None = None
     source: str | None = None
     rationale: str | None = None
+
+
+class Totals(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    orders: int
+    replied: int
+    lines: int
+    cases: float
+    value_inr: float
+    credit_available_inr: float
+    credit_used_pct: float
+    draft_lines: int
+    draft_cases: float
+
+
+class Mode(str, Enum):
+    AUTOMATIC = "automatic"
+    ASK_FIRST = "ask_first"
+
+
+class AssistantRequest(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    plan_id: str
+    message: constr(max_length=500)
+    mode: Mode = "automatic"
+    confirm: bool = False
+
+
+class Status(str, Enum):
+    DONE = "done"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+
+
+class AssistantStep(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    tool: str
+    status: Status
+    summary: str
+    plan_id: str | None = None
+    plan_version: int | None = None
+
+
+class Status1(str, Enum):
+    COMPLETED = "completed"
+    ANSWERED = "answered"
+    NEEDS_CONFIRMATION = "needs_confirmation"
+    FAILED = "failed"
+
+
+class Source(str, Enum):
+    RULES = "rules"
+    AI = "ai"
+
+
+class AssistantResponse(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    status: Status1
+    intent: str
+    reply: str
+    steps: list[AssistantStep]
+    plan_id: str | None = None
+    plan_version: int | None = None
+    plan_status: str | None = None
+    pending_action: str | None = None
+    source: Source
 
 
 class TempClass(str, Enum):
@@ -941,6 +1023,35 @@ class DispatchResponse(BaseModel):
     version: int
     depot_id: str | None = None
     trucks: list[DispatchTruck]
+
+
+class OrderSummary(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    dist_id: str
+    dist_city: str
+    status: ProposalStatus
+    proposal_version: int
+    lines: int
+    cases: float
+    value_inr: float
+    credit_available_inr: float
+    credit_used_pct: float
+    cases_since_draft: float
+    replied: bool
+
+
+class OrdersView(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    plan_id: str
+    version: int
+    draft_version: int
+    plan_status: str
+    orders: list[OrderSummary]
+    totals: Totals
 
 
 class EnginePlanRequest(BaseModel):

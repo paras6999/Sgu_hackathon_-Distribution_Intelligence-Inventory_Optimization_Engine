@@ -81,6 +81,6 @@ describe("API journey (fake engine)", () => {
 
   test("openapi lists every route", async () => {
     const doc = await json(await call("GET", "/openapi.json"));
-    expect(Object.keys(doc.paths).length).toBe(25);
+    expect(Object.keys(doc.paths).length).toBe(27);
   });
 });

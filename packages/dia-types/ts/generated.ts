@@ -53,6 +53,11 @@ export type ReasonCode =
 export type LineStatus = "PROPOSED" | "ACCEPTED" | "TRIMMED" | "REJECTED";
 /**
  * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "ProposalStatus".
+ */
+export type ProposalStatus = "PROPOSED" | "ACCEPTED" | "TRIMMED" | "REJECTED" | "EXPIRED";
+/**
+ * This interface was referenced by `Dia`'s JSON-Schema
  * via the `definition` "NodeType".
  */
 export type NodeType = "depot" | "distributor";
@@ -61,11 +66,6 @@ export type NodeType = "depot" | "distributor";
  * via the `definition` "PlanStatus".
  */
 export type PlanStatus = "DRAFT" | "PROPOSED" | "FINAL";
-/**
- * This interface was referenced by `Dia`'s JSON-Schema
- * via the `definition` "ProposalStatus".
- */
-export type ProposalStatus = "PROPOSED" | "ACCEPTED" | "TRIMMED" | "REJECTED" | "EXPIRED";
 /**
  * This interface was referenced by `Dia`'s JSON-Schema
  * via the `definition` "ExperimentStatus".
@@ -412,6 +412,91 @@ export interface AssumptionRow {
   unit?: string | null;
   source?: string | null;
   rationale?: string | null;
+}
+/**
+ * One distributor's order inside a plan: the proposal the distributor receives (PRD FR-08).
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "OrderSummary".
+ */
+export interface OrderSummary {
+  dist_id: string;
+  dist_city: string;
+  status: ProposalStatus;
+  proposal_version: number;
+  lines: number;
+  cases: number;
+  value_inr: number;
+  credit_available_inr: number;
+  credit_used_pct: number;
+  cases_since_draft: number;
+  replied: boolean;
+}
+/**
+ * All orders of one plan version, with totals. draft_version is the first version of the plan, used for 'since draft'.
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "OrdersView".
+ */
+export interface OrdersView {
+  plan_id: string;
+  version: number;
+  draft_version: number;
+  plan_status: string;
+  orders: OrderSummary[];
+  totals: {
+    orders: number;
+    replied: number;
+    lines: number;
+    cases: number;
+    value_inr: number;
+    credit_available_inr: number;
+    credit_used_pct: number;
+    draft_lines: number;
+    draft_cases: number;
+  };
+}
+/**
+ * A sentence typed in the sidebar. Quantities are never taken from the model: the assistant only picks a tool from a fixed list.
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "AssistantRequest".
+ */
+export interface AssistantRequest {
+  plan_id: string;
+  message: string;
+  mode?: "automatic" | "ask_first";
+  confirm?: boolean;
+}
+/**
+ * One tool the assistant ran (or refused to run), in order.
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "AssistantStep".
+ */
+export interface AssistantStep {
+  tool: string;
+  status: "done" | "failed" | "skipped";
+  summary: string;
+  plan_id: string | null;
+  plan_version: number | null;
+}
+/**
+ * Result of one sidebar message. status needs_confirmation means an ask-first action is waiting for the user's confirm.
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "AssistantResponse".
+ */
+export interface AssistantResponse {
+  status: "completed" | "answered" | "needs_confirmation" | "failed";
+  intent: string;
+  reply: string;
+  steps: AssistantStep[];
+  plan_id: string | null;
+  plan_version: number | null;
+  plan_status: string | null;
+  pending_action: string | null;
+  source: "rules" | "ai";
 }
 /**
  * This interface was referenced by `Dia`'s JSON-Schema
