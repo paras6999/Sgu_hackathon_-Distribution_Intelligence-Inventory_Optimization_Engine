@@ -133,6 +133,7 @@ class Supply(_Strict):
     life_used_at_receipt: LifeUsed
     opening_cover_days: dict[Literal["ambient", "chilled"], int]
     distributor_storage_weeks: float
+    depot_storage_weeks: dict[Literal["ambient", "chilled"], float]
     distributor_credit_weeks: float
 
 

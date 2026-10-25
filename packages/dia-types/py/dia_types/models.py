@@ -13,6 +13,7 @@ from pydantic import (
     Field,
     RootModel,
     confloat,
+    conint,
     constr,
 )
 
@@ -53,6 +54,61 @@ class AtRisk(BaseModel):
     expected_days_to_sell: float
     expected_expired_cases: float
     suggested_action: str
+
+
+class SpaceFit(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    sku_id: str
+    sku_name: str
+    cases: conint(ge=0)
+
+
+class NodeType(str, Enum):
+    DEPOT = "depot"
+    DISTRIBUTOR = "distributor"
+
+
+class TempClass(str, Enum):
+    AMBIENT = "ambient"
+    CHILLED = "chilled"
+
+
+class SpaceNode(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    node_type: NodeType
+    node_id: str
+    city: str
+    region: str
+    temp_class: TempClass | None = Field(
+        ...,
+        description="Store for a depot; null for a distributor godown (one space for all goods).",
+    )
+    capacity_m3: confloat(ge=0.0)
+    used_m3: confloat(ge=0.0)
+    free_m3: confloat(ge=0.0)
+    used_pct: confloat(ge=0.0)
+    cases: confloat(ge=0.0)
+    fits: list[SpaceFit]
+
+
+class OpeningState(str, Enum):
+    NEUTRAL = "neutral"
+    IMBALANCED = "imbalanced"
+
+
+class SpaceReport(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    scenario_id: str
+    as_of: date_aliased
+    opening_state: OpeningState
+    depots: list[SpaceNode]
+    distributors: list[SpaceNode]
 
 
 class TrajectoryPoint(BaseModel):
@@ -175,16 +231,6 @@ class AssistantResponse(BaseModel):
     source: Source
 
 
-class TempClass(str, Enum):
-    AMBIENT = "ambient"
-    CHILLED = "chilled"
-
-
-class NodeType(str, Enum):
-    DEPOT = "depot"
-    DISTRIBUTOR = "distributor"
-
-
 class TruckClass(str, Enum):
     AMB32 = "AMB32"
     REEF17 = "REEF17"
@@ -253,11 +299,6 @@ class PolicyName(str, Enum):
     ABL_NO_CREDIT = "abl_no_credit"
     ABL_UNIFORM_SERVICE = "abl_uniform_service"
     ABL_HOME_DEPOT = "abl_home_depot"
-
-
-class OpeningState(str, Enum):
-    NEUTRAL = "neutral"
-    IMBALANCED = "imbalanced"
 
 
 class ForecastMode(str, Enum):

@@ -153,6 +153,52 @@ export interface AtRisk {
   suggested_action: string;
 }
 /**
+ * How many more whole cases of one product fit in a node's free space.
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "SpaceFit".
+ */
+export interface SpaceFit {
+  sku_id: string;
+  sku_name: string;
+  cases: number;
+}
+/**
+ * Storage at one depot store (ambient or chilled) or one distributor godown on a given morning. used_m3 counts stock on hand, plus stock in transit for a distributor. Depot capacity is supply.depot_storage_weeks x the region's weekly volume; a distributor's is its storage_m3.
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "SpaceNode".
+ */
+export interface SpaceNode {
+  node_type: "depot" | "distributor";
+  node_id: string;
+  city: string;
+  region: string;
+  /**
+   * Store for a depot; null for a distributor godown (one space for all goods).
+   */
+  temp_class: ("ambient" | "chilled") | null;
+  capacity_m3: number;
+  used_m3: number;
+  free_m3: number;
+  used_pct: number;
+  cases: number;
+  fits: SpaceFit[];
+}
+/**
+ * Warehouse space across the network on one morning, after plant receipts and before dispatch.
+ *
+ * This interface was referenced by `Dia`'s JSON-Schema
+ * via the `definition` "SpaceReport".
+ */
+export interface SpaceReport {
+  scenario_id: string;
+  as_of: string;
+  opening_state: "neutral" | "imbalanced";
+  depots: SpaceNode[];
+  distributors: SpaceNode[];
+}
+/**
  * This interface was referenced by `Dia`'s JSON-Schema
  * via the `definition` "TrajectoryPoint".
  */

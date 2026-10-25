@@ -4,7 +4,7 @@
  */
 import type {
   AssumptionRow, AtRisk, BacktestMetrics, DemandHistory, EnginePlanRequest, EngineResolveRequest, ExperimentResults, ForecastBundle,
-  LearnedEffects, OpeningState, Plan, Scenario, Snapshot, Trajectory, TrajectoryPoint,
+  LearnedEffects, OpeningState, Plan, Scenario, Snapshot, SpaceNode, SpaceReport, Trajectory, TrajectoryPoint,
 } from "@dia/types";
 import assumptions from "@dia/types/fixtures/assumptions.json";
 import backtest from "@dia/types/fixtures/backtest.json";
@@ -26,6 +26,35 @@ export class FakeEngine implements EngineClient {
   async scenarios() { return [(scenario as Scenario).scenario_id]; }
   async scenario() { return clone<Scenario>(scenario); }
   async snapshot() { return clone<Snapshot>(snapshot); }
+
+  /**
+   * FAKE DATA (not engine output): space from the scenario and snapshot fixtures. Depot stores have no capacity in the
+   * fixture, so each is given room for its stock at 80% full (at least 10 m3); godowns use their fixture storage_m3.
+   */
+  async space(scenarioId: string, asOf: string, openingState: OpeningState): Promise<SpaceReport> {
+    const sc = scenario as Scenario, snap = snapshot as Snapshot;
+    const sku = new Map(sc.skus.map((s) => [s.sku_id, s]));
+    const r1 = (v: number) => Math.round(v * 10) / 10;
+    const node = (n: Scenario["nodes"][number], temp: "ambient" | "chilled" | null, cap: number, used: number, cases: number): SpaceNode => {
+      const free = Math.max(cap - used, 0);
+      return {
+        node_type: n.type, node_id: n.node_id, city: n.city, region: n.region, temp_class: temp,
+        capacity_m3: r1(cap), used_m3: r1(used), free_m3: r1(free), used_pct: cap > 0 ? r1((100 * used) / cap) : 0, cases: r1(cases),
+        fits: sc.skus.filter((s) => temp === null || s.temp_class === temp).map((s) => ({ sku_id: s.sku_id, sku_name: s.name, cases: Math.floor(free / s.m3_per_case) })),
+      };
+    };
+    const depots = sc.nodes.filter((n) => n.type === "depot").flatMap((n) => (["ambient", "chilled"] as const).map((t) => {
+      const lots = snap.depot_lots.filter((l) => l.depot_id === n.node_id && sku.get(l.sku_id)?.temp_class === t);
+      const used = lots.reduce((a, l) => a + l.qty_cases * (sku.get(l.sku_id)?.m3_per_case ?? 0), 0);
+      return node(n, t, Math.max(used / 0.8, 10), used, lots.reduce((a, l) => a + l.qty_cases, 0));
+    }));
+    const distributors = sc.nodes.filter((n) => n.type === "distributor").map((n) => {
+      const rows = [...snap.dist_stock.filter((d) => d.dist_id === n.node_id), ...snap.in_transit.filter((t) => t.to_id === n.node_id)];
+      const used = rows.reduce((a, r) => a + r.qty_cases * (sku.get(r.sku_id)?.m3_per_case ?? 0), 0);
+      return node(n, null, n.storage_m3 ?? 0, used, rows.reduce((a, r) => a + r.qty_cases, 0));
+    });
+    return { scenario_id: scenarioId, as_of: asOf, opening_state: openingState, depots, distributors };
+  }
 
   /**
    * FAKE DATA (not engine output): at-risk lots are the snapshot fixture's distributor stock rows that have a lot and stock.

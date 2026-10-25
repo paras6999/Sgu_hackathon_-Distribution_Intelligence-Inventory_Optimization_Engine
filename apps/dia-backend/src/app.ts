@@ -24,6 +24,12 @@ import { validate } from "./validation";
 /** llm: undefined reads the environment; null forces the rules-only path (tests). */
 export type Deps = { repo: Repo; engine: EngineClient; llm?: LlmClient | null };
 
+/**
+ * Assumptions the simulator and optimiser never read (shown in the app only). They stay out of the experiment id, so
+ * stating one does not orphan the stored runs. Add a parameter here only if no engine code path reads it.
+ */
+export const DISPLAY_ONLY_ASSUMPTIONS = new Set(["supply.depot_storage_weeks"]);
+
 const now = () => new Date().toISOString();
 const newPlanId = () => `PL-${crypto.randomUUID().replaceAll("-", "").slice(0, 6).toUpperCase()}`;
 
@@ -317,6 +323,12 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
     return c.json(await engine.atRisk(c.req.param("id"), asOf, openingState(c.req.query("opening_state"))));
   });
 
+  app.get("/v1/scenarios/:id/space", async (c) => {
+    const asOf = c.req.query("as_of");
+    if (!asOf) throw new HTTPException(422, { message: "as_of is required" });
+    return c.json(await engine.space(c.req.param("id"), asOf, openingState(c.req.query("opening_state"))));
+  });
+
   app.post("/v1/forecasts", async (c) => {
     const req = validate<ForecastRequest>("ForecastRequest", await c.req.json());
     const bundle = await engine.forecast({ scenario_id: req.scenario_id, as_of: req.as_of, horizon_days: (req.horizon_weeks ?? 4) * 7 });
@@ -445,7 +457,8 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
   // ------------------------------------------------------------------ J4 evaluation
   app.post("/v1/experiments", async (c) => {
     const req = validate<ExperimentRequest>("ExperimentRequest", await c.req.json().catch(() => ({})));
-    const hash = createHash("sha256").update(JSON.stringify(await engine.assumptions()) + JSON.stringify(req)).digest("hex").slice(0, 12);
+    const rows = (await engine.assumptions()).filter((r) => !DISPLAY_ONLY_ASSUMPTIONS.has(r.parameter));
+    const hash = createHash("sha256").update(JSON.stringify(rows) + JSON.stringify(req)).digest("hex").slice(0, 12);
     const [id, cached] = repo.createExperiment(hash);
     if (!cached) {
       repo.updateExperiment(id, "running", 0);

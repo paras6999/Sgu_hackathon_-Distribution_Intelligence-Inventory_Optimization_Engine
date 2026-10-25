@@ -4,7 +4,7 @@
  */
 import type {
   AssumptionRow, AtRisk, BacktestMetrics, DemandHistory, EngineForecastRequest, EngineHealth, EnginePlanRequest, EngineResolveRequest,
-  ExperimentRequest, ExperimentResults, ForecastBundle, LearnedEffects, OpeningState, Plan, Scenario, Snapshot, Trajectory,
+  ExperimentRequest, ExperimentResults, ForecastBundle, LearnedEffects, OpeningState, Plan, Scenario, Snapshot, SpaceReport, Trajectory,
 } from "@dia/types";
 
 /** Error carrying the engine's HTTP status (501 not implemented, 404 unknown scenario, 422 invalid plan). */
@@ -24,6 +24,8 @@ export interface EngineClient {
   snapshot(id: string, asOf: string, openingState: OpeningState): Promise<Snapshot>;
   /** Distributor lots expected to expire before they sell, as of a date. */
   atRisk(scenarioId: string, asOf: string, openingState: OpeningState): Promise<AtRisk[]>;
+  /** Space used and free at each depot store and distributor godown, and how many more cases of each product fit. */
+  space(scenarioId: string, asOf: string, openingState: OpeningState): Promise<SpaceReport>;
   forecast(req: EngineForecastRequest): Promise<ForecastBundle>;
   backtest(id: string): Promise<BacktestMetrics>;
   /** Two years of weekly demand with the backtest forecasts, for one distributor and/or SKU (or the whole network). */

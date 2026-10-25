@@ -111,6 +111,7 @@ Parquet tables and columns: `store.TABLES` in `engine/dia-engine/src/dia_engine/
 | `GET /v1/scenarios/{id}/effects` | Seasonal, weather and festival effects the forecaster learned | `LearnedEffects` |
 | `GET /v1/scenarios/{id}/backtest` | Forecast accuracy (WAPE, bias, coverage) | `BacktestMetrics` |
 | `GET /v1/scenarios/{id}/at-risk?as_of=&opening_state=` | Distributor and depot lots expected to expire before they sell (FR-20) | `AtRisk[]` |
+| `GET /v1/scenarios/{id}/space?as_of=&opening_state=` | Warehouse space: capacity, used and free m3 per depot store (ambient, chilled) and distributor godown, and how many more cases of each product fit | `SpaceReport` |
 | `GET /v1/experiments/{id}/trajectory?sku_id=&dist_id=&seed=&opening_state=` | Day-by-day stock for one SKU and distributor under each policy; 404 if the seed's log was not kept (seeds 1 and 2) (FR-21) | `Trajectory` |
 | `GET /v1/scenarios/{id}/snapshot?as_of=&opening_state=` | Stock state; any day of the test window (later days replay Baseline A) | `Snapshot` |
 | `POST /v1/forecasts` | Weekly forecast + backtest | `ForecastRequest` → `ForecastResponse` |

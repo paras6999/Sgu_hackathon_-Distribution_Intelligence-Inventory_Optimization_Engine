@@ -103,6 +103,7 @@ supply:
   life_used_at_receipt: {ambient: [0.05, 0.15], chilled_days: [1, 2]}   # A8
   opening_cover_days: {ambient: 21, chilled: 4}
   distributor_storage_weeks: 3.0       # godown sized for ~3 weeks of volume; judgment
+  depot_storage_weeks: {ambient: 3.5, chilled: 0.6}   # depot space for this company, in weeks of regional volume; judgment
   distributor_credit_weeks: 2.0        # credit limit ~2 weeks of purchases; judgment
 
 # --------------------------------------------------------------------------- planning
@@ -170,6 +171,7 @@ assumptions:
   supply.life_used_at_receipt: {source: judgment, rationale: "Ambient lots reach the depot with 5-15% of shelf life used; chilled with 1-2 days used"}
   supply.opening_cover_days: {unit: days, source: judgment, rationale: "Depot opening stock of 21 days (ambient) and 4 days (chilled) of regional demand"}
   supply.distributor_storage_weeks: {unit: weeks, source: judgment, rationale: "Distributor godown sized for about 3 weeks of volume"}
+  supply.depot_storage_weeks: {unit: weeks, source: judgment, rationale: "Space this company uses at each depot, in weeks of its region's volume (ambient store, chilled cold room). Sized so the busiest week of the test window is about 90% full: depots held 3.0-3.2 weeks of ambient and 0.40-0.55 weeks of chilled volume at peak (seed01, Diwali pre-build). Display only: the simulator and optimiser do not read it"}
   supply.distributor_credit_weeks: {unit: weeks, source: judgment, rationale: "Credit limit of about 2 weeks of purchases"}
   planning.cadence_days: {unit: days, source: judgment, rationale: "Replenishment rhythm: ambient weekly, chilled every second day (PRD 6.6.5)"}
   planning.fair_share_alpha: {source: "PRD 6.6.3 (C9)", rationale: "0 = fair-share floor switched off by default"}

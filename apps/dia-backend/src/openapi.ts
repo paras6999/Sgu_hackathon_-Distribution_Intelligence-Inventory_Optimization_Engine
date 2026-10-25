@@ -12,6 +12,7 @@ export const ROUTES: Route[] = [
   { method: "get", path: "/v1/scenarios/{id}/backtest", summary: "Forecast accuracy: WAPE, bias, band coverage", response: "BacktestMetrics" },
   { method: "get", path: "/v1/scenarios/{id}/snapshot", summary: "Stock state (query: as_of, opening_state)", response: "Snapshot" },
   { method: "get", path: "/v1/scenarios/{id}/at-risk", summary: "Distributor lots expected to expire before they sell (query: as_of, opening_state)", response: "AtRisk", array: true },
+  { method: "get", path: "/v1/scenarios/{id}/space", summary: "Warehouse space: used and free m3 per depot store and distributor godown, and cases that still fit (query: as_of, opening_state)", response: "SpaceReport" },
   { method: "post", path: "/v1/forecasts", summary: "Weekly forecast + backtest metrics", body: "ForecastRequest", response: "ForecastResponse" },
   { method: "post", path: "/v1/plans", summary: "New plan, or new version with base_plan_id", body: "PlanRequest", response: "Plan" },
   { method: "get", path: "/v1/plans/{id}", summary: "Plan (latest version unless ?version=)", response: "Plan" },

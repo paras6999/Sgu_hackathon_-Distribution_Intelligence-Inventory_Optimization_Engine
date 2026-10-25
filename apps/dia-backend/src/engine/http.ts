@@ -11,7 +11,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import type {
   AssumptionRow, AtRisk, BacktestMetrics, DemandHistory, EngineForecastRequest, EngineHealth, EnginePlanRequest, EngineResolveRequest,
-  ExperimentRequest, ExperimentResults, ForecastBundle, LearnedEffects, OpeningState, Plan, Scenario, Snapshot, Trajectory,
+  ExperimentRequest, ExperimentResults, ForecastBundle, LearnedEffects, OpeningState, Plan, Scenario, Snapshot, SpaceReport, Trajectory,
 } from "@dia/types";
 import { env, repoRoot } from "../env";
 import { EngineError, type EngineClient, type ExperimentOutcome } from "./client";
@@ -80,6 +80,10 @@ export class HttpEngine implements EngineClient {
   atRisk(id: string, asOf: string, openingState: OpeningState) {
     const q = new URLSearchParams({ as_of: asOf, opening_state: openingState });
     return this.call<AtRisk[]>("GET", `/scenarios/${encodeURIComponent(id)}/at-risk?${q}`);
+  }
+  space(id: string, asOf: string, openingState: OpeningState) {
+    const q = new URLSearchParams({ as_of: asOf, opening_state: openingState });
+    return this.call<SpaceReport>("GET", `/scenarios/${encodeURIComponent(id)}/space?${q}`);
   }
   forecast(req: EngineForecastRequest) { return this.call<ForecastBundle>("POST", "/forecast", req); }
   backtest(id: string) { return this.call<BacktestMetrics>("GET", `/scenarios/${encodeURIComponent(id)}/backtest`); }

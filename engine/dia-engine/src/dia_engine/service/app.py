@@ -22,10 +22,11 @@ from dia_engine.forecast.forecast import backtest, forecast
 from dia_engine.optimize.pipeline import PlanInvalid, apply_response, make_plan
 from dia_engine.sim.simulate import get_snapshot
 from dia_engine.sim.trajectory import trajectory
+from dia_engine.space import space
 from dia_engine.whatif import apply_what_if
 from dia_types import (
     AssumptionRow, AtRisk, BacktestMetrics, EngineForecastRequest, EngineHealth, EnginePlanRequest, EngineResolveRequest,
-    DemandHistory, ForecastBundle, ForecastMode, LearnedEffects, OpeningState, Plan, Scenario, Snapshot, Trajectory,
+    DemandHistory, ForecastBundle, ForecastMode, LearnedEffects, OpeningState, Plan, Scenario, Snapshot, SpaceReport, Trajectory,
 )
 
 app = FastAPI(title="dia-engine (internal)", version=__version__)
@@ -83,6 +84,12 @@ def scenario_at_risk(scenario_id: str, as_of: date, opening_state: OpeningState 
     snap = get_snapshot(scenario_id, as_of, opening_state)
     fc = forecast(scenario_id, as_of, 28, ForecastMode("full").value)
     return at_risk(sc, snap, fc, as_of)
+
+
+@app.get("/scenarios/{scenario_id}/space", response_model=SpaceReport)
+def scenario_space(scenario_id: str, as_of: date, opening_state: OpeningState = OpeningState.IMBALANCED) -> SpaceReport:
+    state = OpeningState(opening_state)
+    return space(_scenario(scenario_id), get_snapshot(scenario_id, as_of, state), state)
 
 
 @app.get("/experiments/{experiment_id}/trajectory", response_model=Trajectory)
