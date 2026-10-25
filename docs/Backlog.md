@@ -21,6 +21,7 @@ Run `docs/Kiro-first-prompt.md` first; where `docs/Ground-truth.md` disagrees wi
 | B13 | Experiment id independent of assumption text | HAIKU | S | – |
 | B14 | Remove or refresh stale files and docs | HAIKU | S | – |
 | B15–B19 | Future scope (design only) | **OPUS** | – | – |
+| B20 | Plan distributor credit across two cycles | **OPUS** | L | yes |
 
 ---
 
@@ -84,6 +85,11 @@ Worked example in `docs/Kiro.md` §5.
 
 ## B14 Remove or refresh stale files and docs — HAIKU
 `apps/dia-fallback-ui/` (unmaintained Streamlit app), the root `app/__pycache__/`, solo-build wording in `docs/Team.md` and `docs/Phases.md`, route tables in `docs/PRD.md` §6 that differ from `docs/Architecture.md` §6. Ask the owner before deleting a folder.
+
+## B20 Plan distributor credit across two cycles — OPUS (L)
+**Why.** Credit is what caps the engine's fill rate (Memory.md, 25 Oct): with 1.5x credit for every policy the engine beats Baseline A on fill in 10/10 seed-states at -19% cost; at today's terms fill sits near 95.5% whatever the weights. The single-cycle model fills positions up to its targets, and that stock keeps credit locked until it sells and the payment lands 7 days later, so the next cycle is short. A one-cycle carry cost did not fix it (branch `feat/credit-aware-engine`, +0.1 pp at best).
+**Design questions for Opus.** Add the next cycle's credit as a constraint: credit available next cycle = today's headroom − today's invoice + expected payments from expected sales (E[min(z, D)] × price, linear in the C2 segments); whether ambient and chilled (separate models today) must share one credit budget; whether targets should shrink when credit binds; effect on solve time (B10). Tune nothing on seeds 1–10; use 11–15.
+**Done when.** At today's credit, a 5-seed held-out run shows fill ≥ Baseline A and cost ≥ 10% lower; then the full experiment.
 
 ---
 
