@@ -117,7 +117,12 @@ export function createApp({ repo, engine, llm: llmDep }: Deps): Hono {
     const draftVersion = repo.firstVersion(plan.plan_id) ?? plan.version;
     const draft = repo.loadPlan(plan.plan_id, draftVersion) ?? plan;
     const casesOf = (p: Plan, dist: string) => p.lines.filter((l) => l.to_id === dist).reduce((s, l) => s + l.cases, 0);
-    const orders: OrderSummary[] = repo.getProposals(plan.plan_id).map((prop) => {
+    // A draft has no proposals yet: show its orders from the plan lines, marked not sent (version 0).
+    const sent = repo.getProposals(plan.plan_id);
+    const sources = sent.length > 0
+      ? sent.map((p) => ({ dist_id: p.dist_id, status: p.status, proposal_version: p.proposal_version }))
+      : [...new Set(plan.lines.map((l) => l.to_id))].map((dist) => ({ dist_id: dist, status: "PROPOSED" as const, proposal_version: 0 }));
+    const orders: OrderSummary[] = sources.map((prop) => {
       const credit = snap.credit_available_inr[prop.dist_id] ?? 0;
       const value = message(plan, prop.dist_id, prop.proposal_version, scenario, credit).total_value_inr;
       const cases = casesOf(plan, prop.dist_id);
