@@ -27,3 +27,5 @@ service-account*.json
 !.vscode/extensions.json
 
 .shots/
+
+brag-output/

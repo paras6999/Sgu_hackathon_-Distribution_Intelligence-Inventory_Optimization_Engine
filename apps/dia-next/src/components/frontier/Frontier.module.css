@@ -1,0 +1,67 @@
+.body {
+  display: grid;
+  gap: 14px;
+  padding: 14px 16px 16px;
+}
+
+.tableGap {
+  margin-top: 12px;
+}
+
+.grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.ring {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: 50%;
+  border: 1.5px solid var(--muted);
+}
+
+.bars {
+  display: grid;
+  gap: 8px;
+}
+
+.barRow {
+  display: grid;
+  grid-template-columns: minmax(170px, 260px) minmax(0, 1fr) 100px;
+  gap: 12px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.barSvg {
+  display: block;
+  width: 100%;
+  height: 22px;
+  overflow: visible;
+}
+
+.zero {
+  stroke: var(--muted);
+  stroke-width: 1;
+}
+
+.whisker {
+  stroke: var(--text);
+  stroke-width: 1;
+}
+
+.barValue {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.cellSub {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+  white-space: nowrap;
+}

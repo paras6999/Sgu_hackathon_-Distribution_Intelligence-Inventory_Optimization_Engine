@@ -6,6 +6,7 @@ import type { OrderSummary, ResponseAction } from "@dia/types";
 import { FreedCases } from "@/components/FreedCases";
 import type { LineDecision } from "@/components/OrderLines";
 import { OrdersTable } from "@/components/OrdersTable";
+import { PlanGenerator } from "@/components/PlanGenerator";
 import { RecordHeader } from "@/components/RecordHeader";
 import { Summary } from "@/components/Summary";
 import { TabBody, Tabs, type TabId } from "@/components/Tabs";
@@ -41,6 +42,7 @@ function Planning() {
   );
   /** Orders can be answered only after the plan has been sent (proposal version 1 or more). */
   const canAct = orderList.some((o) => o.proposal_version >= 1);
+  const draft = plan?.status === "DRAFT";
 
   /** Records a reply on one order. Line ids change with every version, so the lines are read fresh. */
   const applyToOrder = async (order: OrderSummary, decisions: LineDecision[]) => {
@@ -107,7 +109,8 @@ function Planning() {
         onModeChange={setMode}
         onApprove={() => void ask("approve and send")}
       />
-      <Summary orders={orders} />
+      <PlanGenerator />
+      <Summary orders={orders} draft={draft} />
       <Tabs active={tab} orderCount={orders?.totals.orders ?? null} onChange={setTab} />
       {!plan && (
         <p className="empty">
@@ -126,6 +129,7 @@ function Planning() {
               onApplyOrder={(order, decisions) => void applyToOrder(order, decisions)}
               onBulk={(distIds, action) => void applyToMany(distIds, action)}
               initialOpenDist={initialOpenDist}
+              draft={draft}
             />
             <div className="below">
               <FreedCases orders={orderList} totals={orders.totals} />

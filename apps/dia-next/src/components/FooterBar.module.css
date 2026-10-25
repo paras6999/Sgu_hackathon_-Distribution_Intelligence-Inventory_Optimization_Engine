@@ -1,0 +1,13 @@
+/* Static footer in the page flow, so it never covers table rows. Replaces the fixed bar from globals.css. */
+.foot {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  height: 36px;
+  margin: 0 14px 12px;
+  padding: 0 14px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+}

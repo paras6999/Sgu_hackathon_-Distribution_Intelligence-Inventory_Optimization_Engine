@@ -1,0 +1,35 @@
+.sub {
+  margin-top: 4px;
+  color: var(--muted);
+  line-height: 1.4;
+  max-width: 760px;
+}
+
+.body {
+  display: grid;
+  gap: 14px;
+  padding: 14px 16px 16px;
+}
+
+.calloutTitle {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.calloutLine + .calloutLine {
+  margin-top: 6px;
+}
+
+.targetLine {
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.cellSub {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+  white-space: nowrap;
+}

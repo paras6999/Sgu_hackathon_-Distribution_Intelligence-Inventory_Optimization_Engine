@@ -14,7 +14,7 @@ function Cell({ label, value, note, warn }: CellProps) {
   );
 }
 
-export function Summary({ orders }: { orders: OrdersView | null }) {
+export function Summary({ orders, draft }: { orders: OrdersView | null; draft: boolean }) {
   const totals = orders?.totals;
   const fullCount = orders?.orders.filter((o) => o.credit_used_pct >= CREDIT_FULL_PCT).length ?? 0;
 
@@ -37,7 +37,7 @@ export function Summary({ orders }: { orders: OrdersView | null }) {
       <Cell
         label="Replied"
         value={`${totals.replied} of ${totals.orders}`}
-        note={`${totals.orders - totals.replied} waiting`}
+        note={draft ? `${totals.orders} not sent yet` : `${totals.orders - totals.replied} waiting`}
       />
       <Cell label="Lines" value={formatNumber(totals.lines)} note={`draft had ${formatNumber(totals.draft_lines)}`} />
       <Cell label="Cases" value={formatNumber(totals.cases)} note={`draft had ${formatNumber(totals.draft_cases)}`} />

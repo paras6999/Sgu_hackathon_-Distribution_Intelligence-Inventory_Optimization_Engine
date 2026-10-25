@@ -1,6 +1,7 @@
 import type {
   AssistantRequest,
   AssistantResponse,
+  AssumptionRow,
   AtRisk,
   BacktestMetrics,
   DemandHistory,
@@ -144,3 +145,6 @@ export const getTrajectory = (experimentId: string, query: TrajectoryQuery) =>
       seed: query.seed,
     }),
   );
+
+/** Every business number the engine uses, from config.yaml. */
+export const getAssumptions = () => request<AssumptionRow[]>("/v1/assumptions");

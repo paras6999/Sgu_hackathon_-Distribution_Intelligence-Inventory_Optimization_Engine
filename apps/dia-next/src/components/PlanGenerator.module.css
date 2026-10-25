@@ -1,0 +1,36 @@
+/* Plan generator bar above the summary strip on the Planning page. */
+.bar {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.field input,
+.field select {
+  border: 1px solid var(--control-line);
+  border-radius: 4px;
+  padding: 6px 8px;
+  background: #fff;
+  color: var(--text);
+}
+
+.hint {
+  display: block;
+  margin-top: 6px;
+  color: var(--warn);
+  font-size: 12px;
+}

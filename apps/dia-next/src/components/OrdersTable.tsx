@@ -27,7 +27,12 @@ type Props = {
   onBulk: (distIds: string[], action: ResponseAction) => void;
   /** Order to open when the table first shows, for example from a link on the map page. */
   initialOpenDist?: string;
+  /** True while the plan is still a draft: no order has been sent, so none can be waiting for a reply. */
+  draft: boolean;
 };
+
+/** Status of an order that has not been sent yet. */
+const NOT_SENT = { label: "Not sent yet", tone: "muted" } as const;
 
 function deltaClass(value: number): string {
   if (value > 0) return "delta-up";
@@ -35,7 +40,7 @@ function deltaClass(value: number): string {
   return "delta-0";
 }
 
-export function OrdersTable({ orders, lines, canAct, busy, onApplyOrder, onBulk, initialOpenDist }: Props) {
+export function OrdersTable({ orders, lines, canAct, busy, onApplyOrder, onBulk, initialOpenDist, draft }: Props) {
   const [filter, setFilter] = useState<FilterId>("all");
   const [openDist, setOpenDist] = useState<string | null>(initialOpenDist ?? null);
   const [checked, setChecked] = useState<Set<string>>(new Set());
@@ -110,7 +115,7 @@ export function OrdersTable({ orders, lines, canAct, busy, onApplyOrder, onBulk,
               </tr>
             )}
             {visible.map((o) => {
-              const status = orderStatus(o);
+              const status = draft && o.proposal_version < 1 ? NOT_SENT : orderStatus(o);
               const open = o.dist_id === openDist;
               const full = o.credit_used_pct >= CREDIT_FULL_PCT;
               return (
@@ -150,7 +155,7 @@ export function OrdersTable({ orders, lines, canAct, busy, onApplyOrder, onBulk,
                       </div>
                     </td>
                     <td className={`num ${deltaClass(o.cases_since_draft)}`}>{formatSigned(o.cases_since_draft)}</td>
-                    <td className="num">{o.proposal_version}</td>
+                    <td className="num">{o.proposal_version < 1 ? "Not sent" : o.proposal_version}</td>
                   </tr>
                   {open && (
                     <tr className="open-row">

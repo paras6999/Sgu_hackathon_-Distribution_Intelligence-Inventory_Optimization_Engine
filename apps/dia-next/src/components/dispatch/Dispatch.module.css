@@ -1,0 +1,82 @@
+.field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.csv {
+  text-decoration: none;
+}
+
+.sub {
+  padding: 10px 16px 0;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.list {
+  display: grid;
+  gap: 12px;
+  padding: 12px 16px 16px;
+}
+
+.truck {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.truckHead {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: #fafaf9;
+  border-bottom: 1px solid var(--line);
+}
+
+.truckTitle {
+  display: grid;
+  gap: 2px;
+  min-width: 180px;
+}
+
+.truckId {
+  font-family: Consolas, "Courier New", monospace;
+  font-weight: 600;
+}
+
+.destination {
+  display: grid;
+  gap: 2px;
+  min-width: 120px;
+}
+
+.meters {
+  display: grid;
+  gap: 6px;
+  flex: 1;
+  min-width: 260px;
+}
+
+.meter {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.meterValue {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.mono {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 12px;
+}
