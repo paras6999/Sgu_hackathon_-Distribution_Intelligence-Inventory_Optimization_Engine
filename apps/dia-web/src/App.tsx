@@ -1,4 +1,4 @@
-/** App shell: sidebar navigation grouped by what the planner is doing. Journeys follow docs/PRD.md section 4. */
+/** App shell: top bar and tab navigation grouped by what the planner is doing. Journeys follow docs/PRD.md section 4. */
 import type { Plan } from "@dia/types";
 import { useState, type ReactNode } from "react";
 import { api } from "./api";
@@ -26,34 +26,28 @@ export function App() {
 
   return (
     <div className="app">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-mark">{Icon.mark}</div>
-          <div>
-            <div className="brand-name">Vitaran</div>
-            <div className="brand-tag">Distribution intelligence</div>
-          </div>
+      <header className="global">
+        <div className="brand-mark">{Icon.mark}</div>
+        <span className="brand-name">Vitaran</span>
+        <span className="brand-tag">Distribution intelligence</span>
+        <span className="spacer" />
+        <div className="status">
+          <span className={`dot ${h && !fake && h.engine === "ok" ? "" : "off"}`} />
+          <span>{health.error ? "Backend unreachable" : fake ? "Demo data (no engine)" : h ? `Engine ${h.engine === "ok" ? "online" : h.engine} · ${h.engine_mode}` : "Connecting…"}</span>
         </div>
-        <nav className="nav" aria-label="Main">
-          {GROUPS.map((g) => (
-            <div key={g.title}>
-              <div className="nav-group">{g.title}</div>
-              {g.items.map((i) => (
-                <button key={i.tab} className={i.tab === tab ? "active" : ""} aria-current={i.tab === tab ? "page" : undefined} onClick={() => setTab(i.tab)}>
-                  {i.icon}<span>{i.tab}</span>
-                </button>
-              ))}
-            </div>
-          ))}
-        </nav>
-        <div className="sidebar-foot">
-          <div className="status">
-            <span className={`dot ${h && !fake && h.engine === "ok" ? "" : "off"}`} />
-            <span>{health.error ? "Backend unreachable" : fake ? "Demo data (no engine)" : h ? `Engine ${h.engine === "ok" ? "online" : h.engine} · ${h.engine_mode}` : "Connecting…"}</span>
+      </header>
+      <nav className="nav" aria-label="Main">
+        {GROUPS.map((g) => (
+          <div className="nav-group" key={g.title}>
+            <span>{g.title}</span>
+            {g.items.map((i) => (
+              <button key={i.tab} className={i.tab === tab ? "active" : ""} aria-current={i.tab === tab ? "page" : undefined} onClick={() => setTab(i.tab)}>
+                {i.icon}<span>{i.tab}</span>
+              </button>
+            ))}
           </div>
-          <div className="sub">Simulated sales and stock; real weather</div>
-        </div>
-      </aside>
+        ))}
+      </nav>
       <main className="main">
         <div className="page">
           {tab === "Plan" && <PlanPage plan={plan} setPlan={setPlan} />}
@@ -67,6 +61,11 @@ export function App() {
           {tab === "Assumptions" && <AssumptionsPage />}
         </div>
       </main>
+      <footer className="foot">
+        <span><b>Plan</b> {plan ? `${plan.plan_id} v${plan.version} · ${plan.status}` : "none yet"}</span>
+        <span className="spacer" />
+        <span>Simulated sales and stock; real weather</span>
+      </footer>
     </div>
   );
 }
